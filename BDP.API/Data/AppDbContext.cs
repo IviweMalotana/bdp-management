@@ -1,0 +1,141 @@
+using BDP.API.Models;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
+namespace BDP.API.Data;
+
+public class AppDbContext : IdentityDbContext<ApplicationUser>
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+
+    public DbSet<Supplier> Suppliers => Set<Supplier>();
+    public DbSet<Product> Products => Set<Product>();
+    public DbSet<PricingTier> PricingTiers => Set<PricingTier>();
+    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
+    public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+    protected override void OnModelCreating(ModelBuilder builder)
+    {
+        base.OnModelCreating(builder);
+
+        // Supplier → Products (cascade delete)
+        builder.Entity<Product>()
+            .HasOne(p => p.Supplier)
+            .WithMany(s => s.Products)
+            .HasForeignKey(p => p.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Product → PricingTiers (cascade delete)
+        builder.Entity<PricingTier>()
+            .HasOne(pt => pt.Product)
+            .WithMany(p => p.PricingTiers)
+            .HasForeignKey(pt => pt.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Product → InventoryItems (cascade delete)
+        builder.Entity<InventoryItem>()
+            .HasOne(ii => ii.Product)
+            .WithMany(p => p.InventoryItems)
+            .HasForeignKey(ii => ii.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Customer → Orders (cascade delete)
+        builder.Entity<Order>()
+            .HasOne(o => o.Customer)
+            .WithMany(c => c.Orders)
+            .HasForeignKey(o => o.CustomerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Order → OrderItems (cascade delete)
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.Order)
+            .WithMany(o => o.OrderItems)
+            .HasForeignKey(oi => oi.OrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // OrderItem → Product (restrict delete)
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.Product)
+            .WithMany()
+            .HasForeignKey(oi => oi.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Decimal precision
+        builder.Entity<Product>()
+            .Property(p => p.CostCNY).HasPrecision(18, 4);
+        builder.Entity<Product>()
+            .Property(p => p.CostWithShippingCNY).HasPrecision(18, 4);
+        builder.Entity<Product>()
+            .Property(p => p.CostPerUnitZAR).HasPrecision(18, 4);
+
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.MarkupPercent).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.SalePricePerUnit).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.TotalSalePrice).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.TotalCostPrice).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.ProfitPerUnit).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.TotalProfit).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.MarginPercent).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.LogoSilkScreen).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.LogoHotStamping).HasPrecision(18, 4);
+        builder.Entity<PricingTier>()
+            .Property(pt => pt.DeliveryCostZAR).HasPrecision(18, 4);
+
+        builder.Entity<Order>()
+            .Property(o => o.TotalAmountZAR).HasPrecision(18, 4);
+        builder.Entity<OrderItem>()
+            .Property(oi => oi.UnitPriceZAR).HasPrecision(18, 4);
+        builder.Entity<OrderItem>()
+            .Property(oi => oi.TotalPriceZAR).HasPrecision(18, 4);
+        builder.Entity<OrderItem>()
+            .Property(oi => oi.BrandingCostZAR).HasPrecision(18, 4);
+
+        SeedData(builder);
+    }
+
+    private static void SeedData(ModelBuilder builder)
+    {
+        // Seed default admin user
+        var adminId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
+        var hasher = new PasswordHasher<ApplicationUser>();
+        var adminUser = new ApplicationUser
+        {
+            Id = adminId,
+            UserName = "admin@bdp.co.za",
+            NormalizedUserName = "ADMIN@BDP.CO.ZA",
+            Email = "admin@bdp.co.za",
+            NormalizedEmail = "ADMIN@BDP.CO.ZA",
+            EmailConfirmed = true,
+            FirstName = "BDP",
+            LastName = "Admin",
+            Role = "Admin",
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            SecurityStamp = "STATIC_SECURITY_STAMP_BDP_ADMIN_2026"
+        };
+        adminUser.PasswordHash = hasher.HashPassword(adminUser, "BDP@Admin2026!");
+        builder.Entity<ApplicationUser>().HasData(adminUser);
+
+        // Seed default supplier
+        builder.Entity<Supplier>().HasData(new Supplier
+        {
+            Id = 1,
+            Name = "Hongxin Pharmaceutical",
+            Platform = "1688.com",
+            Country = "China",
+            ContactEmail = null,
+            Notes = null,
+            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+        });
+    }
+}

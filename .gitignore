@@ -1,0 +1,13 @@
+bin/
+obj/
+.claude/
+.vs/
+*.user
+node_modules/
+dist/
+BDP.Web/dist/
+.env.local
+.env.production
+appsettings.Production.json
+.DS_Store
+*.log

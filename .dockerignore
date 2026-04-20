@@ -1,0 +1,7 @@
+BDP.Web/node_modules
+BDP.Web/dist
+BDP.API/bin
+BDP.API/obj
+BDP.API/wwwroot
+**/.git
+**/.DS_Store
