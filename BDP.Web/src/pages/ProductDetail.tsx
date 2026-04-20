@@ -12,7 +12,7 @@ const LOC_COLOUR: Record<string, string> = {
   'ZQ Warehouse': 'bg-purple-500/20 text-purple-400',
 }
 
-type Tab = 'pricing' | 'inventory'
+type Tab = 'pricing' | 'customisation' | 'inventory'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
@@ -89,13 +89,17 @@ export default function ProductDetail() {
       {/* Tabs */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-800">
-          {(['pricing', 'inventory'] as Tab[]).map((t) => (
+          {([
+            { key: 'pricing',        label: `Pricing Tiers (${product.pricingTiers.length})` },
+            { key: 'customisation',  label: `Pricing & Customisation (${product.productPricingTiers?.length ?? 0})` },
+            { key: 'inventory',      label: `Inventory (${product.inventoryItems?.length ?? 0})` },
+          ] as { key: Tab; label: string }[]).map(({ key, label }) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-5 py-3 text-sm font-medium transition-colors capitalize ${tab === t ? 'text-white border-b-2 border-indigo-500 -mb-px' : 'text-gray-400 hover:text-white'}`}
+              key={key}
+              onClick={() => setTab(key)}
+              className={`px-5 py-3 text-sm font-medium transition-colors whitespace-nowrap ${tab === key ? 'text-white border-b-2 border-indigo-500 -mb-px' : 'text-gray-400 hover:text-white'}`}
             >
-              {t === 'pricing' ? `Pricing Tiers (${product.pricingTiers.length})` : `Inventory (${product.inventoryItems?.length ?? 0})`}
+              {label}
             </button>
           ))}
         </div>
@@ -133,6 +137,56 @@ export default function ProductDetail() {
               </table>
             </div>
           )
+        )}
+
+        {/* Pricing & Customisation tab */}
+        {tab === 'customisation' && (
+          !product.productPricingTiers || product.productPricingTiers.length === 0 ? (
+            <p className="px-5 py-8 text-sm text-gray-500 text-center">No pricing & customisation tiers configured.</p>
+          ) : (() => {
+            // Find first tier index where silk/hot becomes available
+            const firstSilk = product.productPricingTiers!.findIndex(t => t.silkScreenLogoZAR != null)
+            const firstHot  = product.productPricingTiers!.findIndex(t => t.hotStampingLogoZAR != null)
+            return (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-800">
+                      {['Qty', 'Sale Price (ZAR)', 'Delivery (ZAR)', 'Silk Screen Logo', 'Hot Stamping Logo', 'Total w/ Silk', 'Total w/ Hot'].map((h) => (
+                        <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {product.productPricingTiers!.map((tier, idx) => {
+                      const isSilkFirst = idx === firstSilk && firstSilk !== -1
+                      const isHotFirst  = idx === firstHot  && firstHot  !== -1
+                      const highlight   = isSilkFirst || isHotFirst
+                      return (
+                        <tr key={tier.id} className={`hover:bg-gray-800/50 ${highlight ? 'bg-indigo-950/40' : ''}`}>
+                          <td className="px-4 py-2.5 font-semibold text-white">{tier.quantity.toLocaleString()}</td>
+                          <td className="px-4 py-2.5 text-gray-300">R{tier.salePriceZAR.toFixed(2)}</td>
+                          <td className="px-4 py-2.5 text-gray-300">R{tier.deliveryCostZAR.toFixed(2)}</td>
+                          <td className={`px-4 py-2.5 ${isSilkFirst ? 'text-indigo-300 font-semibold' : tier.silkScreenLogoZAR != null ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {tier.silkScreenLogoZAR != null ? `R${tier.silkScreenLogoZAR.toFixed(2)}` : '—'}
+                          </td>
+                          <td className={`px-4 py-2.5 ${isHotFirst ? 'text-amber-300 font-semibold' : tier.hotStampingLogoZAR != null ? 'text-gray-300' : 'text-gray-600'}`}>
+                            {tier.hotStampingLogoZAR != null ? `R${tier.hotStampingLogoZAR.toFixed(2)}` : '—'}
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-300">
+                            {tier.silkScreenLogoZAR != null ? `R${(tier.salePriceZAR + tier.silkScreenLogoZAR).toFixed(2)}` : '—'}
+                          </td>
+                          <td className="px-4 py-2.5 text-gray-300">
+                            {tier.hotStampingLogoZAR != null ? `R${(tier.salePriceZAR + tier.hotStampingLogoZAR).toFixed(2)}` : '—'}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )
+          })()
         )}
 
         {/* Inventory tab */}

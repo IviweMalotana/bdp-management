@@ -74,6 +74,15 @@ export interface InventoryItem {
   updatedAt: string
 }
 
+export interface ProductPricingTier {
+  id: number
+  quantity: number
+  salePriceZAR: number
+  deliveryCostZAR: number
+  silkScreenLogoZAR: number | null
+  hotStampingLogoZAR: number | null
+}
+
 export interface Product {
   id: number
   name: string
@@ -95,19 +104,45 @@ export interface Product {
   createdAt: string
   dateAdded: string
   pricingTiers: PricingTier[]
+  productPricingTiers?: ProductPricingTier[]
   inventoryItems?: InventoryItem[]
+}
+
+export interface CustomisationOption {
+  id: number
+  supplierId: number
+  supplierName: string
+  type: 'SilkScreen' | 'HotStamping'
+  minQuantity: number
+  totalPriceZAR: number
+  notes: string | null
 }
 
 export interface Supplier {
   id: number
   name: string
-  platform: string
   country: string
   contactEmail: string | null
+  contactPhone: string | null
+  website: string | null
+  leadTimeDays: number
+  minOrderQuantity: number
+  offersCustomisation: boolean
   notes: string | null
-  createdAt: string
   productCount: number
-  products?: Product[]
+  customisationOptionCount: number
+  createdAt: string
+  products?: {
+    id: number
+    name: string
+    skuBase: string
+    category: string
+    sizeML: number
+    bottleColour: string
+    lidColour: string
+    isActive: boolean
+  }[]
+  customisationOptions?: CustomisationOption[]
 }
 
 export interface Customer {
@@ -201,4 +236,33 @@ export interface OrderStats {
 
 export interface CustomerDetail extends Customer {
   orders: Order[]
+}
+
+export interface ShipmentItem {
+  id: number
+  productId: number
+  productName: string
+  sku: string
+  quantity: number
+  costPerUnitZAR: number
+  totalCostZAR: number
+}
+
+export interface Shipment {
+  id: number
+  reference: string
+  supplierId: number
+  supplierName: string
+  status: 'Ordered' | 'InTransit' | 'InCustoms' | 'Delivered' | 'Cancelled'
+  orderDate: string
+  estimatedArrival: string | null
+  actualArrival: string | null
+  originCountry: string
+  freightCostZAR: number
+  customsDutyZAR: number
+  totalCostZAR: number
+  notes: string | null
+  itemCount: number
+  createdAt: string
+  items?: ShipmentItem[]
 }

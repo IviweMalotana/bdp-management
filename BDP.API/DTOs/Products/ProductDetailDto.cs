@@ -4,5 +4,6 @@ namespace BDP.API.DTOs.Products;
 
 public class ProductDetailDto : ProductDto
 {
+    public List<ProductPricingTierDto> ProductPricingTiers { get; set; } = new();
     public List<InventoryItemDto> InventoryItems { get; set; } = new();
 }

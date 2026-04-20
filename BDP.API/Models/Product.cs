@@ -23,5 +23,6 @@ public class Product
 
     public Supplier Supplier { get; set; } = null!;
     public ICollection<PricingTier> PricingTiers { get; set; } = new List<PricingTier>();
+    public ICollection<ProductPricingTier> ProductPricingTiers { get; set; } = new List<ProductPricingTier>();
     public ICollection<InventoryItem> InventoryItems { get; set; } = new List<InventoryItem>();
 }

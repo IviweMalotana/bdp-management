@@ -4,10 +4,11 @@ import type {
   Product, PagedResult,
   PricingCalculationResult, AIContentResult,
   InventoryItem, InventorySummary,
-  Supplier,
+  Supplier, CustomisationOption,
   Customer, CustomerDetail,
   Order, OrderStats,
   DashboardSummary,
+  Shipment,
 } from '../types'
 
 const http = axios.create({
@@ -15,14 +16,12 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Attach JWT to every request
 http.interceptors.request.use((config) => {
   const token = localStorage.getItem('bdp_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// On 401, clear auth and redirect to login — but not for the login endpoint itself
 http.interceptors.response.use(
   (res) => res,
   (err) => {
@@ -88,14 +87,11 @@ export const products = {
   shopifyExport: (productIds: number[]) => {
     const token = localStorage.getItem('bdp_token')
     const url = `/api/products/shopify-export?productIds=${productIds.join(',')}`
-    const a = document.createElement('a')
-    a.href = url
-    a.setAttribute('download', '')
-    // attach auth via fetch then trigger download
     return fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then((r) => r.blob())
       .then((blob) => {
         const href = URL.createObjectURL(blob)
+        const a = document.createElement('a')
         a.href = href
         document.body.appendChild(a)
         a.click()
@@ -133,6 +129,68 @@ export const suppliers = {
 
   getById: (id: number) =>
     http.get<Supplier>(`/suppliers/${id}`).then((r) => r.data),
+
+  create: (data: Partial<Supplier>) =>
+    http.post<Supplier>('/suppliers', data).then((r) => r.data),
+
+  update: (id: number, data: Partial<Supplier>) =>
+    http.put<Supplier>(`/suppliers/${id}`, data).then((r) => r.data),
+
+  delete: (id: number) =>
+    http.delete(`/suppliers/${id}`),
+}
+
+// ── Customisation ───────────────────────────────────────────────────────────
+export const customisation = {
+  getBySupplier: (supplierId: number) =>
+    http.get<CustomisationOption[]>(`/customisation/supplier/${supplierId}`).then((r) => r.data),
+
+  getByProduct: (productId: number) =>
+    http.get<CustomisationOption[]>(`/customisation/product/${productId}`).then((r) => r.data),
+
+  create: (data: { supplierId: number; type: string; minQuantity: number; totalPriceZAR: number; notes?: string }) =>
+    http.post<CustomisationOption>('/customisation', data).then((r) => r.data),
+
+  update: (id: number, data: { supplierId: number; type: string; minQuantity: number; totalPriceZAR: number; notes?: string }) =>
+    http.put<CustomisationOption>(`/customisation/${id}`, data).then((r) => r.data),
+
+  delete: (id: number) =>
+    http.delete(`/customisation/${id}`),
+}
+
+// ── Shipments ───────────────────────────────────────────────────────────────
+export const shipments = {
+  getAll: () =>
+    http.get<Shipment[]>('/shipments').then((r) => r.data),
+
+  getById: (id: number) =>
+    http.get<Shipment>(`/shipments/${id}`).then((r) => r.data),
+
+  create: (data: {
+    supplierId: number
+    orderDate: string
+    estimatedArrival?: string
+    originCountry: string
+    freightCostZAR: number
+    customsDutyZAR: number
+    notes?: string
+    items: { productId: number; quantity: number; costPerUnitZAR: number }[]
+  }) => http.post<Shipment>('/shipments', data).then((r) => r.data),
+
+  update: (id: number, data: {
+    status?: string
+    estimatedArrival?: string | null
+    actualArrival?: string | null
+    freightCostZAR: number
+    customsDutyZAR: number
+    notes?: string
+  }) => http.put<Shipment>(`/shipments/${id}`, data).then((r) => r.data),
+
+  updateStatus: (id: number, status: string) =>
+    http.put<Shipment>(`/shipments/${id}/status`, { status }).then((r) => r.data),
+
+  delete: (id: number) =>
+    http.delete(`/shipments/${id}`),
 }
 
 // ── Customers ───────────────────────────────────────────────────────────────

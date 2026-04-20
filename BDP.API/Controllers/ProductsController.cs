@@ -2,6 +2,7 @@ using BDP.API.Data;
 using BDP.API.DTOs.Common;
 using BDP.API.DTOs.Inventory;
 using BDP.API.DTOs.Products;
+using ProductPricingTierDto = BDP.API.DTOs.Products.ProductPricingTierDto;
 using BDP.API.Models;
 using BDP.API.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -109,12 +110,19 @@ public class ProductsController : ControllerBase
     {
         var product = await _context.Products
             .Include(p => p.PricingTiers)
+            .Include(p => p.ProductPricingTiers)
             .Include(p => p.InventoryItems)
             .Include(p => p.Supplier)
             .FirstOrDefaultAsync(p => p.Id == id);
 
         if (product == null) return NotFound(new { message = $"Product {id} not found." });
-        return Ok(MapToDetailDto(product));
+
+        // Load customisation options for the supplier to populate logo prices
+        var customisationOptions = await _context.CustomisationOptions
+            .Where(co => co.SupplierId == product.SupplierId)
+            .ToListAsync();
+
+        return Ok(MapToDetailDto(product, customisationOptions));
     }
 
     // POST /api/products/calculate-pricing
@@ -364,7 +372,8 @@ public class ProductsController : ControllerBase
         PricingTiers = p.PricingTiers?.Select(MapPricingTierToDto).ToList() ?? new()
     };
 
-    internal static ProductDetailDto MapToDetailDto(Product p) => new()
+    internal static ProductDetailDto MapToDetailDto(Product p,
+        IEnumerable<BDP.API.Models.CustomisationOption>? customisationOptions = null) => new()
     {
         Id = p.Id,
         Name = p.Name,
@@ -386,8 +395,34 @@ public class ProductsController : ControllerBase
         CreatedAt = p.CreatedAt,
         DateAdded = p.DateAdded,
         PricingTiers = p.PricingTiers?.Select(MapPricingTierToDto).ToList() ?? new(),
+        ProductPricingTiers = MapProductPricingTiers(p, customisationOptions),
         InventoryItems = p.InventoryItems?.Select(MapInventoryToDto).ToList() ?? new()
     };
+
+    private static List<ProductPricingTierDto> MapProductPricingTiers(
+        Product p,
+        IEnumerable<BDP.API.Models.CustomisationOption>? options)
+    {
+        var optionsList = options?.ToList() ?? new();
+        var silkByQty = optionsList
+            .Where(co => co.Type == BDP.API.Models.CustomisationType.SilkScreen)
+            .ToDictionary(co => co.MinQuantity, co => co.TotalPriceZAR);
+        var hotByQty = optionsList
+            .Where(co => co.Type == BDP.API.Models.CustomisationType.HotStamping)
+            .ToDictionary(co => co.MinQuantity, co => co.TotalPriceZAR);
+
+        return p.ProductPricingTiers?
+            .OrderBy(t => t.Quantity)
+            .Select(t => new ProductPricingTierDto
+            {
+                Id = t.Id,
+                Quantity = t.Quantity,
+                SalePriceZAR = t.SalePriceZAR,
+                DeliveryCostZAR = t.DeliveryCostZAR,
+                SilkScreenLogoZAR = silkByQty.TryGetValue(t.Quantity, out var s) ? s : null,
+                HotStampingLogoZAR = hotByQty.TryGetValue(t.Quantity, out var h) ? h : null,
+            }).ToList() ?? new();
+    }
 
     internal static PricingTierDto MapPricingTierToDto(PricingTier pt) => new()
     {

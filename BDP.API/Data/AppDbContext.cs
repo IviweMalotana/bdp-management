@@ -12,6 +12,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Product> Products => Set<Product>();
     public DbSet<PricingTier> PricingTiers => Set<PricingTier>();
+    public DbSet<ProductPricingTier> ProductPricingTiers => Set<ProductPricingTier>();
+    public DbSet<CustomisationOption> CustomisationOptions => Set<CustomisationOption>();
+    public DbSet<Shipment> Shipments => Set<Shipment>();
+    public DbSet<ShipmentItem> ShipmentItems => Set<ShipmentItem>();
     public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Order> Orders => Set<Order>();
@@ -21,49 +25,84 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     {
         base.OnModelCreating(builder);
 
-        // Supplier → Products (cascade delete)
+        // Supplier → Products (restrict delete)
         builder.Entity<Product>()
             .HasOne(p => p.Supplier)
             .WithMany(s => s.Products)
             .HasForeignKey(p => p.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Product → PricingTiers (cascade delete)
+        // Product → PricingTiers
         builder.Entity<PricingTier>()
             .HasOne(pt => pt.Product)
             .WithMany(p => p.PricingTiers)
             .HasForeignKey(pt => pt.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Product → InventoryItems (cascade delete)
+        // Product → ProductPricingTiers
+        builder.Entity<ProductPricingTier>()
+            .HasOne(ppt => ppt.Product)
+            .WithMany(p => p.ProductPricingTiers)
+            .HasForeignKey(ppt => ppt.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Supplier → CustomisationOptions
+        builder.Entity<CustomisationOption>()
+            .HasOne(co => co.Supplier)
+            .WithMany(s => s.CustomisationOptions)
+            .HasForeignKey(co => co.SupplierId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Supplier → Shipments (restrict: don't delete supplier with shipments)
+        builder.Entity<Shipment>()
+            .HasOne(sh => sh.Supplier)
+            .WithMany(s => s.Shipments)
+            .HasForeignKey(sh => sh.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Shipment → ShipmentItems
+        builder.Entity<ShipmentItem>()
+            .HasOne(si => si.Shipment)
+            .WithMany(sh => sh.Items)
+            .HasForeignKey(si => si.ShipmentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ShipmentItem → Product (restrict)
+        builder.Entity<ShipmentItem>()
+            .HasOne(si => si.Product)
+            .WithMany()
+            .HasForeignKey(si => si.ProductId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Product → InventoryItems
         builder.Entity<InventoryItem>()
             .HasOne(ii => ii.Product)
             .WithMany(p => p.InventoryItems)
             .HasForeignKey(ii => ii.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Customer → Orders (cascade delete)
+        // Customer → Orders
         builder.Entity<Order>()
             .HasOne(o => o.Customer)
             .WithMany(c => c.Orders)
             .HasForeignKey(o => o.CustomerId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Order → OrderItems (cascade delete)
+        // Order → OrderItems
         builder.Entity<OrderItem>()
             .HasOne(oi => oi.Order)
             .WithMany(o => o.OrderItems)
             .HasForeignKey(oi => oi.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // OrderItem → Product (restrict delete)
+        // OrderItem → Product
         builder.Entity<OrderItem>()
             .HasOne(oi => oi.Product)
             .WithMany()
             .HasForeignKey(oi => oi.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Decimal precision
+        // Decimal precision — Product
         builder.Entity<Product>()
             .Property(p => p.CostCNY).HasPrecision(18, 4);
         builder.Entity<Product>()
@@ -71,6 +110,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Product>()
             .Property(p => p.CostPerUnitZAR).HasPrecision(18, 4);
 
+        // Decimal precision — PricingTier
         builder.Entity<PricingTier>()
             .Property(pt => pt.MarkupPercent).HasPrecision(18, 4);
         builder.Entity<PricingTier>()
@@ -92,6 +132,29 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<PricingTier>()
             .Property(pt => pt.DeliveryCostZAR).HasPrecision(18, 4);
 
+        // Decimal precision — ProductPricingTier
+        builder.Entity<ProductPricingTier>()
+            .Property(ppt => ppt.SalePriceZAR).HasPrecision(18, 4);
+        builder.Entity<ProductPricingTier>()
+            .Property(ppt => ppt.DeliveryCostZAR).HasPrecision(18, 4);
+
+        // Decimal precision — CustomisationOption
+        builder.Entity<CustomisationOption>()
+            .Property(co => co.TotalPriceZAR).HasPrecision(18, 4);
+
+        // Decimal precision — Shipment
+        builder.Entity<Shipment>()
+            .Property(sh => sh.FreightCostZAR).HasPrecision(18, 4);
+        builder.Entity<Shipment>()
+            .Property(sh => sh.CustomsDutyZAR).HasPrecision(18, 4);
+
+        // Decimal precision — ShipmentItem
+        builder.Entity<ShipmentItem>()
+            .Property(si => si.CostPerUnitZAR).HasPrecision(18, 4);
+        builder.Entity<ShipmentItem>()
+            .Property(si => si.TotalCostZAR).HasPrecision(18, 4);
+
+        // Decimal precision — Order/OrderItem
         builder.Entity<Order>()
             .Property(o => o.TotalAmountZAR).HasPrecision(18, 4);
         builder.Entity<OrderItem>()
@@ -106,7 +169,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     private static void SeedData(ModelBuilder builder)
     {
-        // Seed default admin user
         var adminId = "a1b2c3d4-e5f6-7890-abcd-ef1234567890";
         var hasher = new PasswordHasher<ApplicationUser>();
         var adminUser = new ApplicationUser
@@ -125,17 +187,5 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         };
         adminUser.PasswordHash = hasher.HashPassword(adminUser, "BDP@Admin2026!");
         builder.Entity<ApplicationUser>().HasData(adminUser);
-
-        // Seed default supplier
-        builder.Entity<Supplier>().HasData(new Supplier
-        {
-            Id = 1,
-            Name = "Hongxin Pharmaceutical",
-            Platform = "1688.com",
-            Country = "China",
-            ContactEmail = null,
-            Notes = null,
-            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
-        });
     }
 }
