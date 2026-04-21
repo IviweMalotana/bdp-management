@@ -10,10 +10,14 @@ public class ShipmentDto
     public DateTime OrderDate { get; set; }
     public DateTime? EstimatedArrival { get; set; }
     public DateTime? ActualArrival { get; set; }
-    public string OriginCountry { get; set; } = string.Empty;
-    public decimal FreightCostZAR { get; set; }
+    public string OriginCountry { get; set; } = "China";
+    public decimal SeaFreightCostZAR { get; set; }
     public decimal CustomsDutyZAR { get; set; }
+    public decimal DdpTotalZAR { get; set; }
     public decimal TotalCostZAR { get; set; }
+    public string? DestinationAddress { get; set; }
+    public string? CustomerName { get; set; }
+    public string? CustomerEmail { get; set; }
     public string? Notes { get; set; }
     public int ItemCount { get; set; }
     public DateTime CreatedAt { get; set; }

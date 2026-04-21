@@ -16,6 +16,7 @@ import Orders from './pages/Orders'
 import OrderDetail from './pages/OrderDetail'
 import SuppliersPage from './pages/SuppliersPage'
 import ShipmentsPage from './pages/ShipmentsPage'
+import ShippingSettingsPage from './pages/ShippingSettingsPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
@@ -58,8 +59,9 @@ export default function App() {
             <Route path="/customers/:id"  element={<CustomerDetail />} />
             <Route path="/orders"         element={<Orders />} />
             <Route path="/orders/:id"     element={<OrderDetail />} />
-            <Route path="/suppliers"      element={<SuppliersPage />} />
-            <Route path="/shipments"      element={<ShipmentsPage />} />
+            <Route path="/suppliers"         element={<SuppliersPage />} />
+            <Route path="/shipments"         element={<ShipmentsPage />} />
+            <Route path="/settings/shipping" element={<ShippingSettingsPage />} />
           </Route>
         </Route>
 

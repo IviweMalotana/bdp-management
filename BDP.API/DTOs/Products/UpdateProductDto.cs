@@ -19,4 +19,8 @@ public class UpdateProductDto
     public bool IsActive { get; set; } = true;
     public string? ShopifyTitle { get; set; }
     public string? ShopifyBodyHtml { get; set; }
+    public decimal WeightKg { get; set; }
+    public decimal LengthCm { get; set; }
+    public decimal WidthCm { get; set; }
+    public decimal HeightCm { get; set; }
 }

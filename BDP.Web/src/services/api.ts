@@ -8,7 +8,7 @@ import type {
   Customer, CustomerDetail,
   Order, OrderStats,
   DashboardSummary,
-  Shipment,
+  Shipment, ShippingSettings,
 } from '../types'
 
 const http = axios.create({
@@ -170,9 +170,11 @@ export const shipments = {
     supplierId: number
     orderDate: string
     estimatedArrival?: string
-    originCountry: string
-    freightCostZAR: number
+    seaFreightCostZAR: number
     customsDutyZAR: number
+    customerName?: string
+    customerEmail?: string
+    destinationAddress?: string
     notes?: string
     items: { productId: number; quantity: number; costPerUnitZAR: number }[]
   }) => http.post<Shipment>('/shipments', data).then((r) => r.data),
@@ -181,8 +183,11 @@ export const shipments = {
     status?: string
     estimatedArrival?: string | null
     actualArrival?: string | null
-    freightCostZAR: number
+    seaFreightCostZAR: number
     customsDutyZAR: number
+    customerName?: string
+    customerEmail?: string
+    destinationAddress?: string
     notes?: string
   }) => http.put<Shipment>(`/shipments/${id}`, data).then((r) => r.data),
 
@@ -233,6 +238,15 @@ export const orders = {
 export const dashboard = {
   getSummary: () =>
     http.get<DashboardSummary>('/dashboard/summary').then((r) => r.data),
+}
+
+// ── Shipping Settings ────────────────────────────────────────────────────────
+export const shippingSettings = {
+  get: () =>
+    http.get<ShippingSettings>('/shipping-settings').then((r) => r.data),
+
+  update: (data: { cnyPerCbm: number; cnyPerKg: number; cnyToZarRate: number; notes?: string }) =>
+    http.put<ShippingSettings>('/shipping-settings', data).then((r) => r.data),
 }
 
 export default http

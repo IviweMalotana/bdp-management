@@ -21,6 +21,13 @@ public class Product
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime DateAdded { get; set; } = DateTime.UtcNow;
 
+    // Shipping dimensions (DDP sea freight from China)
+    public decimal WeightKg { get; set; }
+    public decimal LengthCm { get; set; }
+    public decimal WidthCm { get; set; }
+    public decimal HeightCm { get; set; }
+    public decimal VolumeCBM { get; set; }
+
     public Supplier Supplier { get; set; } = null!;
     public ICollection<PricingTier> PricingTiers { get; set; } = new List<PricingTier>();
     public ICollection<ProductPricingTier> ProductPricingTiers { get; set; } = new List<ProductPricingTier>();

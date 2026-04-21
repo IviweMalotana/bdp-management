@@ -6,20 +6,24 @@ import {
   ChevronRight, Search, Package,
 } from 'lucide-react'
 
-type Status = 'Ordered' | 'InTransit' | 'InCustoms' | 'Delivered' | 'Cancelled'
+type Status = 'Ordered' | 'ManufacturingInProgress' | 'ReadyToShip' | 'InTransit' | 'InCustoms' | 'OutForDelivery' | 'Delivered' | 'Cancelled'
 
 const STATUS_STYLE: Record<Status, string> = {
-  Ordered:    'bg-gray-700 text-gray-300',
-  InTransit:  'bg-blue-500/20 text-blue-400',
-  InCustoms:  'bg-orange-500/20 text-orange-400',
-  Delivered:  'bg-green-500/20 text-green-400',
-  Cancelled:  'bg-red-500/20 text-red-400',
+  Ordered:                  'bg-gray-700 text-gray-300',
+  ManufacturingInProgress:  'bg-yellow-500/20 text-yellow-400',
+  ReadyToShip:              'bg-cyan-500/20 text-cyan-400',
+  InTransit:                'bg-blue-500/20 text-blue-400',
+  InCustoms:                'bg-orange-500/20 text-orange-400',
+  OutForDelivery:           'bg-purple-500/20 text-purple-400',
+  Delivered:                'bg-green-500/20 text-green-400',
+  Cancelled:                'bg-red-500/20 text-red-400',
 }
 const STATUS_LABEL: Record<Status, string> = {
-  Ordered: 'Ordered', InTransit: 'In Transit', InCustoms: 'In Customs',
+  Ordered: 'Ordered', ManufacturingInProgress: 'Manufacturing', ReadyToShip: 'Ready to Ship',
+  InTransit: 'In Transit', InCustoms: 'In Customs', OutForDelivery: 'Out for Delivery',
   Delivered: 'Delivered', Cancelled: 'Cancelled',
 }
-const ALL_STATUSES: Status[] = ['Ordered', 'InTransit', 'InCustoms', 'Delivered', 'Cancelled']
+const ALL_STATUSES: Status[] = ['Ordered', 'ManufacturingInProgress', 'ReadyToShip', 'InTransit', 'InCustoms', 'OutForDelivery', 'Delivered', 'Cancelled']
 
 type ItemLine = { productId: number; quantity: string; costPerUnitZAR: string }
 
@@ -44,9 +48,11 @@ export default function ShipmentsPage() {
     supplierId: '',
     orderDate: new Date().toISOString().substring(0, 10),
     estimatedArrival: '',
-    originCountry: 'China',
-    freightCostZAR: '',
+    seaFreightCostZAR: '',
     customsDutyZAR: '',
+    customerName: '',
+    customerEmail: '',
+    destinationAddress: '',
     notes: '',
   })
   const [items, setItems] = useState<ItemLine[]>([{ ...EMPTY_ITEM }])
@@ -100,9 +106,11 @@ export default function ShipmentsPage() {
       supplierId: supplierList[0]?.id.toString() ?? '',
       orderDate: new Date().toISOString().substring(0, 10),
       estimatedArrival: '',
-      originCountry: 'China',
-      freightCostZAR: '',
+      seaFreightCostZAR: '',
       customsDutyZAR: '',
+      customerName: '',
+      customerEmail: '',
+      destinationAddress: '',
       notes: '',
     })
     setItems([{ ...EMPTY_ITEM }])
@@ -130,7 +138,7 @@ export default function ShipmentsPage() {
   const itemsTotal = items.reduce((sum, it) => {
     return sum + (parseFloat(it.quantity) || 0) * (parseFloat(it.costPerUnitZAR) || 0)
   }, 0)
-  const grandTotal = itemsTotal + (parseFloat(cForm.freightCostZAR) || 0) + (parseFloat(cForm.customsDutyZAR) || 0)
+  const grandTotal = itemsTotal + (parseFloat(cForm.seaFreightCostZAR) || 0) + (parseFloat(cForm.customsDutyZAR) || 0)
 
   const handleCreate = async () => {
     if (!cForm.supplierId) { setCreateError('Select a supplier.'); return }
@@ -143,9 +151,11 @@ export default function ShipmentsPage() {
         supplierId: parseInt(cForm.supplierId),
         orderDate: new Date(cForm.orderDate).toISOString(),
         estimatedArrival: cForm.estimatedArrival ? new Date(cForm.estimatedArrival).toISOString() : undefined,
-        originCountry: cForm.originCountry,
-        freightCostZAR: parseFloat(cForm.freightCostZAR) || 0,
+        seaFreightCostZAR: parseFloat(cForm.seaFreightCostZAR) || 0,
         customsDutyZAR: parseFloat(cForm.customsDutyZAR) || 0,
+        customerName: cForm.customerName || undefined,
+        customerEmail: cForm.customerEmail || undefined,
+        destinationAddress: cForm.destinationAddress || undefined,
         notes: cForm.notes || undefined,
         items: validItems.map((it) => ({
           productId: it.productId,
@@ -303,7 +313,7 @@ export default function ShipmentsPage() {
               <div className="grid grid-cols-2 gap-3">
                 {[
                   ['Supplier',         detail.supplierName],
-                  ['Origin Country',   detail.originCountry],
+                  ['Ships From',       detail.originCountry],
                   ['Order Date',       new Date(detail.orderDate).toLocaleDateString()],
                   ['Est. Arrival',     detail.estimatedArrival ? new Date(detail.estimatedArrival).toLocaleDateString() : '—'],
                   ['Actual Arrival',   detail.actualArrival ? new Date(detail.actualArrival).toLocaleDateString() : '—'],
@@ -316,13 +326,23 @@ export default function ShipmentsPage() {
                 ))}
               </div>
 
+              {/* Customer info */}
+              {(detail.customerName || detail.customerEmail || detail.destinationAddress) && (
+                <div className="bg-gray-800/50 rounded-xl p-4 space-y-1.5">
+                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Customer</p>
+                  {detail.customerName && <p className="text-sm text-white">{detail.customerName}</p>}
+                  {detail.customerEmail && <p className="text-xs text-gray-400">{detail.customerEmail}</p>}
+                  {detail.destinationAddress && <p className="text-xs text-gray-400">{detail.destinationAddress}</p>}
+                </div>
+              )}
+
               {/* Cost breakdown */}
               <div className="bg-gray-800/50 rounded-xl p-4 space-y-2">
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Cost Breakdown</p>
                 {[
-                  ['Freight',           detail.freightCostZAR],
-                  ['Customs Duty',      detail.customsDutyZAR],
-                  ['Items Total',       (detail.items ?? []).reduce((s, i) => s + i.totalCostZAR, 0)],
+                  ['Sea Freight (DDP)',  detail.seaFreightCostZAR],
+                  ['Customs Duty',       detail.customsDutyZAR],
+                  ['Items Total',        (detail.items ?? []).reduce((s, i) => s + i.totalCostZAR, 0)],
                 ].map(([label, val]) => (
                   <div key={String(label)} className="flex justify-between text-sm">
                     <span className="text-gray-400">{label}</span>
@@ -330,8 +350,8 @@ export default function ShipmentsPage() {
                   </div>
                 ))}
                 <div className="border-t border-gray-700 pt-2 flex justify-between text-sm font-semibold">
-                  <span className="text-white">Total</span>
-                  <span className="text-emerald-400">R{detail.totalCostZAR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="text-white">DDP Total</span>
+                  <span className="text-emerald-400">R{detail.ddpTotalZAR.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
 
@@ -405,16 +425,24 @@ export default function ShipmentsPage() {
                   <input type="date" className={inp} value={cForm.estimatedArrival} onChange={(e) => setCForm({ ...cForm, estimatedArrival: e.target.value })} />
                 </div>
                 <div>
-                  <label className={lbl}>Origin Country</label>
-                  <input className={inp} value={cForm.originCountry} onChange={(e) => setCForm({ ...cForm, originCountry: e.target.value })} />
-                </div>
-                <div>
-                  <label className={lbl}>Freight Cost ZAR</label>
-                  <input type="number" className={inp} value={cForm.freightCostZAR} onChange={(e) => setCForm({ ...cForm, freightCostZAR: e.target.value })} placeholder="0" />
+                  <label className={lbl}>Sea Freight ZAR (DDP)</label>
+                  <input type="number" className={inp} value={cForm.seaFreightCostZAR} onChange={(e) => setCForm({ ...cForm, seaFreightCostZAR: e.target.value })} placeholder="0" />
                 </div>
                 <div>
                   <label className={lbl}>Customs Duty ZAR</label>
                   <input type="number" className={inp} value={cForm.customsDutyZAR} onChange={(e) => setCForm({ ...cForm, customsDutyZAR: e.target.value })} placeholder="0" />
+                </div>
+                <div>
+                  <label className={lbl}>Customer Name</label>
+                  <input className={inp} value={cForm.customerName} onChange={(e) => setCForm({ ...cForm, customerName: e.target.value })} placeholder="Optional" />
+                </div>
+                <div>
+                  <label className={lbl}>Customer Email</label>
+                  <input type="email" className={inp} value={cForm.customerEmail} onChange={(e) => setCForm({ ...cForm, customerEmail: e.target.value })} placeholder="Optional" />
+                </div>
+                <div className="col-span-2">
+                  <label className={lbl}>Destination Address</label>
+                  <input className={inp} value={cForm.destinationAddress} onChange={(e) => setCForm({ ...cForm, destinationAddress: e.target.value })} placeholder="Optional" />
                 </div>
                 <div className="col-span-2">
                   <label className={lbl}>Notes</label>
@@ -499,7 +527,7 @@ export default function ShipmentsPage() {
                   </div>
                   <div className="flex justify-between text-gray-400">
                     <span>Freight + Customs</span>
-                    <span>R{((parseFloat(cForm.freightCostZAR) || 0) + (parseFloat(cForm.customsDutyZAR) || 0)).toFixed(2)}</span>
+                    <span>R{((parseFloat(cForm.seaFreightCostZAR) || 0) + (parseFloat(cForm.customsDutyZAR) || 0)).toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between font-semibold text-white">
                     <span>Grand Total</span>

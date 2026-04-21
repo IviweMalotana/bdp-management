@@ -152,7 +152,7 @@ export default function ProductDetail() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-800">
-                      {['Qty', 'Sale Price (ZAR)', 'Delivery (ZAR)', 'Silk Screen Logo', 'Hot Stamping Logo', 'Total w/ Silk', 'Total w/ Hot'].map((h) => (
+                      {['Qty', 'Sale Price (ZAR)', 'Shipping (DDP from China)', 'Silk Screen Logo', 'Hot Stamping Logo', 'Total w/ Silk', 'Total w/ Hot'].map((h) => (
                         <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
                       ))}
                     </tr>
@@ -166,7 +166,7 @@ export default function ProductDetail() {
                         <tr key={tier.id} className={`hover:bg-gray-800/50 ${highlight ? 'bg-indigo-950/40' : ''}`}>
                           <td className="px-4 py-2.5 font-semibold text-white">{tier.quantity.toLocaleString()}</td>
                           <td className="px-4 py-2.5 text-gray-300">R{tier.salePriceZAR.toFixed(2)}</td>
-                          <td className="px-4 py-2.5 text-gray-300">R{tier.deliveryCostZAR.toFixed(2)}</td>
+                          <td className="px-4 py-2.5 text-gray-300">R{tier.shippingFromChinaZAR.toFixed(2)}</td>
                           <td className={`px-4 py-2.5 ${isSilkFirst ? 'text-indigo-300 font-semibold' : tier.silkScreenLogoZAR != null ? 'text-gray-300' : 'text-gray-600'}`}>
                             {tier.silkScreenLogoZAR != null ? `R${tier.silkScreenLogoZAR.toFixed(2)}` : '—'}
                           </td>

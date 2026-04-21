@@ -78,7 +78,7 @@ export interface ProductPricingTier {
   id: number
   quantity: number
   salePriceZAR: number
-  deliveryCostZAR: number
+  shippingFromChinaZAR: number
   silkScreenLogoZAR: number | null
   hotStampingLogoZAR: number | null
 }
@@ -103,6 +103,12 @@ export interface Product {
   shopifyBodyHtml: string | null
   createdAt: string
   dateAdded: string
+  weightKg: number
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  volumeCBM: number
+  shipsFrom: string
   pricingTiers: PricingTier[]
   productPricingTiers?: ProductPricingTier[]
   inventoryItems?: InventoryItem[]
@@ -248,19 +254,31 @@ export interface ShipmentItem {
   totalCostZAR: number
 }
 
+export interface ShippingSettings {
+  id: number
+  cnyPerCbm: number
+  cnyPerKg: number
+  cnyToZarRate: number
+  notes: string
+}
+
 export interface Shipment {
   id: number
   reference: string
   supplierId: number
   supplierName: string
-  status: 'Ordered' | 'InTransit' | 'InCustoms' | 'Delivered' | 'Cancelled'
+  status: 'Ordered' | 'ManufacturingInProgress' | 'ReadyToShip' | 'InTransit' | 'InCustoms' | 'OutForDelivery' | 'Delivered' | 'Cancelled'
   orderDate: string
   estimatedArrival: string | null
   actualArrival: string | null
   originCountry: string
-  freightCostZAR: number
+  seaFreightCostZAR: number
   customsDutyZAR: number
+  ddpTotalZAR: number
   totalCostZAR: number
+  destinationAddress: string | null
+  customerName: string | null
+  customerEmail: string | null
   notes: string | null
   itemCount: number
   createdAt: string

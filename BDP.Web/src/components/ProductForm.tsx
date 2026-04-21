@@ -24,6 +24,10 @@ const schema = z.object({
   supplierId:          z.coerce.number().int().min(1, 'Required'),
   supplierLink:        z.string().optional(),
   isActive:            z.boolean().default(true),
+  weightKg:            z.coerce.number().min(0).default(0.10),
+  lengthCm:            z.coerce.number().min(0).default(4),
+  widthCm:             z.coerce.number().min(0).default(4),
+  heightCm:            z.coerce.number().min(0).default(12),
 })
 type Fields = z.infer<typeof schema>
 
@@ -84,14 +88,20 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
           costWithShippingCNY: product.costWithShippingCNY,
           costPerUnitZAR: product.costPerUnitZAR, supplierId: product.supplierId,
           supplierLink: product.supplierLink ?? '', isActive: product.isActive,
+          weightKg: product.weightKg ?? 0.10,
+          lengthCm: product.lengthCm ?? 4,
+          widthCm: product.widthCm ?? 4,
+          heightCm: product.heightCm ?? 12,
         }
-      : { isActive: true },
+      : { isActive: true, weightKg: 0.10, lengthCm: 4, widthCm: 4, heightCm: 12 },
   })
 
   useEffect(() => { suppliersApi.getAll().then(setSupplierList).catch(() => {}) }, [])
 
-  const [n, cat, sz, bc, lc, tx] = watch(['name', 'category', 'sizeML', 'bottleColour', 'lidColour', 'texture'])
+  const [n, cat, sz, bc, lc, tx, wKg, lCm, wCm, hCm] = watch(['name', 'category', 'sizeML', 'bottleColour', 'lidColour', 'texture', 'weightKg', 'lengthCm', 'widthCm', 'heightCm'])
   const skuPreview = buildSKU(n ?? '', cat ?? '', sz ?? '', bc ?? '', lc ?? '', tx ?? '')
+  const cbmPreview = ((lCm || 0) * (wCm || 0) * (hCm || 0) / 1_000_000).toFixed(9)
+  const shippingPerUnitPreview = (((Number(lCm) * Number(wCm) * Number(hCm) / 1_000_000) * 2000 + (Number(wKg) * 10)) * 2.40).toFixed(2)
 
   const inputCls = (hasErr?: boolean) =>
     `w-full px-3 py-2 bg-gray-800 border rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 ${hasErr ? 'border-red-500' : 'border-gray-700'}`
@@ -316,6 +326,33 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
                 <label className="block text-xs font-medium text-gray-400 mb-1">Supplier Link <span className="text-gray-600">(optional)</span></label>
                 <input {...register('supplierLink')} type="url" className={inputCls()} placeholder="https://…" />
               </div>
+
+              {/* Dimensions */}
+              <div className="col-span-2">
+                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Shipping Dimensions (per unit)</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Weight (kg)</label>
+                <input {...register('weightKg')} type="number" step="0.001" className={inputCls()} placeholder="0.10" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Length (cm)</label>
+                <input {...register('lengthCm')} type="number" step="0.1" className={inputCls()} placeholder="4" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Width (cm)</label>
+                <input {...register('widthCm')} type="number" step="0.1" className={inputCls()} placeholder="4" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-400 mb-1">Height (cm)</label>
+                <input {...register('heightCm')} type="number" step="0.1" className={inputCls()} placeholder="12" />
+              </div>
+              <div className="col-span-2 bg-gray-800/40 rounded-lg px-3 py-2 flex gap-6 text-xs text-gray-400">
+                <span>CBM: <span className="text-gray-200 font-mono">{cbmPreview}</span></span>
+                <span>Shipping/unit (est.): <span className="text-gray-200 font-mono">R{shippingPerUnitPreview}</span></span>
+                <span className="text-gray-600">at ¥2000/CBM + ¥10/kg × 2.40</span>
+              </div>
+
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Generated SKU</label>
                 <div className="px-3 py-2 bg-gray-800/50 border border-gray-700/50 rounded-lg text-sm font-mono text-indigo-300 min-h-[36px]">

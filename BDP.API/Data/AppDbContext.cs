@@ -20,6 +20,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Customer> Customers => Set<Customer>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<ShippingSettings> ShippingSettings => Set<ShippingSettings>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -53,7 +54,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(co => co.SupplierId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Supplier → Shipments (restrict: don't delete supplier with shipments)
+        // Supplier → Shipments (restrict)
         builder.Entity<Shipment>()
             .HasOne(sh => sh.Supplier)
             .WithMany(s => s.Shipments)
@@ -109,6 +110,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(p => p.CostWithShippingCNY).HasPrecision(18, 4);
         builder.Entity<Product>()
             .Property(p => p.CostPerUnitZAR).HasPrecision(18, 4);
+        builder.Entity<Product>()
+            .Property(p => p.WeightKg).HasPrecision(10, 4);
+        builder.Entity<Product>()
+            .Property(p => p.LengthCm).HasPrecision(10, 2);
+        builder.Entity<Product>()
+            .Property(p => p.WidthCm).HasPrecision(10, 2);
+        builder.Entity<Product>()
+            .Property(p => p.HeightCm).HasPrecision(10, 2);
+        builder.Entity<Product>()
+            .Property(p => p.VolumeCBM).HasPrecision(18, 9);
 
         // Decimal precision — PricingTier
         builder.Entity<PricingTier>()
@@ -144,7 +155,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
         // Decimal precision — Shipment
         builder.Entity<Shipment>()
-            .Property(sh => sh.FreightCostZAR).HasPrecision(18, 4);
+            .Property(sh => sh.SeaFreightCostZAR).HasPrecision(18, 4);
         builder.Entity<Shipment>()
             .Property(sh => sh.CustomsDutyZAR).HasPrecision(18, 4);
 
@@ -163,6 +174,14 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(oi => oi.TotalPriceZAR).HasPrecision(18, 4);
         builder.Entity<OrderItem>()
             .Property(oi => oi.BrandingCostZAR).HasPrecision(18, 4);
+
+        // Decimal precision — ShippingSettings
+        builder.Entity<ShippingSettings>()
+            .Property(ss => ss.CnyPerCbm).HasPrecision(18, 4);
+        builder.Entity<ShippingSettings>()
+            .Property(ss => ss.CnyPerKg).HasPrecision(18, 4);
+        builder.Entity<ShippingSettings>()
+            .Property(ss => ss.CnyToZarRate).HasPrecision(18, 4);
 
         SeedData(builder);
     }
@@ -187,5 +206,14 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         };
         adminUser.PasswordHash = hasher.HashPassword(adminUser, "BDP@Admin2026!");
         builder.Entity<ApplicationUser>().HasData(adminUser);
+
+        builder.Entity<ShippingSettings>().HasData(new ShippingSettings
+        {
+            Id = 1,
+            CnyPerCbm = 2000m,
+            CnyPerKg = 10m,
+            CnyToZarRate = 2.40m,
+            Notes = "Sea DDP China to customer",
+        });
     }
 }

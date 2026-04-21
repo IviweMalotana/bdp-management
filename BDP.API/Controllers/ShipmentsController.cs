@@ -52,7 +52,6 @@ public class ShipmentsController : ControllerBase
         var supplier = await _context.Suppliers.FindAsync(dto.SupplierId);
         if (supplier == null) return BadRequest(new { message = "Supplier not found." });
 
-        // Validate product IDs and load product names
         var productIds = dto.Items.Select(i => i.ProductId).Distinct().ToList();
         var products = await _context.Products
             .Where(p => productIds.Contains(p.Id))
@@ -71,9 +70,11 @@ public class ShipmentsController : ControllerBase
             Status = ShipmentStatus.Ordered,
             OrderDate = dto.OrderDate,
             EstimatedArrival = dto.EstimatedArrival,
-            OriginCountry = dto.OriginCountry,
-            FreightCostZAR = dto.FreightCostZAR,
+            SeaFreightCostZAR = dto.SeaFreightCostZAR,
             CustomsDutyZAR = dto.CustomsDutyZAR,
+            DestinationAddress = dto.DestinationAddress,
+            CustomerName = dto.CustomerName,
+            CustomerEmail = dto.CustomerEmail,
             Notes = dto.Notes,
             CreatedAt = DateTime.UtcNow,
         };
@@ -84,7 +85,6 @@ public class ShipmentsController : ControllerBase
         foreach (var item in dto.Items)
         {
             var product = products[item.ProductId];
-            var total = Math.Round(item.Quantity * item.CostPerUnitZAR, 4);
             _context.ShipmentItems.Add(new ShipmentItem
             {
                 ShipmentId = shipment.Id,
@@ -93,7 +93,7 @@ public class ShipmentsController : ControllerBase
                 SKU = product.SKUBase,
                 Quantity = item.Quantity,
                 CostPerUnitZAR = item.CostPerUnitZAR,
-                TotalCostZAR = total,
+                TotalCostZAR = Math.Round(item.Quantity * item.CostPerUnitZAR, 4),
             });
         }
 
@@ -126,8 +126,11 @@ public class ShipmentsController : ControllerBase
 
         shipment.EstimatedArrival = dto.EstimatedArrival;
         shipment.ActualArrival = dto.ActualArrival;
-        shipment.FreightCostZAR = dto.FreightCostZAR;
+        shipment.SeaFreightCostZAR = dto.SeaFreightCostZAR;
         shipment.CustomsDutyZAR = dto.CustomsDutyZAR;
+        shipment.DestinationAddress = dto.DestinationAddress;
+        shipment.CustomerName = dto.CustomerName;
+        shipment.CustomerEmail = dto.CustomerEmail;
         shipment.Notes = dto.Notes;
 
         await _context.SaveChangesAsync();
@@ -189,8 +192,7 @@ public class ShipmentsController : ControllerBase
     {
         var year = DateTime.UtcNow.Year;
         var prefix = $"SHP-{year}-";
-        var count = await _context.Shipments
-            .CountAsync(sh => sh.Reference.StartsWith(prefix));
+        var count = await _context.Shipments.CountAsync(sh => sh.Reference.StartsWith(prefix));
         return $"{prefix}{(count + 1):000}";
     }
 
@@ -199,6 +201,7 @@ public class ShipmentsController : ControllerBase
     private static ShipmentDto MapToDto(Shipment sh)
     {
         var itemsTotal = sh.Items?.Sum(i => i.TotalCostZAR) ?? 0m;
+        var ddp = sh.SeaFreightCostZAR + sh.CustomsDutyZAR;
         return new ShipmentDto
         {
             Id = sh.Id,
@@ -209,10 +212,14 @@ public class ShipmentsController : ControllerBase
             OrderDate = sh.OrderDate,
             EstimatedArrival = sh.EstimatedArrival,
             ActualArrival = sh.ActualArrival,
-            OriginCountry = sh.OriginCountry,
-            FreightCostZAR = sh.FreightCostZAR,
+            OriginCountry = "China",
+            SeaFreightCostZAR = sh.SeaFreightCostZAR,
             CustomsDutyZAR = sh.CustomsDutyZAR,
-            TotalCostZAR = sh.FreightCostZAR + sh.CustomsDutyZAR + itemsTotal,
+            DdpTotalZAR = ddp,
+            TotalCostZAR = ddp + itemsTotal,
+            DestinationAddress = sh.DestinationAddress,
+            CustomerName = sh.CustomerName,
+            CustomerEmail = sh.CustomerEmail,
             Notes = sh.Notes,
             ItemCount = sh.Items?.Count ?? 0,
             CreatedAt = sh.CreatedAt,
@@ -222,6 +229,7 @@ public class ShipmentsController : ControllerBase
     private static ShipmentDetailDto MapToDetailDto(Shipment sh)
     {
         var itemsTotal = sh.Items?.Sum(i => i.TotalCostZAR) ?? 0m;
+        var ddp = sh.SeaFreightCostZAR + sh.CustomsDutyZAR;
         return new ShipmentDetailDto
         {
             Id = sh.Id,
@@ -232,10 +240,14 @@ public class ShipmentsController : ControllerBase
             OrderDate = sh.OrderDate,
             EstimatedArrival = sh.EstimatedArrival,
             ActualArrival = sh.ActualArrival,
-            OriginCountry = sh.OriginCountry,
-            FreightCostZAR = sh.FreightCostZAR,
+            OriginCountry = "China",
+            SeaFreightCostZAR = sh.SeaFreightCostZAR,
             CustomsDutyZAR = sh.CustomsDutyZAR,
-            TotalCostZAR = sh.FreightCostZAR + sh.CustomsDutyZAR + itemsTotal,
+            DdpTotalZAR = ddp,
+            TotalCostZAR = ddp + itemsTotal,
+            DestinationAddress = sh.DestinationAddress,
+            CustomerName = sh.CustomerName,
+            CustomerEmail = sh.CustomerEmail,
             Notes = sh.Notes,
             ItemCount = sh.Items?.Count ?? 0,
             CreatedAt = sh.CreatedAt,

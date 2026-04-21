@@ -222,20 +222,24 @@ public class ProductsController : ControllerBase
         _context.Products.Add(product);
         await _context.SaveChangesAsync();
 
-        foreach (var location in new[] { "Cape Town", "China", "ZQ Warehouse" })
+        product.WeightKg = dto.WeightKg;
+        product.LengthCm = dto.LengthCm;
+        product.WidthCm = dto.WidthCm;
+        product.HeightCm = dto.HeightCm;
+        product.VolumeCBM = ShippingCalculator.ComputeVolumeCBM(dto.LengthCm, dto.WidthCm, dto.HeightCm);
+        await _context.SaveChangesAsync();
+
+        _context.InventoryItems.Add(new InventoryItem
         {
-            _context.InventoryItems.Add(new InventoryItem
-            {
-                ProductId = product.Id,
-                SKU = dto.SKUBase,
-                Quantity = 0,
-                Location = location,
-                OnHandStock = 0,
-                AvailableStock = 0,
-                IsStocked = false,
-                UpdatedAt = DateTime.UtcNow
-            });
-        }
+            ProductId = product.Id,
+            SKU = dto.SKUBase,
+            Quantity = 0,
+            Location = "China",
+            OnHandStock = 0,
+            AvailableStock = 0,
+            IsStocked = false,
+            UpdatedAt = DateTime.UtcNow
+        });
         await _context.SaveChangesAsync();
 
         var created = await _context.Products
@@ -276,6 +280,11 @@ public class ProductsController : ControllerBase
         product.IsActive = dto.IsActive;
         if (dto.ShopifyTitle != null) product.ShopifyTitle = dto.ShopifyTitle;
         if (dto.ShopifyBodyHtml != null) product.ShopifyBodyHtml = dto.ShopifyBodyHtml;
+        product.WeightKg = dto.WeightKg;
+        product.LengthCm = dto.LengthCm;
+        product.WidthCm = dto.WidthCm;
+        product.HeightCm = dto.HeightCm;
+        product.VolumeCBM = ShippingCalculator.ComputeVolumeCBM(dto.LengthCm, dto.WidthCm, dto.HeightCm);
 
         await _context.SaveChangesAsync();
 
@@ -369,6 +378,11 @@ public class ProductsController : ControllerBase
         ShopifyBodyHtml = p.ShopifyBodyHtml,
         CreatedAt = p.CreatedAt,
         DateAdded = p.DateAdded,
+        WeightKg = p.WeightKg,
+        LengthCm = p.LengthCm,
+        WidthCm = p.WidthCm,
+        HeightCm = p.HeightCm,
+        VolumeCBM = p.VolumeCBM,
         PricingTiers = p.PricingTiers?.Select(MapPricingTierToDto).ToList() ?? new()
     };
 
@@ -394,6 +408,12 @@ public class ProductsController : ControllerBase
         ShopifyBodyHtml = p.ShopifyBodyHtml,
         CreatedAt = p.CreatedAt,
         DateAdded = p.DateAdded,
+        WeightKg = p.WeightKg,
+        LengthCm = p.LengthCm,
+        WidthCm = p.WidthCm,
+        HeightCm = p.HeightCm,
+        VolumeCBM = p.VolumeCBM,
+        ShipsFrom = "China",
         PricingTiers = p.PricingTiers?.Select(MapPricingTierToDto).ToList() ?? new(),
         ProductPricingTiers = MapProductPricingTiers(p, customisationOptions),
         InventoryItems = p.InventoryItems?.Select(MapInventoryToDto).ToList() ?? new()
@@ -418,7 +438,7 @@ public class ProductsController : ControllerBase
                 Id = t.Id,
                 Quantity = t.Quantity,
                 SalePriceZAR = t.SalePriceZAR,
-                DeliveryCostZAR = t.DeliveryCostZAR,
+                ShippingFromChinaZAR = t.DeliveryCostZAR,
                 SilkScreenLogoZAR = silkByQty.TryGetValue(t.Quantity, out var s) ? s : null,
                 HotStampingLogoZAR = hotByQty.TryGetValue(t.Quantity, out var h) ? h : null,
             }).ToList() ?? new();

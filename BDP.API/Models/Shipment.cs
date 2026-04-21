@@ -9,9 +9,11 @@ public class Shipment
     public DateTime OrderDate { get; set; }
     public DateTime? EstimatedArrival { get; set; }
     public DateTime? ActualArrival { get; set; }
-    public string OriginCountry { get; set; } = "China";
-    public decimal FreightCostZAR { get; set; }
+    public decimal SeaFreightCostZAR { get; set; }
     public decimal CustomsDutyZAR { get; set; }
+    public string? DestinationAddress { get; set; }
+    public string? CustomerName { get; set; }
+    public string? CustomerEmail { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

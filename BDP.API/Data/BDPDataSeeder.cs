@@ -1,4 +1,5 @@
 using BDP.API.Models;
+using BDP.API.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -104,7 +105,6 @@ public static class BDPDataSeeder
     {
         var suppliers = await context.Suppliers.ToListAsync();
 
-        // Charlie (SA) — full tiers for both types
         var charlie = suppliers.FirstOrDefault(s => s.Name == "Charlie Supplier (SA)");
         if (charlie != null)
         {
@@ -121,7 +121,6 @@ public static class BDPDataSeeder
                 });
         }
 
-        // Chinese suppliers — 2500+ tiers only
         var chineseTiersSilk = new[]
         {
             (2500, 29500m), (5000, 58000m), (10000, 110000m), (20000, 210000m), (50000, 500000m),
@@ -132,9 +131,7 @@ public static class BDPDataSeeder
         };
 
         foreach (var s in suppliers.Where(s => s.Country == "China"))
-        {
             await UpsertCustomisationTiersAsync(context, s.Id, chineseTiersSilk, chineseTiersHot);
-        }
 
         await context.SaveChangesAsync();
     }
@@ -176,6 +173,19 @@ public static class BDPDataSeeder
 
     // ─── Products ────────────────────────────────────────────────────────────
 
+    // Default dimensions by category/size (DDP sea freight from China)
+    private static (decimal weight, decimal l, decimal w, decimal h) GetDimensions(string category, int sizeML) =>
+        (category.ToLower(), sizeML) switch
+        {
+            ("serum", <= 30) => (0.10m, 4m, 4m, 12m),
+            ("serum", _)     => (0.12m, 4m, 4m, 14m),
+            ("pump",  _)     => (0.10m, 4m, 4m, 14m),
+            ("spray", _)     => (0.10m, 4m, 4m, 14m),
+            ("jar",   <= 30) => (0.12m, 6m, 6m, 5m),
+            ("jar",   _)     => (0.15m, 7m, 7m, 6m),
+            _                => (0.10m, 4m, 4m, 12m),
+        };
+
     private static async Task SeedProductsAsync(AppDbContext context)
     {
         if (await context.Products.AnyAsync()) return;
@@ -184,16 +194,14 @@ public static class BDPDataSeeder
 
         var productDefs = new List<ProductDef>
         {
-            // Hongxin products
             new("Devin",   "Serum", 30, "Black",  "Black",  "Matte",   3.18m, 4.18m, 11.19404m,
                 "https://detail.1688.com/offer/705340046271.html",
-                new[] { (10, 16.79m, 200m), (50, 15.67m, 570m), (100, 15.11m, 1140m),
-                        (250, 14.55m, 2850m), (500, 14.33m, 5700m), (1000, 13.99m, 11400m),
-                        (2500, 13.66m, 28500m), (5000, 13.43m, 57000m), (10000, 12.87m, 114000m) }),
+                new[] { (10, 16.79m), (50, 15.67m), (100, 15.11m),
+                        (250, 14.55m), (500, 14.33m), (1000, 13.99m),
+                        (2500, 13.66m), (5000, 13.43m), (10000, 12.87m) }),
             new("Darla",   "Pump",  30, "Clear",  "White",  "Clear",   3.50m, 4.50m, 12.051m,   null, null),
             new("Delphi",  "Pump",  30, "Clear",  "White",  "Clear",   2.58m, 3.58m,  9.58724m, null, null),
             new("Dawn",    "Serum", 30, "Clear",  "Silver", "Clear",   2.15m, 3.15m,  8.4357m,  null, null),
-            // Guangdong products
             new("Daphne",  "Jar",   30, "Clear",  "White",  "Clear",   3.88m, 4.88m, 13.06864m, null, null),
             new("Danica",  "Serum", 30, "Orange", "White",  "Frosted", 2.88m, 3.88m, 10.39064m, null, null),
             new("Aurora",  "Pump",  30, "Clear",  "White",  "Frosted", 3.50m, 4.50m, 12.051m,   null, null),
@@ -201,7 +209,6 @@ public static class BDPDataSeeder
             new("Demi",    "Serum", 30, "Black",  "Gold",   "Matte",   3.20m, 4.20m, 11.247m,   null, null),
             new("Esther",  "Jar",   30, "White",  "White",  "Frosted", 3.90m, 4.90m, 13.1257m,  null, null),
             new("Emma",    "Pump",  30, "White",  "White",  "Clear",   3.50m, 4.50m, 12.051m,   null, null),
-            // Charlie (SA) products
             new("Charlie", "Pump",  30, "Clear",  "White",  "Clear",   3.50m, 4.50m, 12.051m,   null, null),
             new("Dakota",  "Serum", 40, "Black",  "Silver", "Matte",   4.00m, 5.00m, 13.385m,   null, null),
             new("Dahlia",  "Serum", 30, "Green",  "Green",  "Frosted", 3.00m, 4.00m, 10.71m,    null, null),
@@ -211,6 +218,9 @@ public static class BDPDataSeeder
         foreach (var def in productDefs)
         {
             var skuBase = BuildSku(def.Name, def.Category, def.SizeML, def.BottleColour, def.LidColour, def.Texture);
+            var (weight, l, w, h) = GetDimensions(def.Category, def.SizeML);
+            var volumeCBM = ShippingCalculator.ComputeVolumeCBM(l, w, h);
+
             var product = new Product
             {
                 Name = def.Name,
@@ -224,15 +234,20 @@ public static class BDPDataSeeder
                 CostWithShippingCNY = def.CostWithShippingCNY,
                 CostPerUnitZAR = def.CostPerUnitZAR,
                 SupplierLink = def.SupplierLink,
-                SupplierId = hongxin.Id,  // will be corrected by UpdateProductSuppliersAsync
+                SupplierId = hongxin.Id,
                 IsActive = true,
+                WeightKg = weight,
+                LengthCm = l,
+                WidthCm = w,
+                HeightCm = h,
+                VolumeCBM = volumeCBM,
             };
             context.Products.Add(product);
             await context.SaveChangesAsync();
 
             if (def.Tiers != null)
             {
-                foreach (var (qty, sale, delivery) in def.Tiers)
+                foreach (var (qty, sale) in def.Tiers)
                 {
                     var profitPerUnit = sale - def.CostPerUnitZAR;
                     var markupPct = (sale / def.CostPerUnitZAR - 1m) * 100m;
@@ -249,30 +264,22 @@ public static class BDPDataSeeder
                         ProfitPerUnit = Math.Round(profitPerUnit, 5),
                         TotalProfit = Math.Round(profitPerUnit * qty, 2),
                         MarginPercent = Math.Round(marginPct, 2),
-                        DeliveryCostZAR = delivery,
+                        DeliveryCostZAR = 0m,
                     });
                 }
             }
 
-            foreach (var (location, onHand, isStocked) in new[]
+            context.InventoryItems.Add(new InventoryItem
             {
-                ("Cape Town",    0,     false),
-                ("China",        10000, true),
-                ("ZQ Warehouse", 0,     false),
-            })
-            {
-                context.InventoryItems.Add(new InventoryItem
-                {
-                    ProductId = product.Id,
-                    SKU = skuBase,
-                    Quantity = onHand,
-                    Location = location,
-                    OnHandStock = onHand,
-                    AvailableStock = onHand,
-                    IsStocked = isStocked,
-                    UpdatedAt = DateTime.UtcNow,
-                });
-            }
+                ProductId = product.Id,
+                SKU = skuBase,
+                Quantity = 10000,
+                Location = "China",
+                OnHandStock = 10000,
+                AvailableStock = 10000,
+                IsStocked = true,
+                UpdatedAt = DateTime.UtcNow,
+            });
 
             await context.SaveChangesAsync();
         }
@@ -313,13 +320,10 @@ public static class BDPDataSeeder
             }
         }
 
-        if (changed)
-            await context.SaveChangesAsync();
+        if (changed) await context.SaveChangesAsync();
     }
 
     // ─── ProductPricingTiers ─────────────────────────────────────────────────
-
-    private const decimal SHIPPING_PER_UNIT_ZAR = 1.00m;
 
     private static readonly int[] StandardQtys = { 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 50000 };
 
@@ -332,6 +336,12 @@ public static class BDPDataSeeder
 
     private static async Task SeedProductPricingTiersAsync(AppDbContext context)
     {
+        // Load shipping settings for formula
+        var settings = await context.ShippingSettings.FindAsync(1);
+        decimal cnyPerCbm  = settings?.CnyPerCbm    ?? 2000m;
+        decimal cnyPerKg   = settings?.CnyPerKg      ?? 10m;
+        decimal cnyToZar   = settings?.CnyToZarRate  ?? 2.40m;
+
         var products = await context.Products
             .Include(p => p.PricingTiers)
             .Include(p => p.ProductPricingTiers)
@@ -343,7 +353,6 @@ public static class BDPDataSeeder
 
             if (product.PricingTiers.Any())
             {
-                // Derive from existing PricingTiers — delivery is R1 per unit
                 var sorted = product.PricingTiers.OrderBy(t => t.Quantity).ToList();
 
                 foreach (var tier in sorted)
@@ -353,7 +362,9 @@ public static class BDPDataSeeder
                         ProductId = product.Id,
                         Quantity = tier.Quantity,
                         SalePriceZAR = tier.TotalSalePrice,
-                        DeliveryCostZAR = tier.Quantity * SHIPPING_PER_UNIT_ZAR,
+                        DeliveryCostZAR = Math.Round(ShippingCalculator.CalculateShippingZAR(
+                            product.WeightKg, product.VolumeCBM, tier.Quantity,
+                            cnyPerCbm, cnyPerKg, cnyToZar), 4),
                     });
                 }
 
@@ -362,19 +373,22 @@ public static class BDPDataSeeder
                     ProductId = product.Id,
                     Quantity = 20000,
                     SalePriceZAR = Math.Round(product.CostPerUnitZAR * 1.12m * 20000m, 2),
-                    DeliveryCostZAR = 20000 * SHIPPING_PER_UNIT_ZAR,
+                    DeliveryCostZAR = Math.Round(ShippingCalculator.CalculateShippingZAR(
+                        product.WeightKg, product.VolumeCBM, 20000,
+                        cnyPerCbm, cnyPerKg, cnyToZar), 4),
                 });
                 context.ProductPricingTiers.Add(new ProductPricingTier
                 {
                     ProductId = product.Id,
                     Quantity = 50000,
                     SalePriceZAR = Math.Round(product.CostPerUnitZAR * 1.10m * 50000m, 2),
-                    DeliveryCostZAR = 50000 * SHIPPING_PER_UNIT_ZAR,
+                    DeliveryCostZAR = Math.Round(ShippingCalculator.CalculateShippingZAR(
+                        product.WeightKg, product.VolumeCBM, 50000,
+                        cnyPerCbm, cnyPerKg, cnyToZar), 4),
                 });
             }
             else
             {
-                // No PricingTiers — generate all tiers from markup table; delivery is R1 per unit
                 foreach (var qty in StandardQtys)
                 {
                     var markup = MarkupTable[qty];
@@ -385,7 +399,9 @@ public static class BDPDataSeeder
                         ProductId = product.Id,
                         Quantity = qty,
                         SalePriceZAR = Math.Round(salePerUnit * qty, 2),
-                        DeliveryCostZAR = qty * SHIPPING_PER_UNIT_ZAR,
+                        DeliveryCostZAR = Math.Round(ShippingCalculator.CalculateShippingZAR(
+                            product.WeightKg, product.VolumeCBM, qty,
+                            cnyPerCbm, cnyPerKg, cnyToZar), 4),
                     });
                 }
             }
@@ -407,5 +423,5 @@ public static class BDPDataSeeder
         string BottleColour, string LidColour, string Texture,
         decimal CostCNY, decimal CostWithShippingCNY, decimal CostPerUnitZAR,
         string? SupplierLink,
-        (int qty, decimal sale, decimal delivery)[]? Tiers);
+        (int qty, decimal sale)[]? Tiers);
 }

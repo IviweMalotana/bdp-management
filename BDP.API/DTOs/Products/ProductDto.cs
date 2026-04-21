@@ -21,5 +21,10 @@ public class ProductDto
     public string? ShopifyBodyHtml { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime DateAdded { get; set; }
+    public decimal WeightKg { get; set; }
+    public decimal LengthCm { get; set; }
+    public decimal WidthCm { get; set; }
+    public decimal HeightCm { get; set; }
+    public decimal VolumeCBM { get; set; }
     public List<PricingTierDto> PricingTiers { get; set; } = new();
 }

@@ -8,17 +8,19 @@ import {
   ShoppingCart,
   Factory,
   Ship,
+  Settings,
   LogOut,
 } from 'lucide-react'
 
 const NAV = [
-  { to: '/',           label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { to: '/products',   label: 'Products',  icon: Package },
-  { to: '/inventory',  label: 'Inventory', icon: Boxes },
-  { to: '/suppliers',  label: 'Suppliers', icon: Factory },
-  { to: '/shipments',  label: 'Shipments', icon: Ship },
-  { to: '/customers',  label: 'Customers', icon: Users },
-  { to: '/orders',     label: 'Orders',    icon: ShoppingCart },
+  { to: '/',                  label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { to: '/products',          label: 'Products',  icon: Package },
+  { to: '/inventory',         label: 'Inventory', icon: Boxes },
+  { to: '/suppliers',         label: 'Suppliers', icon: Factory },
+  { to: '/shipments',         label: 'Shipments', icon: Ship },
+  { to: '/customers',         label: 'Customers', icon: Users },
+  { to: '/orders',            label: 'Orders',    icon: ShoppingCart },
+  { to: '/settings/shipping', label: 'Settings',  icon: Settings },
 ]
 
 const ROLE_COLOURS: Record<string, string> = {
