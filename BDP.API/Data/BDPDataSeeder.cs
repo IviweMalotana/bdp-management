@@ -319,6 +319,8 @@ public static class BDPDataSeeder
 
     // ─── ProductPricingTiers ─────────────────────────────────────────────────
 
+    private const decimal SHIPPING_PER_UNIT_ZAR = 1.00m;
+
     private static readonly int[] StandardQtys = { 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 20000, 50000 };
 
     private static readonly Dictionary<int, decimal> MarkupTable = new()
@@ -341,7 +343,7 @@ public static class BDPDataSeeder
 
             if (product.PricingTiers.Any())
             {
-                // Derive from existing PricingTiers
+                // Derive from existing PricingTiers — delivery is R1 per unit
                 var sorted = product.PricingTiers.OrderBy(t => t.Quantity).ToList();
 
                 foreach (var tier in sorted)
@@ -351,46 +353,39 @@ public static class BDPDataSeeder
                         ProductId = product.Id,
                         Quantity = tier.Quantity,
                         SalePriceZAR = tier.TotalSalePrice,
-                        DeliveryCostZAR = tier.DeliveryCostZAR,
+                        DeliveryCostZAR = tier.Quantity * SHIPPING_PER_UNIT_ZAR,
                     });
                 }
-
-                // Derive per-unit delivery from highest existing tier
-                var highest = sorted.Last();
-                var deliveryPerUnit = highest.Quantity > 0
-                    ? highest.DeliveryCostZAR / highest.Quantity
-                    : 11.40m;
 
                 context.ProductPricingTiers.Add(new ProductPricingTier
                 {
                     ProductId = product.Id,
                     Quantity = 20000,
                     SalePriceZAR = Math.Round(product.CostPerUnitZAR * 1.12m * 20000m, 2),
-                    DeliveryCostZAR = Math.Round(deliveryPerUnit * 20000m, 2),
+                    DeliveryCostZAR = 20000 * SHIPPING_PER_UNIT_ZAR,
                 });
                 context.ProductPricingTiers.Add(new ProductPricingTier
                 {
                     ProductId = product.Id,
                     Quantity = 50000,
                     SalePriceZAR = Math.Round(product.CostPerUnitZAR * 1.10m * 50000m, 2),
-                    DeliveryCostZAR = Math.Round(deliveryPerUnit * 50000m, 2),
+                    DeliveryCostZAR = 50000 * SHIPPING_PER_UNIT_ZAR,
                 });
             }
             else
             {
-                // No PricingTiers — generate all tiers from markup table
+                // No PricingTiers — generate all tiers from markup table; delivery is R1 per unit
                 foreach (var qty in StandardQtys)
                 {
                     var markup = MarkupTable[qty];
                     var salePerUnit = Math.Round(product.CostPerUnitZAR * (1m + markup / 100m), 4);
-                    var deliveryPerUnit = qty <= 10 ? 20m : 11.40m;
 
                     context.ProductPricingTiers.Add(new ProductPricingTier
                     {
                         ProductId = product.Id,
                         Quantity = qty,
                         SalePriceZAR = Math.Round(salePerUnit * qty, 2),
-                        DeliveryCostZAR = Math.Round(deliveryPerUnit * qty, 2),
+                        DeliveryCostZAR = qty * SHIPPING_PER_UNIT_ZAR,
                     });
                 }
             }
