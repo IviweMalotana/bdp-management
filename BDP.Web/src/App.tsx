@@ -18,6 +18,21 @@ import SuppliersPage from './pages/SuppliersPage'
 import ShipmentsPage from './pages/ShipmentsPage'
 import ShippingSettingsPage from './pages/ShippingSettingsPage'
 
+// B2B pages
+import ClientsList from './pages/clients/ClientsList'
+import ClientForm from './pages/clients/ClientForm'
+import ClientDetail from './pages/clients/ClientDetail'
+import OrdersList from './pages/orders/OrdersList'
+import CreateOrder from './pages/orders/CreateOrder'
+import OrderDetailB2B from './pages/orders/OrderDetail'
+import RecurringOrdersList from './pages/recurring/RecurringOrdersList'
+import RecurringOrderForm from './pages/recurring/RecurringOrderForm'
+import RecurringOrderDetail from './pages/recurring/RecurringOrderDetail'
+import InvoicesList from './pages/invoices/InvoicesList'
+import InvoiceDetail from './pages/invoices/InvoiceDetail'
+import CollectionsList from './pages/collections/CollectionsList'
+import CollectionForm from './pages/collections/CollectionForm'
+
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
   static getDerivedStateFromError(e: Error) { return { error: e.message } }
@@ -62,6 +77,32 @@ export default function App() {
             <Route path="/suppliers"         element={<SuppliersPage />} />
             <Route path="/shipments"         element={<ShipmentsPage />} />
             <Route path="/settings/shipping" element={<ShippingSettingsPage />} />
+
+            {/* B2B — Clients */}
+            <Route path="/clients"           element={<ClientsList />} />
+            <Route path="/clients/new"       element={<ClientForm />} />
+            <Route path="/clients/:id"       element={<ClientDetail />} />
+            <Route path="/clients/:id/edit"  element={<ClientForm />} />
+
+            {/* B2B — Orders */}
+            <Route path="/b2b-orders"        element={<OrdersList />} />
+            <Route path="/b2b-orders/new"    element={<CreateOrder />} />
+            <Route path="/b2b-orders/:id"    element={<OrderDetailB2B />} />
+
+            {/* B2B — Recurring Orders */}
+            <Route path="/recurring-orders"          element={<RecurringOrdersList />} />
+            <Route path="/recurring-orders/new"      element={<RecurringOrderForm />} />
+            <Route path="/recurring-orders/:id"      element={<RecurringOrderDetail />} />
+            <Route path="/recurring-orders/:id/edit" element={<RecurringOrderForm />} />
+
+            {/* B2B — Invoices */}
+            <Route path="/invoices"     element={<InvoicesList />} />
+            <Route path="/invoices/:id" element={<InvoiceDetail />} />
+
+            {/* Collections */}
+            <Route path="/collections"           element={<CollectionsList />} />
+            <Route path="/collections/new"       element={<CollectionForm />} />
+            <Route path="/collections/:id/edit"  element={<CollectionForm />} />
           </Route>
         </Route>
 

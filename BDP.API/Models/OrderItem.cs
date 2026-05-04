@@ -4,13 +4,19 @@ public class OrderItem
 {
     public int Id { get; set; }
     public int OrderId { get; set; }
-    public int ProductId { get; set; }
-    public string SKU { get; set; } = string.Empty;
+    public int ProductVariantId { get; set; }
+    public int PricingTierId { get; set; }
+    public int? CustomisationOptionId { get; set; }
+    public int? CustomisationPricingTierId { get; set; }
     public int Quantity { get; set; }
     public decimal UnitPriceZAR { get; set; }
-    public decimal TotalPriceZAR { get; set; }
-    public decimal BrandingCostZAR { get; set; } = 0;
+    public decimal LineTotal { get; set; }
+    public decimal CustomisationCostZAR { get; set; }
+    public decimal ShippingCostZAR { get; set; }
 
     public Order Order { get; set; } = null!;
-    public Product Product { get; set; } = null!;
+    public ProductVariant ProductVariant { get; set; } = null!;
+    public ProductPricingTier PricingTier { get; set; } = null!;
+    public CustomisationOption? CustomisationOption { get; set; }
+    public CustomisationPricingTier? CustomisationPricingTier { get; set; }
 }

@@ -11,155 +11,45 @@ namespace BDP.API.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // ── Product: add shipping dimension columns ──────────────────────
-            migrationBuilder.AddColumn<decimal>(
-                name: "WeightKg",
-                table: "Products",
-                type: "numeric(10,4)",
-                precision: 10,
-                scale: 4,
-                nullable: false,
-                defaultValue: 0.10m);
+            // ── Product: add shipping dimension columns (IF NOT EXISTS — may already exist from B2B migration) ──
+            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"WeightKg\" numeric(10,4) NOT NULL DEFAULT 0.10;");
+            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"LengthCm\" numeric(10,2) NOT NULL DEFAULT 4;");
+            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"WidthCm\" numeric(10,2) NOT NULL DEFAULT 4;");
+            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"HeightCm\" numeric(10,2) NOT NULL DEFAULT 12;");
+            migrationBuilder.Sql("ALTER TABLE \"Products\" ADD COLUMN IF NOT EXISTS \"VolumeCBM\" numeric(18,9) NOT NULL DEFAULT 0.000192;");
 
-            migrationBuilder.AddColumn<decimal>(
-                name: "LengthCm",
-                table: "Products",
-                type: "numeric(10,2)",
-                precision: 10,
-                scale: 2,
-                nullable: false,
-                defaultValue: 4m);
+            // Dimension population skipped — SizeML column removed by B2B migration; seeder handles this.
 
-            migrationBuilder.AddColumn<decimal>(
-                name: "WidthCm",
-                table: "Products",
-                type: "numeric(10,2)",
-                precision: 10,
-                scale: 2,
-                nullable: false,
-                defaultValue: 4m);
-
-            migrationBuilder.AddColumn<decimal>(
-                name: "HeightCm",
-                table: "Products",
-                type: "numeric(10,2)",
-                precision: 10,
-                scale: 2,
-                nullable: false,
-                defaultValue: 12m);
-
-            migrationBuilder.AddColumn<decimal>(
-                name: "VolumeCBM",
-                table: "Products",
-                type: "numeric(18,9)",
-                precision: 18,
-                scale: 9,
-                nullable: false,
-                defaultValue: 0.000192m);
-
-            // ── Populate dimensions by category ──────────────────────────────
-            // Serum 30ml
+            // Rename FreightCostZAR → SeaFreightCostZAR if it still exists (may have been renamed already)
             migrationBuilder.Sql(@"
-                UPDATE ""Products""
-                SET ""WeightKg"" = 0.10, ""LengthCm"" = 4, ""WidthCm"" = 4, ""HeightCm"" = 12,
-                    ""VolumeCBM"" = 0.000000192
-                WHERE LOWER(""Category"") = 'serum' AND ""SizeML"" <= 30");
+                DO $$ BEGIN
+                    IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='Shipments' AND column_name='FreightCostZAR') THEN
+                        ALTER TABLE ""Shipments"" RENAME COLUMN ""FreightCostZAR"" TO ""SeaFreightCostZAR"";
+                    END IF;
+                END $$;
+            ");
+            // Drop OriginCountry if it still exists
+            migrationBuilder.Sql(@"ALTER TABLE ""Shipments"" DROP COLUMN IF EXISTS ""OriginCountry"";");
 
-            // Serum > 30ml (e.g. 40ml Dakota)
+            // These columns may already exist from AddB2BCollectionsVariantsSEO
+            migrationBuilder.Sql("ALTER TABLE \"Shipments\" ADD COLUMN IF NOT EXISTS \"DestinationAddress\" text;");
+            migrationBuilder.Sql("ALTER TABLE \"Shipments\" ADD COLUMN IF NOT EXISTS \"CustomerName\" text;");
+            migrationBuilder.Sql("ALTER TABLE \"Shipments\" ADD COLUMN IF NOT EXISTS \"CustomerEmail\" text;");
+
+            // ShippingSettings may already exist
             migrationBuilder.Sql(@"
-                UPDATE ""Products""
-                SET ""WeightKg"" = 0.12, ""LengthCm"" = 4, ""WidthCm"" = 4, ""HeightCm"" = 14,
-                    ""VolumeCBM"" = 0.000000224
-                WHERE LOWER(""Category"") = 'serum' AND ""SizeML"" > 30");
-
-            // Pump / Spray 30ml
-            migrationBuilder.Sql(@"
-                UPDATE ""Products""
-                SET ""WeightKg"" = 0.10, ""LengthCm"" = 4, ""WidthCm"" = 4, ""HeightCm"" = 14,
-                    ""VolumeCBM"" = 0.000000224
-                WHERE LOWER(""Category"") IN ('pump', 'spray') AND ""SizeML"" <= 30");
-
-            // Jar <= 30
-            migrationBuilder.Sql(@"
-                UPDATE ""Products""
-                SET ""WeightKg"" = 0.12, ""LengthCm"" = 6, ""WidthCm"" = 6, ""HeightCm"" = 5,
-                    ""VolumeCBM"" = 0.000000180
-                WHERE LOWER(""Category"") = 'jar' AND ""SizeML"" <= 30");
-
-            // Jar > 30
-            migrationBuilder.Sql(@"
-                UPDATE ""Products""
-                SET ""WeightKg"" = 0.15, ""LengthCm"" = 7, ""WidthCm"" = 7, ""HeightCm"" = 6,
-                    ""VolumeCBM"" = 0.000000294
-                WHERE LOWER(""Category"") = 'jar' AND ""SizeML"" > 30");
-
-            // ── Shipment: rename FreightCostZAR, remove OriginCountry, add new cols ──
-            migrationBuilder.RenameColumn(
-                name: "FreightCostZAR",
-                table: "Shipments",
-                newName: "SeaFreightCostZAR");
-
-            migrationBuilder.DropColumn(
-                name: "OriginCountry",
-                table: "Shipments");
-
-            migrationBuilder.AddColumn<string>(
-                name: "DestinationAddress",
-                table: "Shipments",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "CustomerName",
-                table: "Shipments",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "CustomerEmail",
-                table: "Shipments",
-                type: "text",
-                nullable: true);
-
-            // ── ShippingSettings singleton table ─────────────────────────────
-            migrationBuilder.CreateTable(
-                name: "ShippingSettings",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    CnyPerCbm = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    CnyPerKg = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    CnyToZarRate = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: false),
-                    Notes = table.Column<string>(type: "text", nullable: false),
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ShippingSettings", x => x.Id);
-                });
-
-            migrationBuilder.InsertData(
-                table: "ShippingSettings",
-                columns: new[] { "Id", "CnyPerCbm", "CnyPerKg", "CnyToZarRate", "Notes" },
-                values: new object[] { 1, 2000m, 10m, 2.40m, "Sea DDP China to customer" });
-
-            // ── Recalculate ProductPricingTiers.DeliveryCostZAR ──────────────
-            // Formula: ((VolumeCBM * qty * 2000) + (WeightKg * qty * 10)) * 2.40
-            // Using per-unit rates matched to category defaults:
-            // Serum 30ml: R3.3216/unit  | Serum >30ml: R3.9552/unit
-            // Pump/Spray: R3.4752/unit  | Jar <=30:    R3.744/unit  | Jar >30: R5.0112/unit
-            migrationBuilder.Sql(@"
-                UPDATE ""ProductPricingTiers"" ppt
-                SET ""DeliveryCostZAR"" = ppt.""Quantity"" * CASE
-                    WHEN LOWER(p.""Category"") = 'serum' AND p.""SizeML"" <= 30 THEN 3.3216
-                    WHEN LOWER(p.""Category"") = 'serum' AND p.""SizeML"" > 30  THEN 3.9552
-                    WHEN LOWER(p.""Category"") IN ('pump', 'spray')              THEN 3.4752
-                    WHEN LOWER(p.""Category"") = 'jar'   AND p.""SizeML"" <= 30 THEN 3.744
-                    WHEN LOWER(p.""Category"") = 'jar'   AND p.""SizeML"" > 30  THEN 5.0112
-                    ELSE 3.3216
-                END
-                FROM ""Products"" p
-                WHERE ppt.""ProductId"" = p.""Id""");
+                CREATE TABLE IF NOT EXISTS ""ShippingSettings"" (
+                    ""Id"" integer NOT NULL DEFAULT 1,
+                    ""CnyPerCbm"" numeric(18,4) NOT NULL DEFAULT 2000,
+                    ""CnyPerKg"" numeric(18,4) NOT NULL DEFAULT 10,
+                    ""CnyToZarRate"" numeric(18,4) NOT NULL DEFAULT 2.40,
+                    ""UpdatedAt"" timestamp with time zone NOT NULL DEFAULT NOW(),
+                    CONSTRAINT ""PK_ShippingSettings"" PRIMARY KEY (""Id"")
+                );
+                INSERT INTO ""ShippingSettings"" (""Id"", ""CnyPerCbm"", ""CnyPerKg"", ""CnyToZarRate"", ""UpdatedAt"")
+                VALUES (1, 2000, 10, 2.40, NOW())
+                ON CONFLICT (""Id"") DO NOTHING;
+            ");
         }
 
         /// <inheritdoc />

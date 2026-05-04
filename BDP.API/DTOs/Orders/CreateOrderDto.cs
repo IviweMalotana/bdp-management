@@ -4,10 +4,10 @@ namespace BDP.API.DTOs.Orders;
 
 public class CreateOrderDto
 {
-    [Range(1, int.MaxValue)] public int CustomerId { get; set; }
+    [Range(1, int.MaxValue)] public int ClientId { get; set; }
     public DateTime? OrderDate { get; set; }
     public string Status { get; set; } = "Pending";
-    public string? BrandingType { get; set; }
+    public DateTime? RequiredByDate { get; set; }
     public string? Notes { get; set; }
 
     [Required]

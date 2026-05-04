@@ -105,7 +105,7 @@ namespace BDP.API.Migrations
                         {
                             Id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "6e43a167-f2a2-44ee-8ba9-67edaca52edf",
+                            ConcurrencyStamp = "4effb38b-6210-4f45-a6ed-87d71de87504",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "admin@bdp.co.za",
                             EmailConfirmed = true,
@@ -114,13 +114,118 @@ namespace BDP.API.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@BDP.CO.ZA",
                             NormalizedUserName = "ADMIN@BDP.CO.ZA",
-                            PasswordHash = "AQAAAAIAAYagAAAAEFlqE95Y3YChoc/nL5MtgnhAlMQ4VlVkUyJSq/+2v4Ji7lR+2yjBIvj2fzd0xmLVDA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEKSr8XujulKhAM/sZmb2wNXXrKKjSGT6tFkP4+XO0ZAAJWrZyIkO6QTZ9f9LpHINIA==",
                             PhoneNumberConfirmed = false,
                             Role = "Admin",
                             SecurityStamp = "STATIC_SECURITY_STAMP_BDP_ADMIN_2026",
                             TwoFactorEnabled = false,
                             UserName = "admin@bdp.co.za"
                         });
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Client", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BillingAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyRegistrationNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactEmail")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactPersonName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactPhone")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("CreditLimit")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("Industry")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("PaymentTermsDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PaystackCustomerId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ShippingAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TradingName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("VatNumber")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Clients");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Collection", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ImageUrl")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaKeywords")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaTitle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Collections");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Customer", b =>
@@ -172,21 +277,18 @@ namespace BDP.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("MinQuantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Notes")
+                    b.Property<string>("Link1688")
                         .HasColumnType("text");
+
+                    b.Property<int>("MinimumQuantity")
+                        .HasColumnType("integer");
 
                     b.Property<int>("SupplierId")
                         .HasColumnType("integer");
 
-                    b.Property<decimal>("TotalPriceZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -195,226 +297,13 @@ namespace BDP.API.Migrations
                     b.ToTable("CustomisationOptions");
                 });
 
-            modelBuilder.Entity("BDP.API.Models.InventoryItem", b =>
+            modelBuilder.Entity("BDP.API.Models.CustomisationPricingTier", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AvailableStock")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CommittedStock")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("IncomingStock")
-                        .HasColumnType("integer");
-
-                    b.Property<bool>("IsStocked")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Location")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("OnHandStock")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SKU")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("InventoryItems");
-                });
-
-            modelBuilder.Entity("BDP.API.Models.Order", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BrandingType")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("EstimatedDeliveryDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("OrderDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("OrderNumber")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("TotalAmountZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
-
-                    b.ToTable("Orders");
-                });
-
-            modelBuilder.Entity("BDP.API.Models.OrderItem", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("BrandingCostZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<int>("OrderId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SKU")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("TotalPriceZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal>("UnitPriceZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("OrderItems");
-                });
-
-            modelBuilder.Entity("BDP.API.Models.PricingTier", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<decimal>("CompareAtPrice")
-                        .HasColumnType("numeric");
-
-                    b.Property<decimal>("DeliveryCostZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal?>("LogoHotStamping")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal?>("LogoSilkScreen")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal>("MarginPercent")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal>("MarkupPercent")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<decimal>("ProfitPerUnit")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("SKU")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("SalePricePerUnit")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal>("TotalCostPrice")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal>("TotalProfit")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.Property<decimal>("TotalSalePrice")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("PricingTiers");
-                });
-
-            modelBuilder.Entity("BDP.API.Models.Product", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("BottleColour")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<decimal>("CostCNY")
                         .HasPrecision(18, 4)
@@ -428,16 +317,256 @@ namespace BDP.API.Migrations
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
+                    b.Property<int>("CustomisationOptionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("SalePriceZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomisationOptionId");
+
+                    b.ToTable("CustomisationPricingTiers");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Invoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<DateTime>("DateAdded")
+                    b.Property<DateTime>("DueDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<bool>("IsActive")
+                    b.Property<DateTime>("InvoiceDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("InvoiceNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaystackPaymentRequestId")
+                        .HasColumnType("text");
+
+                    b.Property<string>("PdfUrl")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("SentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("SubtotalZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("TotalZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("VatZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("OrderId");
+
+                    b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DeliveredDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsPaid")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("LidColour")
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("OrderDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OrderNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PaystackPaymentReference")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("RecurringOrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("RequiredByDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ShippedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("ShippingCostZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("SubtotalZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("TotalZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.HasIndex("RecurringOrderId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.OrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CustomisationCostZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<int?>("CustomisationOptionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("CustomisationPricingTierId")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("LineTotal")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PricingTierId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductVariantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("ShippingCostZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("UnitPriceZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomisationOptionId");
+
+                    b.HasIndex("CustomisationPricingTierId");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("PricingTierId");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.ToTable("OrderItems");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Product", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("HeightCm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<decimal>("LengthCm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<string>("Link1688")
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaDescription")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaKeywords")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MetaTitle")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -445,34 +574,79 @@ namespace BDP.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("SKUBase")
+                    b.Property<string>("Slug")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<string>("ShopifyBodyHtml")
-                        .HasColumnType("text");
-
-                    b.Property<string>("ShopifyTitle")
-                        .HasColumnType("text");
-
-                    b.Property<int>("SizeML")
-                        .HasColumnType("integer");
 
                     b.Property<int>("SupplierId")
                         .HasColumnType("integer");
 
-                    b.Property<string>("SupplierLink")
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UsageSuitability")
                         .HasColumnType("text");
 
-                    b.Property<string>("Texture")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<decimal>("WeightKg")
+                        .HasPrecision(10, 4)
+                        .HasColumnType("numeric(10,4)");
+
+                    b.Property<decimal>("WidthCm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("SupplierId");
 
                     b.ToTable("Products");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductCollection", b =>
+                {
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CollectionId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ProductId", "CollectionId");
+
+                    b.HasIndex("CollectionId");
+
+                    b.ToTable("ProductCollections");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AltText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsPrimary")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductImages");
                 });
 
             modelBuilder.Entity("BDP.API.Models.ProductPricingTier", b =>
@@ -483,15 +657,31 @@ namespace BDP.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("DeliveryCostZAR")
+                    b.Property<decimal>("CostCNY")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
-                    b.Property<int>("ProductId")
+                    b.Property<decimal>("CostPerUnitZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("CostWithDutiesCNY")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("CostWithShippingCNY")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<int>("ProductVariantId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<decimal>("SalePriceZAR")
                         .HasPrecision(18, 4)
@@ -499,9 +689,129 @@ namespace BDP.API.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("ProductVariantId");
 
                     b.ToTable("ProductPricingTiers");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductVariant", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BottleColour")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LidColour")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SKU")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Size")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Texture")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductVariants");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.RecurringOrder", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("ClientId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("ContractEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ContractStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("FrequencyDays")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("NextOrderDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ClientId");
+
+                    b.ToTable("RecurringOrders");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.RecurringOrderItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CustomisationOptionId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductVariantId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RecurringOrderId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CustomisationOptionId");
+
+                    b.HasIndex("ProductVariantId");
+
+                    b.HasIndex("RecurringOrderId");
+
+                    b.ToTable("RecurringOrderItems");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Shipment", b =>
@@ -518,16 +828,21 @@ namespace BDP.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("CustomerEmail")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CustomerName")
+                        .HasColumnType("text");
+
                     b.Property<decimal>("CustomsDutyZAR")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
+                    b.Property<string>("DestinationAddress")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("EstimatedArrival")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<decimal>("FreightCostZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
 
                     b.Property<string>("Notes")
                         .HasColumnType("text");
@@ -535,13 +850,13 @@ namespace BDP.API.Migrations
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<string>("OriginCountry")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<string>("Reference")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<decimal>("SeaFreightCostZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -598,6 +913,44 @@ namespace BDP.API.Migrations
                     b.ToTable("ShipmentItems");
                 });
 
+            modelBuilder.Entity("BDP.API.Models.ShippingSettings", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CnyPerCbm")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("CnyPerKg")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("CnyToZarRate")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ShippingSettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CnyPerCbm = 2000m,
+                            CnyPerKg = 10m,
+                            CnyToZarRate = 2.40m,
+                            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc)
+                        });
+                });
+
             modelBuilder.Entity("BDP.API.Models.Supplier", b =>
                 {
                     b.Property<int>("Id")
@@ -605,6 +958,9 @@ namespace BDP.API.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .HasColumnType("text");
 
                     b.Property<string>("ContactEmail")
                         .HasColumnType("text");
@@ -619,24 +975,18 @@ namespace BDP.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("LeadTimeDays")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MinOrderQuantity")
-                        .HasColumnType("integer");
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Notes")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("OffersCustomisation")
+                    b.Property<bool>("SuppliesBottles")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Website")
-                        .HasColumnType("text");
+                    b.Property<bool>("SuppliesCustomisation")
+                        .HasColumnType("boolean");
 
                     b.HasKey("Id");
 
@@ -786,56 +1136,93 @@ namespace BDP.API.Migrations
                     b.Navigation("Supplier");
                 });
 
-            modelBuilder.Entity("BDP.API.Models.InventoryItem", b =>
+            modelBuilder.Entity("BDP.API.Models.CustomisationPricingTier", b =>
                 {
-                    b.HasOne("BDP.API.Models.Product", "Product")
-                        .WithMany("InventoryItems")
-                        .HasForeignKey("ProductId")
+                    b.HasOne("BDP.API.Models.CustomisationOption", "CustomisationOption")
+                        .WithMany("PricingTiers")
+                        .HasForeignKey("CustomisationOptionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Product");
+                    b.Navigation("CustomisationOption");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Invoice", b =>
+                {
+                    b.HasOne("BDP.API.Models.Client", "Client")
+                        .WithMany()
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BDP.API.Models.Order", "Order")
+                        .WithMany("Invoices")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+
+                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Order", b =>
                 {
-                    b.HasOne("BDP.API.Models.Customer", "Customer")
+                    b.HasOne("BDP.API.Models.Client", "Client")
                         .WithMany("Orders")
-                        .HasForeignKey("CustomerId")
+                        .HasForeignKey("ClientId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Customer");
+                    b.HasOne("BDP.API.Models.RecurringOrder", "RecurringOrder")
+                        .WithMany("GeneratedOrders")
+                        .HasForeignKey("RecurringOrderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Client");
+
+                    b.Navigation("RecurringOrder");
                 });
 
             modelBuilder.Entity("BDP.API.Models.OrderItem", b =>
                 {
+                    b.HasOne("BDP.API.Models.CustomisationOption", "CustomisationOption")
+                        .WithMany()
+                        .HasForeignKey("CustomisationOptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("BDP.API.Models.CustomisationPricingTier", "CustomisationPricingTier")
+                        .WithMany()
+                        .HasForeignKey("CustomisationPricingTierId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("BDP.API.Models.Order", "Order")
-                        .WithMany("OrderItems")
+                        .WithMany("Items")
                         .HasForeignKey("OrderId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("BDP.API.Models.Product", "Product")
+                    b.HasOne("BDP.API.Models.ProductPricingTier", "PricingTier")
                         .WithMany()
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("PricingTierId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Order");
-
-                    b.Navigation("Product");
-                });
-
-            modelBuilder.Entity("BDP.API.Models.PricingTier", b =>
-                {
-                    b.HasOne("BDP.API.Models.Product", "Product")
-                        .WithMany("PricingTiers")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                    b.HasOne("BDP.API.Models.ProductVariant", "ProductVariant")
+                        .WithMany()
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Product");
+                    b.Navigation("CustomisationOption");
+
+                    b.Navigation("CustomisationPricingTier");
+
+                    b.Navigation("Order");
+
+                    b.Navigation("PricingTier");
+
+                    b.Navigation("ProductVariant");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Product", b =>
@@ -849,15 +1236,93 @@ namespace BDP.API.Migrations
                     b.Navigation("Supplier");
                 });
 
-            modelBuilder.Entity("BDP.API.Models.ProductPricingTier", b =>
+            modelBuilder.Entity("BDP.API.Models.ProductCollection", b =>
+                {
+                    b.HasOne("BDP.API.Models.Collection", "Collection")
+                        .WithMany("ProductCollections")
+                        .HasForeignKey("CollectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BDP.API.Models.Product", "Product")
+                        .WithMany("ProductCollections")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Collection");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductImage", b =>
                 {
                     b.HasOne("BDP.API.Models.Product", "Product")
-                        .WithMany("ProductPricingTiers")
+                        .WithMany("Images")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductPricingTier", b =>
+                {
+                    b.HasOne("BDP.API.Models.ProductVariant", "ProductVariant")
+                        .WithMany("PricingTiers")
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProductVariant");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductVariant", b =>
+                {
+                    b.HasOne("BDP.API.Models.Product", "Product")
+                        .WithMany("Variants")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.RecurringOrder", b =>
+                {
+                    b.HasOne("BDP.API.Models.Client", "Client")
+                        .WithMany("RecurringOrders")
+                        .HasForeignKey("ClientId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Client");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.RecurringOrderItem", b =>
+                {
+                    b.HasOne("BDP.API.Models.CustomisationOption", "CustomisationOption")
+                        .WithMany()
+                        .HasForeignKey("CustomisationOptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("BDP.API.Models.ProductVariant", "ProductVariant")
+                        .WithMany()
+                        .HasForeignKey("ProductVariantId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("BDP.API.Models.RecurringOrder", "RecurringOrder")
+                        .WithMany("Items")
+                        .HasForeignKey("RecurringOrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CustomisationOption");
+
+                    b.Navigation("ProductVariant");
+
+                    b.Navigation("RecurringOrder");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Shipment", b =>
@@ -941,23 +1406,49 @@ namespace BDP.API.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("BDP.API.Models.Customer", b =>
+            modelBuilder.Entity("BDP.API.Models.Client", b =>
                 {
                     b.Navigation("Orders");
+
+                    b.Navigation("RecurringOrders");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.Collection", b =>
+                {
+                    b.Navigation("ProductCollections");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.CustomisationOption", b =>
+                {
+                    b.Navigation("PricingTiers");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Order", b =>
                 {
-                    b.Navigation("OrderItems");
+                    b.Navigation("Invoices");
+
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Product", b =>
                 {
-                    b.Navigation("InventoryItems");
+                    b.Navigation("Images");
 
+                    b.Navigation("ProductCollections");
+
+                    b.Navigation("Variants");
+                });
+
+            modelBuilder.Entity("BDP.API.Models.ProductVariant", b =>
+                {
                     b.Navigation("PricingTiers");
+                });
 
-                    b.Navigation("ProductPricingTiers");
+            modelBuilder.Entity("BDP.API.Models.RecurringOrder", b =>
+                {
+                    b.Navigation("GeneratedOrders");
+
+                    b.Navigation("Items");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Shipment", b =>

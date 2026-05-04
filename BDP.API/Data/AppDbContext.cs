@@ -11,40 +11,70 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
 
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<Product> Products => Set<Product>();
-    public DbSet<PricingTier> PricingTiers => Set<PricingTier>();
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+    public DbSet<ProductImage> ProductImages => Set<ProductImage>();
     public DbSet<ProductPricingTier> ProductPricingTiers => Set<ProductPricingTier>();
+    public DbSet<Collection> Collections => Set<Collection>();
+    public DbSet<ProductCollection> ProductCollections => Set<ProductCollection>();
     public DbSet<CustomisationOption> CustomisationOptions => Set<CustomisationOption>();
+    public DbSet<CustomisationPricingTier> CustomisationPricingTiers => Set<CustomisationPricingTier>();
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<ShipmentItem> ShipmentItems => Set<ShipmentItem>();
-    public DbSet<InventoryItem> InventoryItems => Set<InventoryItem>();
     public DbSet<Customer> Customers => Set<Customer>();
+    public DbSet<Client> Clients => Set<Client>();
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
+    public DbSet<RecurringOrder> RecurringOrders => Set<RecurringOrder>();
+    public DbSet<RecurringOrderItem> RecurringOrderItems => Set<RecurringOrderItem>();
     public DbSet<ShippingSettings> ShippingSettings => Set<ShippingSettings>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        // Supplier → Products (restrict delete)
+        // Supplier → Products
         builder.Entity<Product>()
             .HasOne(p => p.Supplier)
             .WithMany(s => s.Products)
             .HasForeignKey(p => p.SupplierId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Product → PricingTiers
-        builder.Entity<PricingTier>()
-            .HasOne(pt => pt.Product)
-            .WithMany(p => p.PricingTiers)
-            .HasForeignKey(pt => pt.ProductId)
+        // Product → ProductVariants
+        builder.Entity<ProductVariant>()
+            .HasOne(pv => pv.Product)
+            .WithMany(p => p.Variants)
+            .HasForeignKey(pv => pv.ProductId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Product → ProductPricingTiers
+        // Product → ProductImages
+        builder.Entity<ProductImage>()
+            .HasOne(pi => pi.Product)
+            .WithMany(p => p.Images)
+            .HasForeignKey(pi => pi.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ProductVariant → ProductPricingTiers
         builder.Entity<ProductPricingTier>()
-            .HasOne(ppt => ppt.Product)
-            .WithMany(p => p.ProductPricingTiers)
-            .HasForeignKey(ppt => ppt.ProductId)
+            .HasOne(ppt => ppt.ProductVariant)
+            .WithMany(pv => pv.PricingTiers)
+            .HasForeignKey(ppt => ppt.ProductVariantId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Product ↔ Collection (many-to-many via ProductCollection)
+        builder.Entity<ProductCollection>()
+            .HasKey(pc => new { pc.ProductId, pc.CollectionId });
+
+        builder.Entity<ProductCollection>()
+            .HasOne(pc => pc.Product)
+            .WithMany(p => p.ProductCollections)
+            .HasForeignKey(pc => pc.ProductId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<ProductCollection>()
+            .HasOne(pc => pc.Collection)
+            .WithMany(c => c.ProductCollections)
+            .HasForeignKey(pc => pc.CollectionId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Supplier → CustomisationOptions
@@ -54,7 +84,14 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(co => co.SupplierId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Supplier → Shipments (restrict)
+        // CustomisationOption → CustomisationPricingTiers
+        builder.Entity<CustomisationPricingTier>()
+            .HasOne(cpt => cpt.CustomisationOption)
+            .WithMany(co => co.PricingTiers)
+            .HasForeignKey(cpt => cpt.CustomisationOptionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Supplier → Shipments
         builder.Entity<Shipment>()
             .HasOne(sh => sh.Supplier)
             .WithMany(s => s.Shipments)
@@ -68,48 +105,105 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(si => si.ShipmentId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // ShipmentItem → Product (restrict)
+        // ShipmentItem → Product
         builder.Entity<ShipmentItem>()
             .HasOne(si => si.Product)
             .WithMany()
             .HasForeignKey(si => si.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Product → InventoryItems
-        builder.Entity<InventoryItem>()
-            .HasOne(ii => ii.Product)
-            .WithMany(p => p.InventoryItems)
-            .HasForeignKey(ii => ii.ProductId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        // Customer → Orders
+        // Client → Orders
         builder.Entity<Order>()
-            .HasOne(o => o.Customer)
+            .HasOne(o => o.Client)
             .WithMany(c => c.Orders)
-            .HasForeignKey(o => o.CustomerId)
+            .HasForeignKey(o => o.ClientId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Order → OrderItems
+        // Client → RecurringOrders
+        builder.Entity<RecurringOrder>()
+            .HasOne(ro => ro.Client)
+            .WithMany(c => c.RecurringOrders)
+            .HasForeignKey(ro => ro.ClientId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RecurringOrder → GeneratedOrders
+        builder.Entity<Order>()
+            .HasOne(o => o.RecurringOrder)
+            .WithMany(ro => ro.GeneratedOrders)
+            .HasForeignKey(o => o.RecurringOrderId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // RecurringOrder → RecurringOrderItems
+        builder.Entity<RecurringOrderItem>()
+            .HasOne(roi => roi.RecurringOrder)
+            .WithMany(ro => ro.Items)
+            .HasForeignKey(roi => roi.RecurringOrderId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // RecurringOrderItem → ProductVariant
+        builder.Entity<RecurringOrderItem>()
+            .HasOne(roi => roi.ProductVariant)
+            .WithMany()
+            .HasForeignKey(roi => roi.ProductVariantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // RecurringOrderItem → CustomisationOption
+        builder.Entity<RecurringOrderItem>()
+            .HasOne(roi => roi.CustomisationOption)
+            .WithMany()
+            .HasForeignKey(roi => roi.CustomisationOptionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Order → Items
         builder.Entity<OrderItem>()
             .HasOne(oi => oi.Order)
-            .WithMany(o => o.OrderItems)
+            .WithMany(o => o.Items)
             .HasForeignKey(oi => oi.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // OrderItem → Product
+        // OrderItem → ProductVariant
         builder.Entity<OrderItem>()
-            .HasOne(oi => oi.Product)
+            .HasOne(oi => oi.ProductVariant)
             .WithMany()
-            .HasForeignKey(oi => oi.ProductId)
+            .HasForeignKey(oi => oi.ProductVariantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // OrderItem → PricingTier
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.PricingTier)
+            .WithMany()
+            .HasForeignKey(oi => oi.PricingTierId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // OrderItem → CustomisationOption
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.CustomisationOption)
+            .WithMany()
+            .HasForeignKey(oi => oi.CustomisationOptionId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // OrderItem → CustomisationPricingTier
+        builder.Entity<OrderItem>()
+            .HasOne(oi => oi.CustomisationPricingTier)
+            .WithMany()
+            .HasForeignKey(oi => oi.CustomisationPricingTierId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Order → Invoices
+        builder.Entity<Invoice>()
+            .HasOne(i => i.Order)
+            .WithMany(o => o.Invoices)
+            .HasForeignKey(i => i.OrderId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Client → Invoices
+        builder.Entity<Invoice>()
+            .HasOne(i => i.Client)
+            .WithMany()
+            .HasForeignKey(i => i.ClientId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // Decimal precision — Product
-        builder.Entity<Product>()
-            .Property(p => p.CostCNY).HasPrecision(18, 4);
-        builder.Entity<Product>()
-            .Property(p => p.CostWithShippingCNY).HasPrecision(18, 4);
-        builder.Entity<Product>()
-            .Property(p => p.CostPerUnitZAR).HasPrecision(18, 4);
         builder.Entity<Product>()
             .Property(p => p.WeightKg).HasPrecision(10, 4);
         builder.Entity<Product>()
@@ -118,40 +212,32 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(p => p.WidthCm).HasPrecision(10, 2);
         builder.Entity<Product>()
             .Property(p => p.HeightCm).HasPrecision(10, 2);
-        builder.Entity<Product>()
-            .Property(p => p.VolumeCBM).HasPrecision(18, 9);
-
-        // Decimal precision — PricingTier
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.MarkupPercent).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.SalePricePerUnit).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.TotalSalePrice).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.TotalCostPrice).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.ProfitPerUnit).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.TotalProfit).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.MarginPercent).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.LogoSilkScreen).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.LogoHotStamping).HasPrecision(18, 4);
-        builder.Entity<PricingTier>()
-            .Property(pt => pt.DeliveryCostZAR).HasPrecision(18, 4);
 
         // Decimal precision — ProductPricingTier
         builder.Entity<ProductPricingTier>()
-            .Property(ppt => ppt.SalePriceZAR).HasPrecision(18, 4);
+            .Property(ppt => ppt.CostCNY).HasPrecision(18, 4);
         builder.Entity<ProductPricingTier>()
-            .Property(ppt => ppt.DeliveryCostZAR).HasPrecision(18, 4);
+            .Property(ppt => ppt.CostWithShippingCNY).HasPrecision(18, 4);
+        builder.Entity<ProductPricingTier>()
+            .Property(ppt => ppt.CostWithDutiesCNY).HasPrecision(18, 4);
+        builder.Entity<ProductPricingTier>()
+            .Property(ppt => ppt.CostPerUnitZAR).HasPrecision(18, 4);
+        builder.Entity<ProductPricingTier>()
+            .Property(ppt => ppt.SalePriceZAR).HasPrecision(18, 4);
 
-        // Decimal precision — CustomisationOption
-        builder.Entity<CustomisationOption>()
-            .Property(co => co.TotalPriceZAR).HasPrecision(18, 4);
+        // Decimal precision — CustomisationPricingTier
+        builder.Entity<CustomisationPricingTier>()
+            .Property(cpt => cpt.CostCNY).HasPrecision(18, 4);
+        builder.Entity<CustomisationPricingTier>()
+            .Property(cpt => cpt.CostWithShippingCNY).HasPrecision(18, 4);
+        builder.Entity<CustomisationPricingTier>()
+            .Property(cpt => cpt.CostPerUnitZAR).HasPrecision(18, 4);
+        builder.Entity<CustomisationPricingTier>()
+            .Property(cpt => cpt.SalePriceZAR).HasPrecision(18, 4);
+
+        // Decimal precision — Client
+        builder.Entity<Client>()
+            .Property(c => c.CreditLimit).HasPrecision(18, 2);
 
         // Decimal precision — Shipment
         builder.Entity<Shipment>()
@@ -165,15 +251,31 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<ShipmentItem>()
             .Property(si => si.TotalCostZAR).HasPrecision(18, 4);
 
-        // Decimal precision — Order/OrderItem
+        // Decimal precision — Order
         builder.Entity<Order>()
-            .Property(o => o.TotalAmountZAR).HasPrecision(18, 4);
+            .Property(o => o.SubtotalZAR).HasPrecision(18, 4);
+        builder.Entity<Order>()
+            .Property(o => o.ShippingCostZAR).HasPrecision(18, 4);
+        builder.Entity<Order>()
+            .Property(o => o.TotalZAR).HasPrecision(18, 4);
+
+        // Decimal precision — OrderItem
         builder.Entity<OrderItem>()
             .Property(oi => oi.UnitPriceZAR).HasPrecision(18, 4);
         builder.Entity<OrderItem>()
-            .Property(oi => oi.TotalPriceZAR).HasPrecision(18, 4);
+            .Property(oi => oi.LineTotal).HasPrecision(18, 4);
         builder.Entity<OrderItem>()
-            .Property(oi => oi.BrandingCostZAR).HasPrecision(18, 4);
+            .Property(oi => oi.CustomisationCostZAR).HasPrecision(18, 4);
+        builder.Entity<OrderItem>()
+            .Property(oi => oi.ShippingCostZAR).HasPrecision(18, 4);
+
+        // Decimal precision — Invoice
+        builder.Entity<Invoice>()
+            .Property(i => i.SubtotalZAR).HasPrecision(18, 4);
+        builder.Entity<Invoice>()
+            .Property(i => i.VatZAR).HasPrecision(18, 4);
+        builder.Entity<Invoice>()
+            .Property(i => i.TotalZAR).HasPrecision(18, 4);
 
         // Decimal precision — ShippingSettings
         builder.Entity<ShippingSettings>()
@@ -213,7 +315,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             CnyPerCbm = 2000m,
             CnyPerKg = 10m,
             CnyToZarRate = 2.40m,
-            Notes = "Sea DDP China to customer",
+            UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         });
     }
 }

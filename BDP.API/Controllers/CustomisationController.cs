@@ -23,9 +23,10 @@ public class CustomisationController : ControllerBase
         if (supplier == null) return NotFound(new { message = $"Supplier {supplierId} not found." });
 
         var options = await _context.CustomisationOptions
+            .Include(co => co.PricingTiers)
             .Where(co => co.SupplierId == supplierId)
             .OrderBy(co => co.Type)
-            .ThenBy(co => co.MinQuantity)
+            .ThenBy(co => co.MinimumQuantity)
             .ToListAsync();
 
         return Ok(options.Select(co => MapToDto(co, supplier.Name)));
@@ -42,10 +43,10 @@ public class CustomisationController : ControllerBase
         if (product == null) return NotFound(new { message = $"Product {productId} not found." });
 
         var options = await _context.CustomisationOptions
-            .Where(co => co.SupplierId == product.SupplierId
-                      && co.MinQuantity >= product.Supplier.MinOrderQuantity)
+            .Include(co => co.PricingTiers)
+            .Where(co => co.SupplierId == product.SupplierId)
             .OrderBy(co => co.Type)
-            .ThenBy(co => co.MinQuantity)
+            .ThenBy(co => co.MinimumQuantity)
             .ToListAsync();
 
         return Ok(options.Select(co => MapToDto(co, product.Supplier.Name)));
@@ -61,16 +62,12 @@ public class CustomisationController : ControllerBase
         var supplier = await _context.Suppliers.FindAsync(dto.SupplierId);
         if (supplier == null) return BadRequest(new { message = "Supplier not found." });
 
-        if (!Enum.TryParse<CustomisationType>(dto.Type, true, out var type))
-            return BadRequest(new { message = $"Invalid type '{dto.Type}'. Valid values: SilkScreen, HotStamping." });
-
         var option = new CustomisationOption
         {
             SupplierId = dto.SupplierId,
-            Type = type,
-            MinQuantity = dto.MinQuantity,
-            TotalPriceZAR = dto.TotalPriceZAR,
-            Notes = dto.Notes,
+            Type = dto.Type,
+            Link1688 = dto.Link1688,
+            MinimumQuantity = dto.MinimumQuantity,
         };
 
         _context.CustomisationOptions.Add(option);
@@ -90,18 +87,15 @@ public class CustomisationController : ControllerBase
 
         var option = await _context.CustomisationOptions
             .Include(co => co.Supplier)
+            .Include(co => co.PricingTiers)
             .FirstOrDefaultAsync(co => co.Id == id);
 
         if (option == null) return NotFound(new { message = $"Customisation option {id} not found." });
 
-        if (!Enum.TryParse<CustomisationType>(dto.Type, true, out var type))
-            return BadRequest(new { message = $"Invalid type '{dto.Type}'. Valid values: SilkScreen, HotStamping." });
-
         option.SupplierId = dto.SupplierId;
-        option.Type = type;
-        option.MinQuantity = dto.MinQuantity;
-        option.TotalPriceZAR = dto.TotalPriceZAR;
-        option.Notes = dto.Notes;
+        option.Type = dto.Type;
+        option.Link1688 = dto.Link1688;
+        option.MinimumQuantity = dto.MinimumQuantity;
 
         await _context.SaveChangesAsync();
 
@@ -127,9 +121,18 @@ public class CustomisationController : ControllerBase
         Id = co.Id,
         SupplierId = co.SupplierId,
         SupplierName = supplierName,
-        Type = co.Type.ToString(),
-        MinQuantity = co.MinQuantity,
-        TotalPriceZAR = co.TotalPriceZAR,
-        Notes = co.Notes,
+        Type = co.Type,
+        Link1688 = co.Link1688,
+        MinimumQuantity = co.MinimumQuantity,
+        PricingTiers = co.PricingTiers?.OrderBy(t => t.Quantity).Select(t => new CustomisationPricingTierDto
+        {
+            Id = t.Id,
+            Quantity = t.Quantity,
+            CostCNY = t.CostCNY,
+            CostWithShippingCNY = t.CostWithShippingCNY,
+            CostPerUnitZAR = t.CostPerUnitZAR,
+            SalePriceZAR = t.SalePriceZAR,
+            SKU = t.SKU,
+        }).ToList() ?? new(),
     };
 }

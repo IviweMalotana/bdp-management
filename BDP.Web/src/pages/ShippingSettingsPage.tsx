@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { shippingSettings as settingsApi } from '../services/api'
+import { shipping as settingsApi } from '../services/api'
 import type { ShippingSettings } from '../types'
 import { Settings, Loader2, Check, AlertCircle, RefreshCw } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
@@ -12,7 +12,7 @@ export default function ShippingSettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '', notes: '' })
+  const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '' })
 
   // Live preview
   const cnyPerCbm = parseFloat(form.cnyPerCbm) || 0
@@ -31,14 +31,13 @@ export default function ShippingSettingsPage() {
     ((cbm * cnyPerCbm) + (kg * cnyPerKg)) * cnyToZar
 
   useEffect(() => {
-    settingsApi.get()
+    settingsApi.getSettings()
       .then((s) => {
         setSettings(s)
         setForm({
           cnyPerCbm:    String(s.cnyPerCbm),
           cnyPerKg:     String(s.cnyPerKg),
           cnyToZarRate: String(s.cnyToZarRate),
-          notes:        s.notes,
         })
       })
       .finally(() => setLoading(false))
@@ -47,11 +46,10 @@ export default function ShippingSettingsPage() {
   const handleSave = async () => {
     setSaving(true); setError(null); setSuccess(false)
     try {
-      const updated = await settingsApi.update({
+      const updated = await settingsApi.updateSettings({
         cnyPerCbm:    parseFloat(form.cnyPerCbm),
         cnyPerKg:     parseFloat(form.cnyPerKg),
         cnyToZarRate: parseFloat(form.cnyToZarRate),
-        notes:        form.notes || undefined,
       })
       setSettings(updated)
       setSuccess(true)
@@ -126,16 +124,6 @@ export default function ShippingSettingsPage() {
                   value={form.cnyToZarRate}
                   onChange={(e) => setForm({ ...form, cnyToZarRate: e.target.value })}
                   disabled={!isAdmin}
-                />
-              </div>
-              <div>
-                <label className={lbl}>Notes</label>
-                <input
-                  className={inp}
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  disabled={!isAdmin}
-                  placeholder="e.g. Sea DDP China to customer"
                 />
               </div>
             </div>

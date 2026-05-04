@@ -130,16 +130,16 @@ export default function Products() {
                       className="rounded border-gray-600 bg-gray-800 accent-indigo-500" />
                   </th>
                 )}
-                {['Product', 'Category', 'Size', 'Bottle / Lid', 'Texture', 'Supplier', 'Status', 'Actions'].map((h) => (
+                {['', 'Product', 'Category', 'Variants', 'Size', 'Bottle / Lid', 'Texture', 'Supplier', 'Status', 'Actions'].map((h) => (
                   <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
               {loading ? (
-                <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-gray-500">Loading…</td></tr>
+                <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-12 text-gray-500">Loading…</td></tr>
               ) : data?.items.length === 0 ? (
-                <tr><td colSpan={isAdmin ? 9 : 8} className="text-center py-12 text-gray-500">
+                <tr><td colSpan={isAdmin ? 11 : 10} className="text-center py-12 text-gray-500">
                   <Package size={32} className="mx-auto mb-2 opacity-30" />
                   No products found.
                 </td></tr>
@@ -151,11 +151,30 @@ export default function Products() {
                         className="rounded border-gray-600 bg-gray-800 accent-indigo-500" />
                     </td>
                   )}
+                  {/* Thumbnail */}
+                  <td className="px-4 py-3">
+                    {(p as any).primaryImageUrl ? (
+                      <img src={(p as any).primaryImageUrl} alt={p.name} className="w-10 h-10 rounded object-cover bg-gray-800" />
+                    ) : (
+                      <div className="w-10 h-10 rounded bg-gray-800 flex items-center justify-center">
+                        <Package size={16} className="text-gray-600" />
+                      </div>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <p className="text-white font-medium">{p.name}</p>
                     <p className="text-xs text-gray-500 font-mono">{p.skuBase}</p>
                   </td>
-                  <td className="px-4 py-3 text-gray-300">{p.category}</td>
+                  <td className="px-4 py-3">
+                    <span className="text-xs px-2 py-0.5 rounded bg-indigo-900/40 text-indigo-300 border border-indigo-800/50">{p.category}</span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(p as any).variantCount != null ? (
+                      <span className="text-xs px-2 py-0.5 rounded bg-gray-800 text-gray-300">{(p as any).variantCount} var.</span>
+                    ) : (
+                      <span className="text-xs text-gray-600">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-gray-300 whitespace-nowrap">{p.sizeML}ml</td>
                   <td className="px-4 py-3">
                     <p className="text-gray-300 text-xs">{p.bottleColour}</p>

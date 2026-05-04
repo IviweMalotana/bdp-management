@@ -1,7 +1,6 @@
 using BDP.API.Data;
 using BDP.API.DTOs.Common;
 using BDP.API.DTOs.Customers;
-using BDP.API.DTOs.Orders;
 using BDP.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,9 +24,7 @@ public class CustomersController : ControllerBase
         [FromQuery] int pageSize = 20,
         [FromQuery] string? search = null)
     {
-        var query = _context.Customers
-            .Include(c => c.Orders)
-            .AsQueryable();
+        var query = _context.Customers.AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
@@ -59,11 +56,7 @@ public class CustomersController : ControllerBase
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
     {
-        var customer = await _context.Customers
-            .Include(c => c.Orders)
-                .ThenInclude(o => o.OrderItems)
-                    .ThenInclude(oi => oi.Product)
-            .FirstOrDefaultAsync(c => c.Id == id);
+        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == id);
 
         if (customer == null) return NotFound(new { message = $"Customer {id} not found." });
 
@@ -78,36 +71,7 @@ public class CustomersController : ControllerBase
             Country = customer.Country,
             Notes = customer.Notes,
             CreatedAt = customer.CreatedAt,
-            TotalOrders = customer.Orders.Count,
-            Orders = customer.Orders
-                .OrderByDescending(o => o.OrderDate)
-                .Select(o => new OrderDto
-                {
-                    Id = o.Id,
-                    OrderNumber = o.OrderNumber,
-                    CustomerId = o.CustomerId,
-                    CustomerName = customer.CompanyName,
-                    Status = o.Status,
-                    OrderDate = o.OrderDate,
-                    EstimatedDeliveryDate = o.EstimatedDeliveryDate,
-                    TotalAmountZAR = o.TotalAmountZAR,
-                    BrandingType = o.BrandingType,
-                    Notes = o.Notes,
-                    CreatedAt = o.CreatedAt,
-                    UpdatedAt = o.UpdatedAt,
-                    OrderItems = o.OrderItems.Select(oi => new OrderItemDto
-                    {
-                        Id = oi.Id,
-                        OrderId = oi.OrderId,
-                        ProductId = oi.ProductId,
-                        ProductName = oi.Product?.Name ?? string.Empty,
-                        SKU = oi.SKU,
-                        Quantity = oi.Quantity,
-                        UnitPriceZAR = oi.UnitPriceZAR,
-                        TotalPriceZAR = oi.TotalPriceZAR,
-                        BrandingCostZAR = oi.BrandingCostZAR
-                    }).ToList()
-                }).ToList()
+            TotalOrders = 0,
         });
     }
 
@@ -167,6 +131,6 @@ public class CustomersController : ControllerBase
         Country = c.Country,
         Notes = c.Notes,
         CreatedAt = c.CreatedAt,
-        TotalOrders = c.Orders?.Count ?? 0
+        TotalOrders = 0
     };
 }

@@ -36,7 +36,7 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized(new { message = "Invalid email or password." });
 
-        var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: false);
+        var result = await _signInManager.CheckPasswordSignInAsync(user, dto.Password, lockoutOnFailure: true);
         if (!result.Succeeded)
             return Unauthorized(new { message = "Invalid email or password." });
 

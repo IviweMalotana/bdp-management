@@ -90,7 +90,7 @@ public class ShipmentsController : ControllerBase
                 ShipmentId = shipment.Id,
                 ProductId = item.ProductId,
                 ProductName = product.Name,
-                SKU = product.SKUBase,
+                SKU = string.Empty,
                 Quantity = item.Quantity,
                 CostPerUnitZAR = item.CostPerUnitZAR,
                 TotalCostZAR = Math.Round(item.Quantity * item.CostPerUnitZAR, 4),

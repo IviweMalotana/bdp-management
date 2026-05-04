@@ -10,17 +10,29 @@ import {
   Ship,
   Settings,
   LogOut,
+  Building2,
+  ClipboardList,
+  RefreshCw,
+  FileText,
+  Layers,
 } from 'lucide-react'
 
 const NAV = [
-  { to: '/',                  label: 'Dashboard', icon: LayoutDashboard, exact: true },
-  { to: '/products',          label: 'Products',  icon: Package },
-  { to: '/inventory',         label: 'Inventory', icon: Boxes },
-  { to: '/suppliers',         label: 'Suppliers', icon: Factory },
-  { to: '/shipments',         label: 'Shipments', icon: Ship },
-  { to: '/customers',         label: 'Customers', icon: Users },
-  { to: '/orders',            label: 'Orders',    icon: ShoppingCart },
-  { to: '/settings/shipping', label: 'Settings',  icon: Settings },
+  { to: '/',                  label: 'Dashboard',       icon: LayoutDashboard, exact: true },
+  { to: '/products',          label: 'Products',        icon: Package },
+  { to: '/inventory',         label: 'Inventory',       icon: Boxes },
+  { to: '/suppliers',         label: 'Suppliers',       icon: Factory },
+  { to: '/shipments',         label: 'Shipments',       icon: Ship },
+  { to: '/customers',         label: 'Customers',       icon: Users },
+  { to: '/orders',            label: 'Legacy Orders',   icon: ShoppingCart },
+  { divider: true,            label: 'B2B' },
+  { to: '/clients',           label: 'Clients',         icon: Building2 },
+  { to: '/b2b-orders',        label: 'Orders',          icon: ClipboardList },
+  { to: '/recurring-orders',  label: 'Recurring',       icon: RefreshCw },
+  { to: '/invoices',          label: 'Invoices',        icon: FileText },
+  { to: '/collections',       label: 'Collections',     icon: Layers },
+  { divider: true,            label: 'System' },
+  { to: '/settings/shipping', label: 'Settings',        icon: Settings },
 ]
 
 const ROLE_COLOURS: Record<string, string> = {
@@ -54,23 +66,33 @@ export default function Layout() {
 
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {NAV.map(({ to, label, icon: Icon, exact }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={exact}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-indigo-600 text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`
-              }
-            >
-              <Icon size={18} />
-              {label}
-            </NavLink>
-          ))}
+          {NAV.map((item) => {
+            if ('divider' in item) {
+              return (
+                <div key={item.label} className="pt-3 pb-1 px-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-600">{item.label}</p>
+                </div>
+              )
+            }
+            const { to, label, icon: Icon, exact } = item as { to: string; label: string; icon: React.ElementType; exact?: boolean }
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                end={exact}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  }`
+                }
+              >
+                <Icon size={18} />
+                {label}
+              </NavLink>
+            )
+          })}
         </nav>
 
         {/* User footer */}

@@ -1,3 +1,4 @@
+// ── Auth ─────────────────────────────────────────────────────────────────────
 export interface User {
   id: string
   email: string
@@ -17,6 +18,7 @@ export interface LoginResponse {
   user: User
 }
 
+// ── Legacy product types (kept for existing pages) ────────────────────────────
 export interface PricingTier {
   id: number
   productId: number
@@ -74,6 +76,72 @@ export interface InventoryItem {
   updatedAt: string
 }
 
+// ── B2B Product / Variant types ───────────────────────────────────────────────
+export interface VariantPricingTier {
+  id: number
+  quantity: number
+  costCNY: number
+  costWithShippingCNY: number
+  costWithDutiesCNY: number
+  costPerUnitZAR: number
+  salePriceZAR: number
+  sku: string
+}
+
+export interface ProductVariant {
+  id: number
+  productId: number
+  size: string
+  bottleColour: string
+  lidColour: string
+  texture: string
+  sku: string
+  isActive: boolean
+  name?: string
+  pricingTiers: VariantPricingTier[]
+}
+
+export interface ProductImage {
+  id: number
+  productId: number
+  url: string
+  altText: string
+  sortOrder: number
+  isPrimary: boolean
+}
+
+export interface Product {
+  id: number
+  name: string
+  category: string
+  link1688: string | null
+  description: string | null
+  usageSuitability: string | null
+  metaTitle: string
+  metaDescription: string
+  metaKeywords: string
+  slug: string
+  supplierId: number
+  supplierName: string
+  weightKg: number
+  lengthCm: number
+  widthCm: number
+  heightCm: number
+  createdAt: string
+  updatedAt: string
+  variants: ProductVariant[]
+  images?: ProductImage[]
+  collections?: string[]
+  // Legacy compat fields
+  skuBase?: string
+  sizeML?: number
+  bottleColour?: string
+  lidColour?: string
+  texture?: string
+  isActive?: boolean
+  pricingTiers?: PricingTier[]
+}
+
 export interface ProductPricingTier {
   id: number
   quantity: number
@@ -83,35 +151,11 @@ export interface ProductPricingTier {
   hotStampingLogoZAR: number | null
 }
 
-export interface Product {
+// ── Customisation ─────────────────────────────────────────────────────────────
+export interface CustomisationPricingTier {
   id: number
-  name: string
-  skuBase: string
-  category: string
-  sizeML: number
-  bottleColour: string
-  lidColour: string
-  texture: string
-  costCNY: number
-  costWithShippingCNY: number
-  costPerUnitZAR: number
-  supplierLink: string | null
-  supplierId: number
-  supplierName: string
-  isActive: boolean
-  shopifyTitle: string | null
-  shopifyBodyHtml: string | null
-  createdAt: string
-  dateAdded: string
-  weightKg: number
-  lengthCm: number
-  widthCm: number
-  heightCm: number
-  volumeCBM: number
-  shipsFrom: string
-  pricingTiers: PricingTier[]
-  productPricingTiers?: ProductPricingTier[]
-  inventoryItems?: InventoryItem[]
+  minimumQuantity: number
+  pricePerUnitZAR: number
 }
 
 export interface CustomisationOption {
@@ -119,77 +163,128 @@ export interface CustomisationOption {
   supplierId: number
   supplierName: string
   type: 'SilkScreen' | 'HotStamping'
-  minQuantity: number
-  totalPriceZAR: number
-  notes: string | null
+  minimumQuantity: number
+  link1688?: string | null
+  pricingTiers: CustomisationPricingTier[]
+  // legacy
+  minQuantity?: number
+  totalPriceZAR?: number
+  notes?: string | null
 }
 
+// ── Supplier ──────────────────────────────────────────────────────────────────
 export interface Supplier {
   id: number
   name: string
   country: string
   contactEmail: string | null
   contactPhone: string | null
-  website: string | null
-  leadTimeDays: number
-  minOrderQuantity: number
-  offersCustomisation: boolean
-  notes: string | null
-  productCount: number
-  customisationOptionCount: number
+  website?: string | null
+  leadTimeDays?: number
+  minOrderQuantity?: number
+  offersCustomisation?: boolean
+  suppliesBottles?: boolean
+  suppliesCustomisation?: boolean
+  isActive?: boolean
+  notes?: string | null
+  productCount?: number
+  customisationOptionCount?: number
   createdAt: string
   products?: {
-    id: number
-    name: string
-    skuBase: string
-    category: string
-    sizeML: number
-    bottleColour: string
-    lidColour: string
-    isActive: boolean
+    id: number; name: string; skuBase?: string; category: string
+    sizeML?: number; bottleColour?: string; lidColour?: string; isActive?: boolean
   }[]
   customisationOptions?: CustomisationOption[]
 }
 
-export interface Customer {
+// ── Client (B2B) ──────────────────────────────────────────────────────────────
+export interface Client {
   id: number
   companyName: string
-  contactName: string
-  email: string
-  phone: string | null
-  brandName: string | null
-  country: string
-  notes: string | null
+  tradingName: string | null
+  companyRegistrationNumber: string | null
+  vatNumber: string | null
+  contactPersonName: string
+  contactEmail: string
+  contactPhone: string | null
+  billingAddress: string | null
+  shippingAddress: string | null
+  industry: string | null
+  paystackCustomerId: string | null
+  creditLimit: number
+  paymentTermsDays: number
+  isActive: boolean
   createdAt: string
-  totalOrders: number
 }
 
+export interface ClientSummary {
+  id: number
+  companyName: string
+  contactPersonName: string
+  contactEmail: string
+  isActive: boolean
+  totalOrders: number
+  totalSpendZAR: number
+}
+
+export interface ClientOrderSummary {
+  id: number
+  orderNumber: string
+  status: string
+  totalZAR: number
+  isPaid: boolean
+  orderDate: string
+}
+
+export interface ClientDetail extends Client {
+  recentOrders: ClientOrderSummary[]
+}
+
+// ── Order ─────────────────────────────────────────────────────────────────────
 export interface OrderItem {
   id: number
   orderId: number
-  productId: number
+  productVariantId: number
   productName: string
-  sku: string
+  variantSku: string
+  pricingTierId: number
+  customisationOptionId: number | null
+  customisationPricingTierId: number | null
   quantity: number
   unitPriceZAR: number
-  totalPriceZAR: number
-  brandingCostZAR: number
+  lineTotal: number
+  customisationCostZAR: number
+  shippingCostZAR: number
+  // legacy compat
+  totalPriceZAR?: number
+  brandingCostZAR?: number
 }
 
 export interface Order {
   id: number
   orderNumber: string
-  customerId: number
-  customerName: string
+  clientId: number
+  clientName: string
   status: string
   orderDate: string
-  estimatedDeliveryDate: string | null
-  totalAmountZAR: number
-  brandingType: string | null
+  requiredByDate: string | null
+  shippedDate: string | null
+  deliveredDate: string | null
+  subtotalZAR: number
+  shippingCostZAR: number
+  totalZAR: number
+  isPaid: boolean
+  paidAt: string | null
+  paystackPaymentReference: string | null
+  recurringOrderId: number | null
   notes: string | null
   createdAt: string
-  updatedAt: string
-  orderItems: OrderItem[]
+  items: OrderItem[]
+  // legacy compat
+  customerId?: number
+  customerName?: string
+  totalAmountZAR?: number
+  orderItems?: OrderItem[]
 }
 
 export interface OrderStatusCount {
@@ -197,11 +292,91 @@ export interface OrderStatusCount {
   count: number
 }
 
+export interface OrderStats {
+  totalOrders: number
+  revenueThisMonth: number
+  ordersByStatus: OrderStatusCount[]
+}
+
+// ── Invoice ───────────────────────────────────────────────────────────────────
+export interface Invoice {
+  id: number
+  invoiceNumber: string
+  orderId: number
+  orderNumber: string
+  clientId: number
+  clientName: string
+  invoiceDate: string
+  dueDate: string
+  subtotalZAR: number
+  vatZAR: number
+  totalZAR: number
+  status: string
+  pdfUrl: string | null
+  sentAt: string | null
+  paidAt: string | null
+  paystackPaymentRequestId: string | null
+  createdAt: string
+}
+
+// ── Recurring Order ───────────────────────────────────────────────────────────
+export interface RecurringOrderItem {
+  id: number
+  productVariantId: number
+  variantName: string
+  productName: string
+  customisationOptionId: number | null
+  customisationType: string | null
+  quantity: number
+}
+
+export interface RecurringOrder {
+  id: number
+  clientId: number
+  clientName: string
+  name: string
+  frequency: string
+  frequencyDays: number
+  contractStartDate: string
+  contractEndDate: string
+  nextOrderDate: string
+  status: string
+  notes: string | null
+  items: RecurringOrderItem[]
+  createdAt: string
+}
+
+// ── Collection ────────────────────────────────────────────────────────────────
+export interface CollectionProduct {
+  productId: number
+  name: string
+  category: string
+  slug: string
+  variantCount: number
+}
+
+export interface Collection {
+  id: number
+  name: string
+  description: string
+  metaTitle: string
+  metaDescription: string
+  metaKeywords: string
+  slug: string
+  imageUrl: string | null
+  productCount: number
+  createdAt: string
+  products?: CollectionProduct[]
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
 export interface RecentOrder {
   id: number
   orderNumber: string
-  customerName: string
-  totalAmountZAR: number
+  customerName?: string
+  clientName?: string
+  totalAmountZAR?: number
+  totalZAR?: number
   status: string
   orderDate: string
 }
@@ -215,14 +390,22 @@ export interface DashboardSummary {
   lowStockCount: number
   ordersByStatus: OrderStatusCount[]
   recentOrders: RecentOrder[]
+  // B2B additions
+  activeClients?: number
+  openOrders?: number
+  overdueInvoices?: number
+  recurringDueThisWeek?: number
 }
 
+// ── Shared ────────────────────────────────────────────────────────────────────
 export interface PagedResult<T> {
-  items: T[]
-  totalCount: number
+  items?: T[]
+  data?: T[]
+  total?: number
+  totalCount?: number
   page: number
   pageSize: number
-  totalPages: number
+  totalPages?: number
 }
 
 export interface InventorySummary {
@@ -234,10 +417,17 @@ export interface InventorySummary {
   itemCount: number
 }
 
-export interface OrderStats {
+export interface Customer {
+  id: number
+  companyName: string
+  contactName: string
+  email: string
+  phone: string | null
+  brandName?: string | null
+  country: string
+  notes: string | null
+  createdAt: string
   totalOrders: number
-  revenueThisMonth: number
-  ordersByStatus: OrderStatusCount[]
 }
 
 export interface CustomerDetail extends Customer {
@@ -259,7 +449,8 @@ export interface ShippingSettings {
   cnyPerCbm: number
   cnyPerKg: number
   cnyToZarRate: number
-  notes: string
+  updatedAt?: string
+  notes?: string
 }
 
 export interface Shipment {
@@ -271,7 +462,7 @@ export interface Shipment {
   orderDate: string
   estimatedArrival: string | null
   actualArrival: string | null
-  originCountry: string
+  originCountry?: string
   seaFreightCostZAR: number
   customsDutyZAR: number
   ddpTotalZAR: number

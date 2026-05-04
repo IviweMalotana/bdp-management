@@ -4,10 +4,9 @@ namespace BDP.API.DTOs.Orders;
 
 public class UpdateOrderDto
 {
-    [Range(1, int.MaxValue)] public int CustomerId { get; set; }
-    [Required]               public string Status { get; set; } = string.Empty;
-    public DateTime? EstimatedDeliveryDate { get; set; }
-    public string? BrandingType { get; set; }
+    [Range(1, int.MaxValue)] public int ClientId { get; set; }
+    [Required] public string Status { get; set; } = string.Empty;
+    public DateTime? RequiredByDate { get; set; }
     public string? Notes { get; set; }
 
     [Required]

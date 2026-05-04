@@ -1,10 +1,16 @@
-using BDP.API.DTOs.Inventory;
-
 namespace BDP.API.DTOs.Products;
 
 public class ProductDetailDto : ProductDto
 {
-    public string ShipsFrom { get; set; } = "China";
-    public List<ProductPricingTierDto> ProductPricingTiers { get; set; } = new();
-    public List<InventoryItemDto> InventoryItems { get; set; } = new();
+    public List<ProductImageDto> Images { get; set; } = new();
+    public List<string> Collections { get; set; } = new();
+}
+
+public class ProductImageDto
+{
+    public int Id { get; set; }
+    public string Url { get; set; } = string.Empty;
+    public string AltText { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public bool IsPrimary { get; set; }
 }

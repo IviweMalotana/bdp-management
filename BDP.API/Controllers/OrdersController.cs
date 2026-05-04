@@ -1,6 +1,8 @@
 using BDP.API.Data;
+using BDP.API.DTOs.Invoices;
 using BDP.API.DTOs.Orders;
 using BDP.API.Models;
+using BDP.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,8 +15,13 @@ namespace BDP.API.Controllers;
 public class OrdersController : ControllerBase
 {
     private readonly AppDbContext _context;
+    private readonly InvoiceService _invoiceService;
 
-    public OrdersController(AppDbContext context) => _context = context;
+    public OrdersController(AppDbContext context, InvoiceService invoiceService)
+    {
+        _context = context;
+        _invoiceService = invoiceService;
+    }
 
     // GET /api/orders?status=X&from=Y&to=Z&page=1&pageSize=20
     [HttpGet]
@@ -26,9 +33,10 @@ public class OrdersController : ControllerBase
         [FromQuery] int pageSize = 20)
     {
         var query = _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Product)
+            .Include(o => o.Client)
+            .Include(o => o.Items)
+                .ThenInclude(oi => oi.ProductVariant)
+                    .ThenInclude(pv => pv.Product)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(status))
@@ -65,7 +73,7 @@ public class OrdersController : ControllerBase
         var totalOrders = await _context.Orders.CountAsync();
         var revenueThisMonth = await _context.Orders
             .Where(o => o.OrderDate >= startOfMonth)
-            .SumAsync(o => (decimal?)o.TotalAmountZAR) ?? 0;
+            .SumAsync(o => (decimal?)o.TotalZAR) ?? 0;
 
         var ordersByStatus = await _context.Orders
             .GroupBy(o => o.Status)
@@ -85,9 +93,10 @@ public class OrdersController : ControllerBase
     public async Task<IActionResult> GetById(int id)
     {
         var order = await _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.OrderItems)
-                .ThenInclude(oi => oi.Product)
+            .Include(o => o.Client)
+            .Include(o => o.Items)
+                .ThenInclude(oi => oi.ProductVariant)
+                    .ThenInclude(pv => pv.Product)
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (order == null) return NotFound(new { message = $"Order {id} not found." });
@@ -100,9 +109,9 @@ public class OrdersController : ControllerBase
     {
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
-        var customerExists = await _context.Customers.AnyAsync(c => c.Id == dto.CustomerId);
-        if (!customerExists)
-            return BadRequest(new { message = "Customer not found." });
+        var clientExists = await _context.Clients.AnyAsync(c => c.Id == dto.ClientId);
+        if (!clientExists)
+            return BadRequest(new { message = "Client not found." });
 
         var orderDate = (dto.OrderDate ?? DateTime.UtcNow).ToUniversalTime();
         var orderNumber = await GenerateOrderNumberAsync(orderDate.Year);
@@ -110,46 +119,58 @@ public class OrdersController : ControllerBase
         var order = new Order
         {
             OrderNumber = orderNumber,
-            CustomerId = dto.CustomerId,
+            ClientId = dto.ClientId,
             Status = dto.Status,
             OrderDate = orderDate,
-            EstimatedDeliveryDate = orderDate.AddDays(84),
-            BrandingType = dto.BrandingType,
+            RequiredByDate = dto.RequiredByDate?.ToUniversalTime(),
             Notes = dto.Notes,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow
         };
 
-        // Build order items and calculate total
-        decimal total = 0;
+        decimal subtotal = 0;
+        decimal shippingTotal = 0;
         foreach (var item in dto.Items)
         {
-            var productExists = await _context.Products.AnyAsync(p => p.Id == item.ProductId);
-            if (!productExists)
-                return BadRequest(new { message = $"Product {item.ProductId} not found." });
+            var variantExists = await _context.ProductVariants.AnyAsync(pv => pv.Id == item.ProductVariantId);
+            if (!variantExists)
+                return BadRequest(new { message = $"ProductVariant {item.ProductVariantId} not found." });
 
-            var lineTotal = item.UnitPriceZAR * item.Quantity + item.BrandingCostZAR;
-            total += lineTotal;
-
-            order.OrderItems.Add(new OrderItem
+            // Validate customisation minimum quantity
+            if (item.CustomisationOptionId.HasValue)
             {
-                ProductId = item.ProductId,
-                SKU = item.SKU,
+                var opt = await _context.CustomisationOptions.FindAsync(item.CustomisationOptionId.Value);
+                if (opt != null && item.Quantity < opt.MinimumQuantity)
+                    return BadRequest(new { message = $"Customisation option '{opt.Type}' requires a minimum quantity of {opt.MinimumQuantity}. You ordered {item.Quantity}." });
+            }
+
+            var lineTotal = item.UnitPriceZAR * item.Quantity + item.CustomisationCostZAR;
+            subtotal += lineTotal;
+            shippingTotal += item.ShippingCostZAR;
+
+            order.Items.Add(new OrderItem
+            {
+                ProductVariantId = item.ProductVariantId,
+                PricingTierId = item.PricingTierId,
+                CustomisationOptionId = item.CustomisationOptionId,
+                CustomisationPricingTierId = item.CustomisationPricingTierId,
                 Quantity = item.Quantity,
                 UnitPriceZAR = item.UnitPriceZAR,
-                TotalPriceZAR = lineTotal,
-                BrandingCostZAR = item.BrandingCostZAR
+                LineTotal = lineTotal,
+                CustomisationCostZAR = item.CustomisationCostZAR,
+                ShippingCostZAR = item.ShippingCostZAR,
             });
         }
 
-        order.TotalAmountZAR = total;
+        order.SubtotalZAR = subtotal;
+        order.ShippingCostZAR = shippingTotal;
+        order.TotalZAR = subtotal + shippingTotal;
 
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
 
         var created = await _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.OrderItems).ThenInclude(oi => oi.Product)
+            .Include(o => o.Client)
+            .Include(o => o.Items).ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Product)
             .FirstAsync(o => o.Id == order.Id);
 
         return CreatedAtAction(nameof(GetById), new { id = order.Id }, MapToDto(created));
@@ -162,15 +183,13 @@ public class OrdersController : ControllerBase
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var order = await _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.OrderItems).ThenInclude(oi => oi.Product)
+            .Include(o => o.Client)
+            .Include(o => o.Items).ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Product)
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (order == null) return NotFound(new { message = $"Order {id} not found." });
 
         order.Status = dto.Status;
-        order.UpdatedAt = DateTime.UtcNow;
-
         await _context.SaveChangesAsync();
         return Ok(MapToDto(order));
     }
@@ -182,55 +201,132 @@ public class OrdersController : ControllerBase
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         var order = await _context.Orders
-            .Include(o => o.OrderItems)
+            .Include(o => o.Items)
             .FirstOrDefaultAsync(o => o.Id == id);
 
         if (order == null) return NotFound(new { message = $"Order {id} not found." });
 
-        var customerExists = await _context.Customers.AnyAsync(c => c.Id == dto.CustomerId);
-        if (!customerExists)
-            return BadRequest(new { message = "Customer not found." });
+        var clientExists = await _context.Clients.AnyAsync(c => c.Id == dto.ClientId);
+        if (!clientExists)
+            return BadRequest(new { message = "Client not found." });
 
-        order.CustomerId = dto.CustomerId;
+        order.ClientId = dto.ClientId;
         order.Status = dto.Status;
-        order.EstimatedDeliveryDate = dto.EstimatedDeliveryDate?.ToUniversalTime();
-        order.BrandingType = dto.BrandingType;
+        order.RequiredByDate = dto.RequiredByDate?.ToUniversalTime();
         order.Notes = dto.Notes;
-        order.UpdatedAt = DateTime.UtcNow;
 
-        // Replace order items
-        _context.OrderItems.RemoveRange(order.OrderItems);
+        _context.OrderItems.RemoveRange(order.Items);
+        order.Items.Clear();
 
-        decimal total = 0;
+        decimal subtotal = 0;
+        decimal shippingTotal = 0;
         foreach (var item in dto.Items)
         {
-            var productExists = await _context.Products.AnyAsync(p => p.Id == item.ProductId);
-            if (!productExists)
-                return BadRequest(new { message = $"Product {item.ProductId} not found." });
+            var variantExists = await _context.ProductVariants.AnyAsync(pv => pv.Id == item.ProductVariantId);
+            if (!variantExists)
+                return BadRequest(new { message = $"ProductVariant {item.ProductVariantId} not found." });
 
-            var lineTotal = item.UnitPriceZAR * item.Quantity + item.BrandingCostZAR;
-            total += lineTotal;
+            var lineTotal = item.UnitPriceZAR * item.Quantity + item.CustomisationCostZAR;
+            subtotal += lineTotal;
+            shippingTotal += item.ShippingCostZAR;
 
-            order.OrderItems.Add(new OrderItem
+            order.Items.Add(new OrderItem
             {
-                ProductId = item.ProductId,
-                SKU = item.SKU,
+                ProductVariantId = item.ProductVariantId,
+                PricingTierId = item.PricingTierId,
+                CustomisationOptionId = item.CustomisationOptionId,
+                CustomisationPricingTierId = item.CustomisationPricingTierId,
                 Quantity = item.Quantity,
                 UnitPriceZAR = item.UnitPriceZAR,
-                TotalPriceZAR = lineTotal,
-                BrandingCostZAR = item.BrandingCostZAR
+                LineTotal = lineTotal,
+                CustomisationCostZAR = item.CustomisationCostZAR,
+                ShippingCostZAR = item.ShippingCostZAR,
             });
         }
 
-        order.TotalAmountZAR = total;
+        order.SubtotalZAR = subtotal;
+        order.ShippingCostZAR = shippingTotal;
+        order.TotalZAR = subtotal + shippingTotal;
+
         await _context.SaveChangesAsync();
 
         var updated = await _context.Orders
-            .Include(o => o.Customer)
-            .Include(o => o.OrderItems).ThenInclude(oi => oi.Product)
+            .Include(o => o.Client)
+            .Include(o => o.Items).ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Product)
             .FirstAsync(o => o.Id == id);
 
         return Ok(MapToDto(updated));
+    }
+
+    // POST /api/orders/{id}/invoice
+    [HttpPost("{id:int}/invoice")]
+    public async Task<IActionResult> GenerateAndSendInvoice(int id)
+    {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
+
+        Invoice invoice;
+        var existing = await _context.Invoices.FirstOrDefaultAsync(i => i.OrderId == id);
+        if (existing != null)
+        {
+            invoice = existing;
+        }
+        else
+        {
+            invoice = await _invoiceService.GenerateInvoiceAsync(id);
+        }
+
+        await _invoiceService.SendInvoiceAsync(invoice.Id);
+
+        return Ok(new InvoiceDto
+        {
+            Id = invoice.Id,
+            InvoiceNumber = invoice.InvoiceNumber,
+            OrderId = invoice.OrderId,
+            ClientId = invoice.ClientId,
+            InvoiceDate = invoice.InvoiceDate,
+            DueDate = invoice.DueDate,
+            SubtotalZAR = invoice.SubtotalZAR,
+            VatZAR = invoice.VatZAR,
+            TotalZAR = invoice.TotalZAR,
+            Status = invoice.Status,
+            PdfUrl = invoice.PdfUrl,
+            SentAt = invoice.SentAt,
+            PaystackPaymentRequestId = invoice.PaystackPaymentRequestId,
+            CreatedAt = invoice.CreatedAt
+        });
+    }
+
+    // GET /api/orders/{id}/invoice
+    [HttpGet("{id:int}/invoice")]
+    public async Task<IActionResult> GetInvoice(int id)
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.Order)
+            .Include(i => i.Client)
+            .FirstOrDefaultAsync(i => i.OrderId == id);
+        if (invoice == null) return NotFound(new { message = "No invoice for this order." });
+
+        return Ok(new InvoiceDto
+        {
+            Id = invoice.Id,
+            InvoiceNumber = invoice.InvoiceNumber,
+            OrderId = invoice.OrderId,
+            OrderNumber = invoice.Order.OrderNumber,
+            ClientId = invoice.ClientId,
+            ClientName = invoice.Client.CompanyName,
+            InvoiceDate = invoice.InvoiceDate,
+            DueDate = invoice.DueDate,
+            SubtotalZAR = invoice.SubtotalZAR,
+            VatZAR = invoice.VatZAR,
+            TotalZAR = invoice.TotalZAR,
+            Status = invoice.Status,
+            PdfUrl = invoice.PdfUrl,
+            SentAt = invoice.SentAt,
+            PaidAt = invoice.PaidAt,
+            PaystackPaymentRequestId = invoice.PaystackPaymentRequestId,
+            CreatedAt = invoice.CreatedAt
+        });
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -258,27 +354,37 @@ public class OrdersController : ControllerBase
     {
         Id = o.Id,
         OrderNumber = o.OrderNumber,
-        CustomerId = o.CustomerId,
-        CustomerName = o.Customer?.CompanyName ?? string.Empty,
+        ClientId = o.ClientId,
+        ClientName = o.Client?.CompanyName ?? string.Empty,
         Status = o.Status,
         OrderDate = o.OrderDate,
-        EstimatedDeliveryDate = o.EstimatedDeliveryDate,
-        TotalAmountZAR = o.TotalAmountZAR,
-        BrandingType = o.BrandingType,
+        RequiredByDate = o.RequiredByDate,
+        ShippedDate = o.ShippedDate,
+        DeliveredDate = o.DeliveredDate,
+        SubtotalZAR = o.SubtotalZAR,
+        ShippingCostZAR = o.ShippingCostZAR,
+        TotalZAR = o.TotalZAR,
+        IsPaid = o.IsPaid,
+        PaidAt = o.PaidAt,
+        PaystackPaymentReference = o.PaystackPaymentReference,
+        RecurringOrderId = o.RecurringOrderId,
         Notes = o.Notes,
         CreatedAt = o.CreatedAt,
-        UpdatedAt = o.UpdatedAt,
-        OrderItems = o.OrderItems?.Select(oi => new OrderItemDto
+        Items = o.Items?.Select(oi => new OrderItemDto
         {
             Id = oi.Id,
             OrderId = oi.OrderId,
-            ProductId = oi.ProductId,
-            ProductName = oi.Product?.Name ?? string.Empty,
-            SKU = oi.SKU,
+            ProductVariantId = oi.ProductVariantId,
+            ProductName = oi.ProductVariant?.Product?.Name ?? string.Empty,
+            VariantSku = oi.ProductVariant?.SKU ?? string.Empty,
+            PricingTierId = oi.PricingTierId,
+            CustomisationOptionId = oi.CustomisationOptionId,
+            CustomisationPricingTierId = oi.CustomisationPricingTierId,
             Quantity = oi.Quantity,
             UnitPriceZAR = oi.UnitPriceZAR,
-            TotalPriceZAR = oi.TotalPriceZAR,
-            BrandingCostZAR = oi.BrandingCostZAR
+            LineTotal = oi.LineTotal,
+            CustomisationCostZAR = oi.CustomisationCostZAR,
+            ShippingCostZAR = oi.ShippingCostZAR,
         }).ToList() ?? new()
     };
 }

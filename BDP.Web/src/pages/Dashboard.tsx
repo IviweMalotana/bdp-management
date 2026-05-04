@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { dashboard } from '../services/api'
-import type { DashboardSummary } from '../types'
-import { Package, ShoppingCart, Users, TrendingUp, AlertTriangle, BarChart2 } from 'lucide-react'
+import { dashboard, clients as clientsApi, invoices as invoicesApi, recurringOrders as recurringApi } from '../services/api'
+import type { DashboardSummary, Invoice, RecurringOrder } from '../types'
+import { Package, ShoppingCart, Users, TrendingUp, AlertTriangle, BarChart2, Building2, FileText, RefreshCw } from 'lucide-react'
 
 const STATUS_COLOURS: Record<string, string> = {
   Pending:          'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
@@ -31,9 +31,23 @@ function StatCard({ icon: Icon, label, value, sub, colour }: {
 export default function Dashboard() {
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [overdueCount, setOverdueCount] = useState(0)
+  const [activeClientCount, setActiveClientCount] = useState(0)
+  const [recurringDueSoon, setRecurringDueSoon] = useState<RecurringOrder[]>([])
 
   useEffect(() => {
     dashboard.getSummary().then(setSummary).finally(() => setLoading(false))
+
+    // B2B supplementary stats
+    clientsApi.getAll({ pageSize: 1 }).then((r) => setActiveClientCount(r.total ?? 0)).catch(() => {})
+    invoicesApi.getAll().then((invs: Invoice[]) => {
+      const now = new Date()
+      setOverdueCount(invs.filter((i) => i.status === 'Sent' && new Date(i.dueDate) < now).length)
+    }).catch(() => {})
+    recurringApi.getAll().then((list: RecurringOrder[]) => {
+      const soon = new Date(); soon.setDate(soon.getDate() + 7)
+      setRecurringDueSoon(list.filter((r) => r.status === 'Active' && new Date(r.nextOrderDate) <= soon))
+    }).catch(() => {})
   }, [])
 
   if (loading) return (
@@ -74,6 +88,51 @@ export default function Dashboard() {
         <StatCard icon={BarChart2}     label="Orders (Month)"   value={summary.ordersThisMonth}     colour="bg-purple-500/20 text-purple-400" />
         <StatCard icon={AlertTriangle} label="Low Stock (CPT)"  value={summary.lowStockCount}       colour="bg-red-500/20 text-red-400" />
       </div>
+
+      {/* B2B quick stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <Link to="/clients" className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-5 transition-colors group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-400">Active Clients</span>
+            <div className="p-2 rounded-lg bg-cyan-500/20 text-cyan-400"><Building2 size={16} /></div>
+          </div>
+          <p className="text-2xl font-bold text-white group-hover:text-cyan-300 transition-colors">{activeClientCount}</p>
+        </Link>
+        <Link to="/invoices?status=Overdue" className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-5 transition-colors group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-400">Overdue Invoices</span>
+            <div className="p-2 rounded-lg bg-red-500/20 text-red-400"><FileText size={16} /></div>
+          </div>
+          <p className={`text-2xl font-bold ${overdueCount > 0 ? 'text-red-400' : 'text-white'}`}>{overdueCount}</p>
+        </Link>
+        <Link to="/recurring-orders" className="bg-gray-900 border border-gray-800 hover:border-gray-700 rounded-xl p-5 transition-colors group">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-400">Recurring Due (7d)</span>
+            <div className="p-2 rounded-lg bg-amber-500/20 text-amber-400"><RefreshCw size={16} /></div>
+          </div>
+          <p className={`text-2xl font-bold ${recurringDueSoon.length > 0 ? 'text-amber-400' : 'text-white'}`}>{recurringDueSoon.length}</p>
+        </Link>
+      </div>
+
+      {recurringDueSoon.length > 0 && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-amber-500/20 flex items-center gap-2">
+            <RefreshCw size={14} className="text-amber-400" />
+            <h2 className="text-sm font-semibold text-amber-300">Recurring Orders Due This Week</h2>
+          </div>
+          <div className="divide-y divide-amber-500/10">
+            {recurringDueSoon.map((r) => (
+              <Link key={r.id} to={`/recurring-orders/${r.id}`} className="flex items-center justify-between px-5 py-3 hover:bg-amber-500/5 transition-colors">
+                <div>
+                  <p className="text-sm text-white font-medium">{r.name}</p>
+                  <p className="text-xs text-gray-400">{r.clientName}</p>
+                </div>
+                <p className="text-xs text-amber-300 font-medium">{new Date(r.nextOrderDate).toLocaleDateString()}</p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         {/* Orders by status */}

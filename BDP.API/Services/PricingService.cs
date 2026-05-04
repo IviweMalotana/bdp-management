@@ -22,13 +22,15 @@ public class PricingService
 
     private readonly IMemoryCache _cache;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<PricingService> _logger;
     private const string CacheKey = "cny_zar_rate";
     private const decimal FallbackRate = 2.6m;
 
-    public PricingService(IMemoryCache cache, IHttpClientFactory httpClientFactory)
+    public PricingService(IMemoryCache cache, IHttpClientFactory httpClientFactory, ILogger<PricingService> logger)
     {
         _cache = cache;
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     public async Task<decimal> GetLiveExchangeRate()
@@ -40,16 +42,19 @@ public class PricingService
         {
             var http = _httpClientFactory.CreateClient();
             http.Timeout = TimeSpan.FromSeconds(5);
-            var response = await http.GetStringAsync("https://api.exchangerate.host/convert?from=CNY&to=ZAR");
+            var response = await http.GetStringAsync("https://api.frankfurter.app/latest?from=CNY&to=ZAR");
             using var doc = JsonDocument.Parse(response);
-            var rate = doc.RootElement.GetProperty("result").GetDecimal();
+            var rate = doc.RootElement.GetProperty("rates").GetProperty("ZAR").GetDecimal();
             if (rate > 0)
             {
                 _cache.Set(CacheKey, rate, TimeSpan.FromHours(1));
                 return rate;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "CNY/ZAR exchange rate fetch failed — using fallback {Rate}", FallbackRate);
+        }
 
         return FallbackRate;
     }

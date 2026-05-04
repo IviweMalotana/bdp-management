@@ -6,7 +6,7 @@ public class ShippingSettingsDto
     public decimal CnyPerCbm { get; set; }
     public decimal CnyPerKg { get; set; }
     public decimal CnyToZarRate { get; set; }
-    public string Notes { get; set; } = string.Empty;
+    public DateTime UpdatedAt { get; set; }
 }
 
 public class UpdateShippingSettingsDto
@@ -14,5 +14,4 @@ public class UpdateShippingSettingsDto
     public decimal CnyPerCbm { get; set; }
     public decimal CnyPerKg { get; set; }
     public decimal CnyToZarRate { get; set; }
-    public string? Notes { get; set; }
 }

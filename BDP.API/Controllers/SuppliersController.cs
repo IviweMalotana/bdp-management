@@ -37,6 +37,7 @@ public class SuppliersController : ControllerBase
         var supplier = await _context.Suppliers
             .Include(s => s.Products)
             .Include(s => s.CustomisationOptions)
+                .ThenInclude(co => co.PricingTiers)
             .FirstOrDefaultAsync(s => s.Id == id);
 
         if (supplier == null) return NotFound(new { message = $"Supplier {id} not found." });
@@ -55,13 +56,12 @@ public class SuppliersController : ControllerBase
         {
             Name = dto.Name,
             Country = dto.Country,
+            Address = dto.Address,
             ContactEmail = dto.ContactEmail,
             ContactPhone = dto.ContactPhone,
-            Website = dto.Website,
-            LeadTimeDays = dto.LeadTimeDays,
-            MinOrderQuantity = dto.MinOrderQuantity,
-            OffersCustomisation = dto.OffersCustomisation,
-            Notes = dto.Notes,
+            SuppliesBottles = dto.SuppliesBottles,
+            SuppliesCustomisation = dto.SuppliesCustomisation,
+            IsActive = dto.IsActive,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -83,13 +83,12 @@ public class SuppliersController : ControllerBase
 
         supplier.Name = dto.Name;
         supplier.Country = dto.Country;
+        supplier.Address = dto.Address;
         supplier.ContactEmail = dto.ContactEmail;
         supplier.ContactPhone = dto.ContactPhone;
-        supplier.Website = dto.Website;
-        supplier.LeadTimeDays = dto.LeadTimeDays;
-        supplier.MinOrderQuantity = dto.MinOrderQuantity;
-        supplier.OffersCustomisation = dto.OffersCustomisation;
-        supplier.Notes = dto.Notes;
+        supplier.SuppliesBottles = dto.SuppliesBottles;
+        supplier.SuppliesCustomisation = dto.SuppliesCustomisation;
+        supplier.IsActive = dto.IsActive;
 
         await _context.SaveChangesAsync();
         return Ok(MapToDto(supplier));
@@ -121,13 +120,12 @@ public class SuppliersController : ControllerBase
         Id = s.Id,
         Name = s.Name,
         Country = s.Country,
+        Address = s.Address,
         ContactEmail = s.ContactEmail,
         ContactPhone = s.ContactPhone,
-        Website = s.Website,
-        LeadTimeDays = s.LeadTimeDays,
-        MinOrderQuantity = s.MinOrderQuantity,
-        OffersCustomisation = s.OffersCustomisation,
-        Notes = s.Notes,
+        SuppliesBottles = s.SuppliesBottles,
+        SuppliesCustomisation = s.SuppliesCustomisation,
+        IsActive = s.IsActive,
         CreatedAt = s.CreatedAt,
         ProductCount = s.Products?.Count ?? 0,
         CustomisationOptionCount = s.CustomisationOptions?.Count ?? 0,
@@ -138,13 +136,12 @@ public class SuppliersController : ControllerBase
         Id = s.Id,
         Name = s.Name,
         Country = s.Country,
+        Address = s.Address,
         ContactEmail = s.ContactEmail,
         ContactPhone = s.ContactPhone,
-        Website = s.Website,
-        LeadTimeDays = s.LeadTimeDays,
-        MinOrderQuantity = s.MinOrderQuantity,
-        OffersCustomisation = s.OffersCustomisation,
-        Notes = s.Notes,
+        SuppliesBottles = s.SuppliesBottles,
+        SuppliesCustomisation = s.SuppliesCustomisation,
+        IsActive = s.IsActive,
         CreatedAt = s.CreatedAt,
         ProductCount = s.Products?.Count ?? 0,
         CustomisationOptionCount = s.CustomisationOptions?.Count ?? 0,
@@ -152,23 +149,29 @@ public class SuppliersController : ControllerBase
         {
             Id = p.Id,
             Name = p.Name,
-            SKUBase = p.SKUBase,
             Category = p.Category,
-            SizeML = p.SizeML,
-            BottleColour = p.BottleColour,
-            LidColour = p.LidColour,
-            IsActive = p.IsActive,
+            Slug = p.Slug,
+            VariantCount = p.Variants?.Count ?? 0,
         }).ToList() ?? new(),
-        CustomisationOptions = s.CustomisationOptions?.OrderBy(co => co.Type).ThenBy(co => co.MinQuantity)
+        CustomisationOptions = s.CustomisationOptions?.OrderBy(co => co.Type).ThenBy(co => co.MinimumQuantity)
             .Select(co => new CustomisationOptionDto
             {
                 Id = co.Id,
                 SupplierId = co.SupplierId,
                 SupplierName = s.Name,
-                Type = co.Type.ToString(),
-                MinQuantity = co.MinQuantity,
-                TotalPriceZAR = co.TotalPriceZAR,
-                Notes = co.Notes,
+                Type = co.Type,
+                Link1688 = co.Link1688,
+                MinimumQuantity = co.MinimumQuantity,
+                PricingTiers = co.PricingTiers?.OrderBy(t => t.Quantity).Select(t => new CustomisationPricingTierDto
+                {
+                    Id = t.Id,
+                    Quantity = t.Quantity,
+                    CostCNY = t.CostCNY,
+                    CostWithShippingCNY = t.CostWithShippingCNY,
+                    CostPerUnitZAR = t.CostPerUnitZAR,
+                    SalePriceZAR = t.SalePriceZAR,
+                    SKU = t.SKU,
+                }).ToList() ?? new(),
             }).ToList() ?? new(),
     };
 }

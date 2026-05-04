@@ -19,8 +19,9 @@ public class HealthController : ControllerBase
     {
         suppliers = await _context.Suppliers.CountAsync(),
         products = await _context.Products.CountAsync(),
-        pricingTiers = await _context.PricingTiers.CountAsync(),
+        productVariants = await _context.ProductVariants.CountAsync(),
         productPricingTiers = await _context.ProductPricingTiers.CountAsync(),
         customisationOptions = await _context.CustomisationOptions.CountAsync(),
+        clients = await _context.Clients.CountAsync(),
     });
 }

@@ -1,6 +1,7 @@
 using BDP.API.Data;
 using BDP.API.DTOs.Dashboard;
 using BDP.API.DTOs.Orders;
+using BDP.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -23,21 +24,18 @@ public class DashboardController : ControllerBase
         var now = DateTime.UtcNow;
         var startOfMonth = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        var activeStatuses = new[] { "Pending", "Confirmed", "In Production", "Shipped" };
+        var activeStatuses = new[] { OrderStatus.Draft, OrderStatus.Pending, OrderStatus.Confirmed, OrderStatus.InProduction, OrderStatus.Shipped };
 
-        var totalProducts = await _context.Products.CountAsync(p => p.IsActive);
+        var totalProducts = await _context.Products.CountAsync();
         var totalActiveOrders = await _context.Orders.CountAsync(o => activeStatuses.Contains(o.Status));
-        var totalCustomers = await _context.Customers.CountAsync();
+        var totalCustomers = await _context.Clients.CountAsync();
 
         var revenueThisMonth = await _context.Orders
             .Where(o => o.OrderDate >= startOfMonth)
-            .SumAsync(o => (decimal?)o.TotalAmountZAR) ?? 0;
+            .SumAsync(o => (decimal?)o.TotalZAR) ?? 0;
 
         var ordersThisMonth = await _context.Orders
             .CountAsync(o => o.OrderDate >= startOfMonth);
-
-        var lowStockCount = await _context.InventoryItems
-            .CountAsync(ii => ii.Location == "Cape Town" && ii.OnHandStock == 0);
 
         var ordersByStatus = await _context.Orders
             .GroupBy(o => o.Status)
@@ -45,15 +43,15 @@ public class DashboardController : ControllerBase
             .ToListAsync();
 
         var recentOrders = await _context.Orders
-            .Include(o => o.Customer)
+            .Include(o => o.Client)
             .OrderByDescending(o => o.OrderDate)
             .Take(5)
             .Select(o => new RecentOrderDto
             {
                 Id = o.Id,
                 OrderNumber = o.OrderNumber,
-                CustomerName = o.Customer!.CompanyName,
-                TotalAmountZAR = o.TotalAmountZAR,
+                CustomerName = o.Client!.CompanyName,
+                TotalAmountZAR = o.TotalZAR,
                 Status = o.Status,
                 OrderDate = o.OrderDate
             })
@@ -66,7 +64,7 @@ public class DashboardController : ControllerBase
             TotalCustomers = totalCustomers,
             RevenueThisMonth = revenueThisMonth,
             OrdersThisMonth = ordersThisMonth,
-            LowStockCount = lowStockCount,
+            LowStockCount = 0,
             OrdersByStatus = ordersByStatus,
             RecentOrders = recentOrders
         });

@@ -6,7 +6,6 @@ public class CustomisationOptionCreateDto
 {
     [Required] public int SupplierId { get; set; }
     [Required] public string Type { get; set; } = string.Empty;
-    [Required] public int MinQuantity { get; set; }
-    [Required] public decimal TotalPriceZAR { get; set; }
-    public string? Notes { get; set; }
+    public string? Link1688 { get; set; }
+    [Required] public int MinimumQuantity { get; set; }
 }

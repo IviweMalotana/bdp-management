@@ -83,6 +83,10 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddSignInManager<SignInManager<ApplicationUser>>()
 .AddDefaultTokenProviders();
 
+var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
+    ?? builder.Configuration["JWT:Secret"]
+    ?? throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET env var.");
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -99,17 +103,19 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["JWT:Issuer"],
         ValidAudience = builder.Configuration["JWT:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]
-                ?? throw new InvalidOperationException("JWT:Secret not configured")))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret))
     };
 });
 
-// Allow all origins for initial deployment — lock down after going live
+var allowedOrigins = (Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")
+    ?? builder.Configuration["AllowedOrigins"]
+    ?? "http://localhost:5173")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll", policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
+    options.AddPolicy("AllowFrontend", policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod());
 });
 
 builder.Services.AddMemoryCache();
@@ -118,17 +124,25 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BDP.API.Services.PricingService>();
 builder.Services.AddScoped<BDP.API.Services.AIContentService>();
 builder.Services.AddScoped<BDP.API.Services.ShopifyExportService>();
+builder.Services.AddScoped<BDP.API.Services.PaystackService>();
+builder.Services.AddScoped<BDP.API.Services.ShippingCalculatorService>();
+builder.Services.AddScoped<BDP.API.Services.EmailService>();
+builder.Services.AddScoped<BDP.API.Services.InvoiceService>();
+builder.Services.AddSingleton<BDP.API.Services.RecurringOrderService>();
+builder.Services.AddHostedService(sp => sp.GetRequiredService<BDP.API.Services.RecurringOrderService>());
 
 var app = builder.Build();
 
-// Swagger available in all environments
-app.UseSwagger();
-app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "BDP API v1"));
+if (!app.Environment.IsProduction())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "BDP API v1"));
+}
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseCors("AllowAll");
+app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
