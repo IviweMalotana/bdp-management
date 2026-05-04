@@ -85,9 +85,9 @@ export default function SuppliersPage() {
       contactEmail: s.contactEmail ?? '',
       contactPhone: s.contactPhone ?? '',
       website: s.website ?? '',
-      leadTimeDays: String(s.leadTimeDays),
-      minOrderQuantity: String(s.minOrderQuantity),
-      offersCustomisation: s.offersCustomisation,
+      leadTimeDays: String(s.leadTimeDays ?? 0),
+      minOrderQuantity: String(s.minOrderQuantity ?? 0),
+      offersCustomisation: s.offersCustomisation ?? false,
       notes: s.notes ?? '',
     })
     setOptionForm(null)
@@ -270,7 +270,7 @@ export default function SuppliersPage() {
                   </td>
                   <td className="px-4 py-3 text-gray-300">{s.productCount}</td>
                   <td className="px-4 py-3 text-gray-300">{s.leadTimeDays}d</td>
-                  <td className="px-4 py-3 text-gray-300">{s.minOrderQuantity.toLocaleString()}</td>
+                  <td className="px-4 py-3 text-gray-300">{(s.minOrderQuantity ?? 0).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1 justify-end" onClick={(e) => e.stopPropagation()}>
                       <button
@@ -456,8 +456,8 @@ export default function SuppliersPage() {
                         {group.map((o) => (
                           <div key={o.id} className="flex items-center px-4 py-2 border-b border-gray-800/50 hover:bg-gray-800/30 group">
                             <div className="flex-1 flex items-center gap-4 text-sm">
-                              <span className="text-gray-300 font-medium w-24">{o.minQuantity.toLocaleString()} units</span>
-                              <span className="text-emerald-400">R{o.totalPriceZAR.toLocaleString()}</span>
+                              <span className="text-gray-300 font-medium w-24">{(o.minQuantity ?? 0).toLocaleString()} units</span>
+                              <span className="text-emerald-400">R{(o.totalPriceZAR ?? 0).toLocaleString()}</span>
                               {o.notes && <span className="text-gray-500 text-xs truncate">{o.notes}</span>}
                             </div>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

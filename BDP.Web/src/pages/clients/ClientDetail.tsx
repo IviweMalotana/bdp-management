@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Edit, Plus, Download, RefreshCw } from 'lucide-react'
+import { ArrowLeft, Edit, Plus, Download } from 'lucide-react'
 import type { ClientDetail as IClientDetail, Invoice, RecurringOrder } from '../../types'
 import { clients as clientsApi } from '../../services/api'
 import InvoiceStatusBadge from '../../components/InvoiceStatusBadge'

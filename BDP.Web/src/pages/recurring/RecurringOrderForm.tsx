@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
 import type { Product, ProductVariant } from '../../types'
-import { recurringOrders as recurringApi, clients as clientsApi, products as productsApi, customisation as customisationApi } from '../../services/api'
+import { recurringOrders as recurringApi, clients as clientsApi, products as productsApi } from '../../services/api'
 
 const FREQUENCY_OPTIONS = ['Monthly', 'Quarterly', 'Bi-Monthly', 'Custom']
 const QUANTITY_TIERS = [10, 50, 100, 250, 500, 1000, 2500, 5000, 10000]

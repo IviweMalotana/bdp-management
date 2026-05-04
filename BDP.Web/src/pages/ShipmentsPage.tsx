@@ -69,7 +69,7 @@ export default function ShipmentsPage() {
   useEffect(() => {
     load()
     suppliersApi.getAll().then(setSupplierList)
-    productsApi.getAll({ pageSize: 200 }).then((r) => setProductList(r.items))
+    productsApi.getAll({ pageSize: 200 }).then((r) => setProductList(r.items ?? []))
   }, [])
 
   const openDetail = async (id: number) => {
@@ -132,7 +132,7 @@ export default function ShipmentsPage() {
   const filteredProducts = (search: string) => {
     if (!search) return productList.slice(0, 20)
     const q = search.toLowerCase()
-    return productList.filter((p) => p.name.toLowerCase().includes(q) || p.skuBase.toLowerCase().includes(q)).slice(0, 20)
+    return productList.filter((p) => p.name.toLowerCase().includes(q) || (p.skuBase ?? '').toLowerCase().includes(q)).slice(0, 20)
   }
 
   const itemsTotal = items.reduce((sum, it) => {

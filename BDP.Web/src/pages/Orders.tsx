@@ -142,8 +142,8 @@ export default function Orders() {
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-0.5 rounded border font-medium ${STATUS_COLOURS[o.status] ?? 'bg-gray-700 text-gray-400 border-gray-700'}`}>{o.status}</span>
                   </td>
-                  <td className="px-4 py-3 text-gray-300">{o.orderItems.length}</td>
-                  <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">{formatZAR(o.totalAmountZAR)}</td>
+                  <td className="px-4 py-3 text-gray-300">{o.orderItems?.length ?? 0}</td>
+                  <td className="px-4 py-3 font-semibold text-white whitespace-nowrap">{formatZAR(o.totalAmountZAR ?? 0)}</td>
                 </tr>
               ))}
             </tbody>

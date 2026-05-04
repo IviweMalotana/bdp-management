@@ -104,7 +104,7 @@ export default function OrderDetail() {
           ['Order Date', new Date(order.orderDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' })],
           ['Est. Delivery', order.estimatedDeliveryDate ? new Date(order.estimatedDeliveryDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'],
           ['Branding', order.brandingType ?? 'None'],
-          ['Order Total', formatZAR(order.totalAmountZAR)],
+          ['Order Total', formatZAR(order.totalAmountZAR ?? 0)],
         ] as [string, string][]).map(([l, v]) => (
           <div key={l} className="bg-gray-900 border border-gray-800 rounded-lg p-3">
             <p className="text-xs text-gray-500 mb-1">{l}</p>
@@ -123,7 +123,7 @@ export default function OrderDetail() {
       {/* Line items */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-gray-800">
-          <h2 className="text-sm font-semibold text-white">Line Items ({order.orderItems.length})</h2>
+          <h2 className="text-sm font-semibold text-white">Line Items ({order.orderItems?.length ?? 0})</h2>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -135,21 +135,21 @@ export default function OrderDetail() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-800">
-              {order.orderItems.map((oi) => (
+              {(order.orderItems ?? []).map((oi) => (
                 <tr key={oi.id} className="hover:bg-gray-800/50">
                   <td className="px-4 py-3 font-medium text-white">{oi.productName}</td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-400">{oi.sku}</td>
                   <td className="px-4 py-3 text-gray-300">{oi.quantity.toLocaleString()}</td>
                   <td className="px-4 py-3 text-gray-300">{formatZAR(oi.unitPriceZAR)}</td>
-                  <td className="px-4 py-3 text-gray-300">{oi.brandingCostZAR > 0 ? formatZAR(oi.brandingCostZAR) : '—'}</td>
-                  <td className="px-4 py-3 font-semibold text-white">{formatZAR(oi.totalPriceZAR)}</td>
+                  <td className="px-4 py-3 text-gray-300">{(oi.brandingCostZAR ?? 0) > 0 ? formatZAR(oi.brandingCostZAR ?? 0) : '—'}</td>
+                  <td className="px-4 py-3 font-semibold text-white">{formatZAR(oi.totalPriceZAR ?? 0)}</td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
               <tr className="border-t border-gray-700 bg-gray-800/50">
                 <td colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-gray-300">Order Total</td>
-                <td className="px-4 py-3 font-bold text-white text-base">{formatZAR(order.totalAmountZAR)}</td>
+                <td className="px-4 py-3 font-bold text-white text-base">{formatZAR(order.totalAmountZAR ?? 0)}</td>
               </tr>
             </tfoot>
           </table>
@@ -158,7 +158,7 @@ export default function OrderDetail() {
 
       {/* Meta */}
       <p className="text-xs text-gray-600">
-        Created {new Date(order.createdAt).toLocaleString()} · Last updated {new Date(order.updatedAt).toLocaleString()}
+        Created {new Date(order.createdAt).toLocaleString()}{order.updatedAt ? ` · Last updated ${new Date(order.updatedAt).toLocaleString()}` : ''}
       </p>
     </div>
   )

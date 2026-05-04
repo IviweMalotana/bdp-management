@@ -70,7 +70,7 @@ export default function ProductDetail() {
           ['Texture', product.texture],
           ['Supplier', product.supplierName],
           ['Cost CNY', `¥${product.costCNY}`],
-          ['Cost ZAR', `R${product.costPerUnitZAR.toFixed(2)}`],
+          ['Cost ZAR', `R${(product.costPerUnitZAR ?? 0).toFixed(2)}`],
         ] as [string, string][]).map(([label, val]) => (
           <div key={label} className="bg-gray-900 border border-gray-800 rounded-lg p-3">
             <p className="text-xs text-gray-500 mb-1">{label}</p>
@@ -90,7 +90,7 @@ export default function ProductDetail() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-800">
           {([
-            { key: 'pricing',        label: `Pricing Tiers (${product.pricingTiers.length})` },
+            { key: 'pricing',        label: `Pricing Tiers (${product.pricingTiers?.length ?? 0})` },
             { key: 'customisation',  label: `Pricing & Customisation (${product.productPricingTiers?.length ?? 0})` },
             { key: 'inventory',      label: `Inventory (${product.inventoryItems?.length ?? 0})` },
           ] as { key: Tab; label: string }[]).map(({ key, label }) => (
@@ -106,7 +106,7 @@ export default function ProductDetail() {
 
         {/* Pricing Tiers tab */}
         {tab === 'pricing' && (
-          product.pricingTiers.length === 0 ? (
+          (product.pricingTiers?.length ?? 0) === 0 ? (
             <p className="px-5 py-8 text-sm text-gray-500 text-center">No pricing tiers configured.{isAdmin && ' Click Edit to add tiers after saving.'}</p>
           ) : (
             <div className="overflow-x-auto">
@@ -119,7 +119,7 @@ export default function ProductDetail() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-800">
-                  {product.pricingTiers.map((t) => (
+                  {(product.pricingTiers ?? []).map((t) => (
                     <tr key={t.id} className="hover:bg-gray-800/50">
                       <td className="px-4 py-2.5 font-mono text-xs text-gray-300">{t.sku}</td>
                       <td className="px-4 py-2.5 text-gray-300">{t.quantity.toLocaleString()}</td>

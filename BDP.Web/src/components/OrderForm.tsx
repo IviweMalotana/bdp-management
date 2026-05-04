@@ -56,16 +56,16 @@ export default function OrderForm({ customerId: presetCustomerId, onClose, onSav
   const watchedItems = watch('items')
 
   useEffect(() => {
-    customersApi.getAll({ pageSize: 200 }).then((r) => setCustomerList(r.items)).catch(() => {})
-    productsApi.getAll({ pageSize: 200 }).then((r) => setProductList(r.items)).catch(() => {})
+    customersApi.getAll({ pageSize: 200 }).then((r) => setCustomerList(r.items ?? [])).catch(() => {})
+    productsApi.getAll({ pageSize: 200 }).then((r) => setProductList(r.items ?? [])).catch(() => {})
   }, [])
 
   const handleProductChange = (index: number, productId: number) => {
     const product = productList.find((p) => p.id === productId)
     if (!product) return
-    setValue(`items.${index}.sku`, product.skuBase)
+    setValue(`items.${index}.sku`, product.skuBase ?? '')
     const qty = watchedItems[index]?.quantity ?? 1
-    const tier = product.pricingTiers
+    const tier = (product.pricingTiers ?? [])
       .filter((t) => t.quantity <= qty)
       .sort((a, b) => b.quantity - a.quantity)[0]
     if (tier) setValue(`items.${index}.unitPriceZAR`, tier.salePricePerUnit)
@@ -75,7 +75,7 @@ export default function OrderForm({ customerId: presetCustomerId, onClose, onSav
     const productId = watchedItems[index]?.productId
     const product = productList.find((p) => p.id === productId)
     if (!product) return
-    const tier = product.pricingTiers
+    const tier = (product.pricingTiers ?? [])
       .filter((t) => t.quantity <= qty)
       .sort((a, b) => b.quantity - a.quantity)[0]
     if (tier) setValue(`items.${index}.unitPriceZAR`, tier.salePricePerUnit)

@@ -197,7 +197,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
       fd.append('size', `${savedProduct.sizeML}ml`)
       fd.append('category', savedProduct.category)
       fd.append('colour', `${savedProduct.bottleColour}/${savedProduct.lidColour}`)
-      fd.append('texture', savedProduct.texture)
+      fd.append('texture', savedProduct.texture ?? '')
       const result = await productApi.generateAiContent(fd)
       setAiTitle(result.title)
       setAiHtml(result.htmlBody)
@@ -564,7 +564,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
                 ['Bottle / Lid', `${savedProduct.bottleColour} / ${savedProduct.lidColour}`],
                 ['Texture', savedProduct.texture],
                 ['Cost (CNY)', `¥${savedProduct.costCNY}`],
-                ['Cost/unit (ZAR)', formatZAR(savedProduct.costPerUnitZAR)],
+                ['Cost/unit (ZAR)', formatZAR(savedProduct.costPerUnitZAR ?? 0)],
               ].map(([l, v]) => (
                 <div key={l} className="bg-gray-800/50 rounded-lg px-3 py-2.5">
                   <p className="text-xs text-gray-500 mb-0.5">{l}</p>
@@ -573,17 +573,17 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
               ))}
             </div>
 
-            {savedProduct.pricingTiers.length > 0 && (
+            {(savedProduct.pricingTiers?.length ?? 0) > 0 && (
               <div className="bg-gray-800/30 rounded-lg px-4 py-3">
-                <p className="text-xs text-gray-400 font-medium mb-2">{savedProduct.pricingTiers.length} pricing tiers saved</p>
+                <p className="text-xs text-gray-400 font-medium mb-2">{savedProduct.pricingTiers!.length} pricing tiers saved</p>
                 <div className="flex flex-wrap gap-2">
-                  {savedProduct.pricingTiers.slice(0, 5).map((t) => (
+                  {savedProduct.pricingTiers!.slice(0, 5).map((t) => (
                     <span key={t.quantity} className="text-xs bg-indigo-900/40 text-indigo-300 border border-indigo-800/40 px-2 py-0.5 rounded">
                       {t.quantity.toLocaleString()} × {formatZAR(t.salePricePerUnit)}
                     </span>
                   ))}
-                  {savedProduct.pricingTiers.length > 5 && (
-                    <span className="text-xs text-gray-500">+{savedProduct.pricingTiers.length - 5} more</span>
+                  {savedProduct.pricingTiers!.length > 5 && (
+                    <span className="text-xs text-gray-500">+{savedProduct.pricingTiers!.length - 5} more</span>
                   )}
                 </div>
               </div>

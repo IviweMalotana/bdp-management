@@ -140,6 +140,16 @@ export interface Product {
   texture?: string
   isActive?: boolean
   pricingTiers?: PricingTier[]
+  costCNY?: number
+  costWithShippingCNY?: number
+  costPerUnitZAR?: number
+  supplierLink?: string
+  shopifyTitle?: string
+  shopifyBodyHtml?: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  productPricingTiers?: any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  inventoryItems?: any[]
 }
 
 export interface ProductPricingTier {
@@ -247,6 +257,7 @@ export interface OrderItem {
   productVariantId: number
   productName: string
   variantSku: string
+  sku?: string
   pricingTierId: number
   customisationOptionId: number | null
   customisationPricingTierId: number | null
@@ -285,6 +296,9 @@ export interface Order {
   customerName?: string
   totalAmountZAR?: number
   orderItems?: OrderItem[]
+  estimatedDeliveryDate?: string
+  brandingType?: string
+  updatedAt?: string
 }
 
 export interface OrderStatusCount {
@@ -399,13 +413,13 @@ export interface DashboardSummary {
 
 // ── Shared ────────────────────────────────────────────────────────────────────
 export interface PagedResult<T> {
-  items?: T[]
+  items: T[]
   data?: T[]
   total?: number
   totalCount?: number
   page: number
   pageSize: number
-  totalPages?: number
+  totalPages: number
 }
 
 export interface InventorySummary {

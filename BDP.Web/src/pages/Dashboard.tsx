@@ -202,7 +202,7 @@ export default function Dashboard() {
                       {new Date(o.orderDate).toLocaleDateString('en-ZA', { day: 'numeric', month: 'short' })}
                     </td>
                     <td className="px-4 py-2.5 text-right text-gray-300 text-xs font-mono whitespace-nowrap">
-                      {formatZAR(o.totalAmountZAR)}
+                      {formatZAR(o.totalAmountZAR ?? 0)}
                     </td>
                   </tr>
                 ))}

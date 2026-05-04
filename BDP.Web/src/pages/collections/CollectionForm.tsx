@@ -16,7 +16,6 @@ export default function CollectionForm() {
   const isEdit = !!id
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [collection, setCollection] = useState<Collection | null>(null)
 
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -36,7 +35,6 @@ export default function CollectionForm() {
   useEffect(() => {
     if (isEdit) {
       collectionsApi.getById(Number(id)).then((c) => {
-        setCollection(c)
         setName(c.name); setDescription(c.description); setSlug(c.slug)
         setImageUrl(c.imageUrl ?? ''); setMetaTitle(c.metaTitle)
         setMetaDescription(c.metaDescription); setMetaKeywords(c.metaKeywords)

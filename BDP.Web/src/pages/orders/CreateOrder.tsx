@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowLeft, ArrowRight, Plus, Trash2, Check } from 'lucide-react'
-import type { Client, Product, ProductVariant, VariantPricingTier, CustomisationOption, CustomisationPricingTier } from '../../types'
+import type { Product, ProductVariant, VariantPricingTier, CustomisationOption, CustomisationPricingTier } from '../../types'
 import { clients as clientsApi, products as productsApi, orders as ordersApi, shipping as shippingApi, customisation as customisationApi } from '../../services/api'
 
 const fmt = (n: number) =>

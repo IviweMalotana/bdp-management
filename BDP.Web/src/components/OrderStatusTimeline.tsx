@@ -21,7 +21,6 @@ export default function OrderStatusTimeline({ currentStatus }: Props) {
       {STEPS.map((step, i) => {
         const done = i < currentIndex
         const active = i === currentIndex
-        const future = i > currentIndex
 
         return (
           <div key={step} className="flex items-center flex-1 last:flex-none">
