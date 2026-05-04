@@ -83,9 +83,10 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 .AddSignInManager<SignInManager<ApplicationUser>>()
 .AddDefaultTokenProviders();
 
-var jwtSecret = Environment.GetEnvironmentVariable("JWT_SECRET")
-    ?? builder.Configuration["JWT:Secret"]
-    ?? throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET env var.");
+var jwtSecret =
+    (Environment.GetEnvironmentVariable("JWT_SECRET") is { Length: > 0 } envSecret ? envSecret : null)
+    ?? (builder.Configuration["JWT:Secret"] is { Length: > 0 } cfgSecret ? cfgSecret : null)
+    ?? throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET env var (production) or JWT:Secret in appsettings.Development.json (local).");
 
 builder.Services.AddAuthentication(options =>
 {
