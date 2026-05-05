@@ -17,7 +17,10 @@ public class JwtService
 
     public (string token, DateTime expiresAt) GenerateToken(ApplicationUser user)
     {
-        var secret = _config["JWT:Secret"] ?? throw new InvalidOperationException("JWT:Secret not configured");
+        var secret =
+            (Environment.GetEnvironmentVariable("JWT_SECRET") is { Length: > 0 } envSecret ? envSecret : null)
+            ?? (_config["JWT:Secret"] is { Length: > 0 } cfgSecret ? cfgSecret : null)
+            ?? throw new InvalidOperationException("JWT secret not configured. Set JWT_SECRET env var (production) or JWT:Secret in appsettings.Development.json (local).");
         var issuer = _config["JWT:Issuer"] ?? throw new InvalidOperationException("JWT:Issuer not configured");
         var audience = _config["JWT:Audience"] ?? throw new InvalidOperationException("JWT:Audience not configured");
         var expiryHours = int.Parse(_config["JWT:ExpiryHours"] ?? "8");
