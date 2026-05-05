@@ -10,11 +10,13 @@ import type { Product, Supplier, PricingCalculationResult, PricingTierCalculatio
 
 const CATEGORIES = ['Serum', 'Pump', 'Spray', 'Jar']
 const TEXTURES   = ['Matte', 'Clear', 'Frosted']
+const SIZES_ML   = ['5ml','10ml','15ml','20ml','30ml','50ml','60ml','100ml','120ml','150ml','200ml','250ml','300ml','500ml','1000ml']
+const SIZES_G    = ['5g','10g','15g','20g','30g','50g','100g','150g','200g','250g','300g','500g']
 
 const schema = z.object({
   name:                z.string().min(1, 'Required').max(200),
   category:            z.string().min(1, 'Required'),
-  sizeML:              z.coerce.number().int().min(1, 'Must be > 0'),
+  size:                z.string().min(1, 'Required'),
   bottleColour:        z.string().min(1, 'Required'),
   lidColour:           z.string().min(1, 'Required'),
   texture:             z.string().min(1, 'Required'),
@@ -35,9 +37,9 @@ type Step = 'product' | 'pricing' | 'ai' | 'review'
 const STEPS: Step[] = ['product', 'pricing', 'ai', 'review']
 const STEP_LABELS = ['Details', 'Pricing', 'AI Content', 'Review']
 
-function buildSKU(name: string, cat: string, sz: number | string, bc: string, lc: string, tx: string) {
-  const slug = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5)
-  return [slug(name), slug(cat), sz ? `${sz}ML` : '', slug(bc), slug(lc), slug(tx)]
+function buildSKU(name: string, cat: string, sz: string, bc: string, lc: string, tx: string) {
+  const slug = (s: string) => s.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6)
+  return [slug(name), slug(cat), sz ? slug(sz) : '', slug(bc), slug(lc), slug(tx)]
     .filter(Boolean).join('-')
 }
 
@@ -82,9 +84,12 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
     resolver: zodResolver(schema),
     defaultValues: product
       ? {
-          name: product.name, category: product.category, sizeML: product.sizeML,
-          bottleColour: product.bottleColour, lidColour: product.lidColour,
-          texture: product.texture, costCNY: product.costCNY,
+          name: product.name, category: product.category,
+          size: product.variants?.[0]?.size ?? (product.sizeML ? `${product.sizeML}ml` : ''),
+          bottleColour: product.variants?.[0]?.bottleColour ?? product.bottleColour ?? '',
+          lidColour: product.variants?.[0]?.lidColour ?? product.lidColour ?? '',
+          texture: product.variants?.[0]?.texture ?? product.texture ?? '',
+          costCNY: product.costCNY,
           costWithShippingCNY: product.costWithShippingCNY,
           costPerUnitZAR: product.costPerUnitZAR, supplierId: product.supplierId,
           supplierLink: product.supplierLink ?? '', isActive: product.isActive,
@@ -98,7 +103,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
 
   useEffect(() => { suppliersApi.getAll().then(setSupplierList).catch(() => {}) }, [])
 
-  const [n, cat, sz, bc, lc, tx, wKg, lCm, wCm, hCm] = watch(['name', 'category', 'sizeML', 'bottleColour', 'lidColour', 'texture', 'weightKg', 'lengthCm', 'widthCm', 'heightCm'])
+  const [n, cat, sz, bc, lc, tx, wKg, lCm, wCm, hCm] = watch(['name', 'category', 'size', 'bottleColour', 'lidColour', 'texture', 'weightKg', 'lengthCm', 'widthCm', 'heightCm'])
   const skuPreview = buildSKU(n ?? '', cat ?? '', sz ?? '', bc ?? '', lc ?? '', tx ?? '')
   const cbmPreview = ((lCm || 0) * (wCm || 0) * (hCm || 0) / 1_000_000).toFixed(9)
   const shippingPerUnitPreview = (((Number(lCm) * Number(wCm) * Number(hCm) / 1_000_000) * 2000 + (Number(wKg) * 10)) * 2.40).toFixed(2)
@@ -125,14 +130,15 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
     if (!savedProduct) return
     setCalculating(true); setError(null)
     try {
+      const variantSize = savedProduct.variants?.[0]?.size ?? (savedProduct.sizeML ? `${savedProduct.sizeML}ml` : '')
       const result = await productApi.calculatePricing({
         costCNY: savedProduct.costCNY,
         productName: savedProduct.name,
         category: savedProduct.category,
-        size: `${savedProduct.sizeML}ml`,
-        bottleColour: savedProduct.bottleColour,
-        lidColour: savedProduct.lidColour,
-        texture: savedProduct.texture,
+        size: variantSize,
+        bottleColour: savedProduct.variants?.[0]?.bottleColour ?? savedProduct.bottleColour ?? '',
+        lidColour: savedProduct.variants?.[0]?.lidColour ?? savedProduct.lidColour ?? '',
+        texture: savedProduct.variants?.[0]?.texture ?? savedProduct.texture ?? '',
       })
       setCalcResult(result)
       setOverrides({})
@@ -193,11 +199,15 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
     try {
       const fd = new FormData()
       fd.append('image', imageFile)
+      const vSize = savedProduct.variants?.[0]?.size ?? (savedProduct.sizeML ? `${savedProduct.sizeML}ml` : '')
+      const vBottle = savedProduct.variants?.[0]?.bottleColour ?? savedProduct.bottleColour ?? ''
+      const vLid = savedProduct.variants?.[0]?.lidColour ?? savedProduct.lidColour ?? ''
+      const vTexture = savedProduct.variants?.[0]?.texture ?? savedProduct.texture ?? ''
       fd.append('productName', savedProduct.name)
-      fd.append('size', `${savedProduct.sizeML}ml`)
+      fd.append('size', vSize)
       fd.append('category', savedProduct.category)
-      fd.append('colour', `${savedProduct.bottleColour}/${savedProduct.lidColour}`)
-      fd.append('texture', savedProduct.texture ?? '')
+      fd.append('colour', `${vBottle}/${vLid}`)
+      fd.append('texture', vTexture)
       const result = await productApi.generateAiContent(fd)
       setAiTitle(result.title)
       setAiHtml(result.htmlBody)
@@ -280,9 +290,17 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
                 {errors.category && <p className="text-xs text-red-400 mt-1">{errors.category.message}</p>}
               </div>
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Size (ml)</label>
-                <input {...register('sizeML')} type="number" className={inputCls(!!errors.sizeML)} placeholder="30" />
-                {errors.sizeML && <p className="text-xs text-red-400 mt-1">{errors.sizeML.message}</p>}
+                <label className="block text-xs font-medium text-gray-400 mb-1">Size</label>
+                <select {...register('size')} className={inputCls(!!errors.size)}>
+                  <option value="">Select size…</option>
+                  <optgroup label="— ml —">
+                    {SIZES_ML.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </optgroup>
+                  <optgroup label="— g —">
+                    {SIZES_G.map((s) => <option key={s} value={s}>{s}</option>)}
+                  </optgroup>
+                </select>
+                {errors.size && <p className="text-xs text-red-400 mt-1">{errors.size.message}</p>}
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-400 mb-1">Bottle Colour</label>
@@ -560,7 +578,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
                 ['Product', savedProduct.name],
                 ['SKU Base', savedProduct.skuBase],
                 ['Category', savedProduct.category],
-                ['Size', `${savedProduct.sizeML}ml`],
+                ['Size', savedProduct.variants?.[0]?.size ?? (savedProduct.sizeML ? `${savedProduct.sizeML}ml` : '—')],
                 ['Bottle / Lid', `${savedProduct.bottleColour} / ${savedProduct.lidColour}`],
                 ['Texture', savedProduct.texture],
                 ['Cost (CNY)', `¥${savedProduct.costCNY}`],
