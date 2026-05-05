@@ -17,6 +17,7 @@ import OrderDetail from './pages/OrderDetail'
 import SuppliersPage from './pages/SuppliersPage'
 import ShipmentsPage from './pages/ShipmentsPage'
 import ShippingSettingsPage from './pages/ShippingSettingsPage'
+import ShippingRatesPage from './pages/ShippingRatesPage'
 
 // B2B pages
 import ClientsList from './pages/clients/ClientsList'
@@ -77,6 +78,7 @@ export default function App() {
             <Route path="/suppliers"         element={<SuppliersPage />} />
             <Route path="/shipments"         element={<ShipmentsPage />} />
             <Route path="/settings/shipping" element={<ShippingSettingsPage />} />
+            <Route path="/shipping-rates"    element={<ShippingRatesPage />} />
 
             {/* B2B — Clients */}
             <Route path="/clients"           element={<ClientsList />} />

@@ -28,6 +28,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RecurringOrder> RecurringOrders => Set<RecurringOrder>();
     public DbSet<RecurringOrderItem> RecurringOrderItems => Set<RecurringOrderItem>();
     public DbSet<ShippingSettings> ShippingSettings => Set<ShippingSettings>();
+    public DbSet<ShippingRate> ShippingRates => Set<ShippingRate>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -284,6 +285,19 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(ss => ss.CnyPerKg).HasPrecision(18, 4);
         builder.Entity<ShippingSettings>()
             .Property(ss => ss.CnyToZarRate).HasPrecision(18, 4);
+
+        // Decimal precision — ShippingRate
+        builder.Entity<ShippingRate>().Property(r => r.RatePerKg).HasPrecision(18, 4);
+        builder.Entity<ShippingRate>().Property(r => r.RatePerCbm).HasPrecision(18, 2);
+        builder.Entity<ShippingRate>().Property(r => r.FuelSurchargePercent).HasPrecision(8, 2);
+        builder.Entity<ShippingRate>().Property(r => r.DutyRatePercent).HasPrecision(8, 2);
+        builder.Entity<ShippingRate>().Property(r => r.VatRatePercent).HasPrecision(8, 2);
+        builder.Entity<ShippingRate>().Property(r => r.HandlingFeeZAR).HasPrecision(18, 2);
+        builder.Entity<ShippingRate>().Property(r => r.MinimumChargeZAR).HasPrecision(18, 2);
+        builder.Entity<ShippingRate>().Property(r => r.ExchangeRateCNYToZAR).HasPrecision(10, 4);
+        builder.Entity<ShippingRate>()
+            .HasIndex(r => new { r.Country, r.ShippingType })
+            .IsUnique();
 
         SeedData(builder);
     }

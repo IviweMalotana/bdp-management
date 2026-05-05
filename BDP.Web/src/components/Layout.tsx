@@ -15,6 +15,7 @@ import {
   RefreshCw,
   FileText,
   Layers,
+  Globe,
 } from 'lucide-react'
 
 const NAV = [
@@ -32,6 +33,7 @@ const NAV = [
   { to: '/invoices',          label: 'Invoices',        icon: FileText },
   { to: '/collections',       label: 'Collections',     icon: Layers },
   { divider: true,            label: 'System' },
+  { to: '/shipping-rates',    label: 'Shipping Rates',  icon: Globe },
   { to: '/settings/shipping', label: 'Settings',        icon: Settings },
 ]
 

@@ -13,6 +13,7 @@ import type {
   Collection,
   DashboardSummary,
   Shipment, ShippingSettings,
+  ShippingRate, ShippingCalcRequest, ShippingCalcResult,
 } from '../types'
 
 const http = axios.create({
@@ -353,6 +354,27 @@ export const customers = {
 export const dashboard = {
   getSummary: () =>
     http.get<DashboardSummary>('/dashboard/summary').then((r) => r.data),
+}
+
+// ── Shipping Rates ────────────────────────────────────────────────────────────
+export const shippingRates = {
+  getAll: () =>
+    http.get<ShippingRate[]>('/shipping-rates').then((r) => r.data),
+
+  getById: (id: number) =>
+    http.get<ShippingRate>(`/shipping-rates/${id}`).then((r) => r.data),
+
+  create: (data: Omit<ShippingRate, 'id' | 'updatedAt'>) =>
+    http.post<ShippingRate>('/shipping-rates', data).then((r) => r.data),
+
+  update: (id: number, data: Omit<ShippingRate, 'id' | 'updatedAt'>) =>
+    http.put<ShippingRate>(`/shipping-rates/${id}`, data).then((r) => r.data),
+
+  delete: (id: number) =>
+    http.delete(`/shipping-rates/${id}`),
+
+  calculate: (req: ShippingCalcRequest) =>
+    http.post<ShippingCalcResult>('/shipping-rates/calculate', req).then((r) => r.data),
 }
 
 export default http

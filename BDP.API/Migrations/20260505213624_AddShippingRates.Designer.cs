@@ -3,6 +3,7 @@ using System;
 using BDP.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BDP.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260505213624_AddShippingRates")]
+    partial class AddShippingRates
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -105,7 +108,7 @@ namespace BDP.API.Migrations
                         {
                             Id = "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "7c9d6d41-e3f3-4254-8930-96c0c31b11b1",
+                            ConcurrencyStamp = "b20137e9-a125-487f-96ab-65a67021004d",
                             CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             Email = "admin@bdp.co.za",
                             EmailConfirmed = true,
@@ -114,7 +117,7 @@ namespace BDP.API.Migrations
                             LockoutEnabled = false,
                             NormalizedEmail = "ADMIN@BDP.CO.ZA",
                             NormalizedUserName = "ADMIN@BDP.CO.ZA",
-                            PasswordHash = "AQAAAAIAAYagAAAAEOADiu8n+kzYKXd4p5WUsmJKnTHBe+YyZwfLf5o9rVMmnvLNtM0GtrWuJ4g1atCMQg==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEIgUlpyiBQpzRcyIckpVFnJDJz6iY5dvwTWeiEQm8i1J0rg5t/K7VntxZK0PHNqPTQ==",
                             PhoneNumberConfirmed = false,
                             Role = "Admin",
                             SecurityStamp = "STATIC_SECURITY_STAMP_BDP_ADMIN_2026",

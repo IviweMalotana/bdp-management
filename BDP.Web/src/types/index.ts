@@ -467,6 +467,46 @@ export interface ShippingSettings {
   notes?: string
 }
 
+// ── Shipping Rates ────────────────────────────────────────────────────────────
+export interface ShippingRate {
+  id: number
+  country: string
+  shippingType: string           // AirDDP | AirDDU | SeaDDP | SeaDDU
+  ratePerKg: number
+  ratePerCbm: number
+  fuelSurchargePercent: number
+  dutyRatePercent: number
+  vatRatePercent: number
+  handlingFeeZAR: number
+  minimumChargeZAR: number
+  exchangeRateCNYToZAR: number
+  estimatedTransitDays: number
+  isActive: boolean
+  notes: string | null
+  updatedAt: string
+}
+
+export interface ShippingCalcRequest {
+  country: string
+  shippingType: string
+  weightKg: number
+  volumeCBM: number
+}
+
+export interface ShippingCalcResult {
+  country: string
+  shippingType: string
+  weightKg: number
+  volumeCBM: number
+  baseCostCNY: number
+  withSurchargeCNY: number
+  withDutiesCNY: number
+  rawZAR: number
+  totalZAR: number
+  minimumApplied: boolean
+  estimatedTransitDays: number
+}
+
 export interface Shipment {
   id: number
   reference: string
