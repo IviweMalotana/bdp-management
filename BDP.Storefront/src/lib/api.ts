@@ -145,3 +145,31 @@ export function getOrders(jwt: string) {
     headers: { Authorization: `Bearer ${jwt}` },
   });
 }
+
+export function getMe(jwt: string) {
+  return request("/api/storefront/me", {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
+export function applyForB2B(jwt: string, body: unknown) {
+  return request("/api/storefront/me/b2b/apply", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify(body),
+  });
+}
+
+export function mergeCart(jwt: string, guestSessionToken: string) {
+  return request("/api/storefront/cart/merge", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify({ guestSessionToken }),
+  });
+}
+
+export function getOrderById(jwt: string, id: number) {
+  return request(`/api/storefront/me/orders/${id}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}

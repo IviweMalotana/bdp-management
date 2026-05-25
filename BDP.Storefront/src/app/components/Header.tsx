@@ -2,11 +2,13 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useCartStore } from "@/store/cartStore";
+import { useAuthStore } from "@/store/authStore";
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const items = useCartStore((s) => s.items);
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
+  const { jwt, firstName } = useAuthStore();
 
   const navLinks = [
     { href: "/shop", label: "Shop" },
@@ -14,6 +16,9 @@ export default function Header() {
     { href: "/customise", label: "Customise" },
     { href: "/for-business", label: "For Business" },
   ];
+
+  const accountHref = jwt ? "/account" : "/auth/login";
+  const accountLabel = jwt && firstName ? firstName : "Account";
 
   return (
     <header
@@ -50,8 +55,8 @@ export default function Header() {
 
         {/* Right icons */}
         <div className="flex items-center gap-4">
-          <Link href="/auth/login" className="hidden md:block text-sm" style={{ color: "#4A4540" }}>
-            Account
+          <Link href={accountHref} className="hidden md:block text-sm" style={{ color: "#4A4540" }}>
+            {accountLabel}
           </Link>
           <Link href="/cart" className="relative" aria-label="Cart">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C1A17" strokeWidth="1.5">
@@ -113,12 +118,12 @@ export default function Header() {
               </Link>
             ))}
             <Link
-              href="/auth/login"
+              href={accountHref}
               className="text-base mt-4"
               style={{ color: "#4A4540" }}
               onClick={() => setDrawerOpen(false)}
             >
-              Account
+              {accountLabel}
             </Link>
           </div>
         </div>
