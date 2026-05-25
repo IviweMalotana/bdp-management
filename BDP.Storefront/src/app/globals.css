@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@theme {
+  --color-cream: #F5EFE6;
+  --color-cream-dark: #EDE4D8;
+  --color-ink: #1C1A17;
+  --color-ink-soft: #4A4540;
+  --color-blush: #D4A89A;
+  --color-blush-light: #EDD8D2;
+  --color-sand: #C9B8A8;
+  --color-white-warm: #FEFCFA;
+
+  --font-display: "Cormorant Garamond", "Georgia", serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  --radius-card: 2px;
+  --radius-btn: 2px;
+
+  --shadow-card: 0 1px 4px rgba(28, 26, 23, 0.06);
+}
+
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@400;500&display=swap");
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #F5EFE6;
+  color: #1C1A17;
+  font-family: var(--font-body);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
