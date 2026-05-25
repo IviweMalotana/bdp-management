@@ -1,8 +1,15 @@
 # Deployment Guide
 
+## Live URLs
+| Service | URL |
+|---------|-----|
+| **API** | https://bdp-api-production.up.railway.app |
+| **Storefront** | https://bdp-management.vercel.app |
+| **Database** | Neon PostgreSQL (eu-west-2) |
+
 ## Overview
-- **API** → Render.com (free Docker hosting, auto-deploys from GitHub)
-- **Storefront** → Vercel (free Next.js hosting, auto-deploys from GitHub)
+- **API** → Railway (`stunning-commitment` project, `bdp-api` service)
+- **Storefront** → Vercel (`bdp-management.vercel.app`)
 
 ---
 
