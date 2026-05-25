@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: bdp-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/storefront/products
+    envVars:
+      - key: DATABASE_URL
+        sync: false          # set manually in Render dashboard
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT__Issuer
+        value: https://bdp-api.onrender.com
+      - key: JWT__Audience
+        sync: false          # set to your Vercel URL
+      - key: SEED_DATA
+        value: "false"
+      - key: STOREFRONT_URL
+        sync: false          # set to your Vercel URL
+      - key: ALLOWED_ORIGINS
+        sync: false          # set to your Vercel URL
+      - key: Paystack__SecretKey
+        sync: false
+      - key: Paystack__PublicKey
+        value: pk_live_b344621ece16998735e8c6b58645c13b99dd2f06
+      - key: Paystack__StorefrontCallbackUrl
+        sync: false          # set to https://<vercel-url>/checkout/success
