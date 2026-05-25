@@ -19,12 +19,16 @@ public class StorefrontCartController : ControllerBase
     private Cart? ResolveCart(string? userId, string? sessionToken)
     {
         if (!string.IsNullOrEmpty(userId))
-            return _db.Carts.Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
+            return _db.Carts
+                .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
+                .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product).ThenInclude(p => p.Images)
                 .Include(c => c.Items).ThenInclude(i => i.CustomisationOption)
                 .FirstOrDefault(c => c.UserId == userId && c.ExpiresAt > DateTime.UtcNow);
 
         if (!string.IsNullOrEmpty(sessionToken))
-            return _db.Carts.Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
+            return _db.Carts
+                .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
+                .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product).ThenInclude(p => p.Images)
                 .Include(c => c.Items).ThenInclude(i => i.CustomisationOption)
                 .FirstOrDefault(c => c.SessionToken == sessionToken && c.UserId == null && c.ExpiresAt > DateTime.UtcNow);
 
@@ -53,12 +57,21 @@ public class StorefrontCartController : ControllerBase
             {
                 var tiers = item.ProductVariant.PricingTiers.OrderBy(t => t.Quantity).ToList();
                 var tier = tiers.LastOrDefault(t => t.Quantity <= item.Quantity) ?? tiers.FirstOrDefault();
-                var unitPrice = tier?.SalePriceZAR ?? 0m;
+                var unitPrice = tier != null && tier.Quantity > 0 ? tier.SalePriceZAR / tier.Quantity : 0m;
+                var imageUrl = item.ProductVariant.Product?.Images
+                    .OrderBy(i => i.SortOrder).FirstOrDefault()?.Url;
                 return new
                 {
                     item.Id,
                     item.ProductVariantId,
-                    variant = new { item.ProductVariant.SKU, item.ProductVariant.Size, item.ProductVariant.BottleColour, item.ProductVariant.Texture },
+                    variant = new
+                    {
+                        item.ProductVariant.SKU,
+                        item.ProductVariant.Size,
+                        item.ProductVariant.BottleColour,
+                        item.ProductVariant.Texture,
+                        imageUrl
+                    },
                     item.Quantity,
                     item.CustomisationOptionId,
                     item.CustomisationNotes,

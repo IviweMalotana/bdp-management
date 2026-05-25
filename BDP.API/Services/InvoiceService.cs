@@ -37,7 +37,7 @@ public class InvoiceService
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
 
         var invoiceNumber = $"INV-{DateTime.UtcNow:yyyyMM}-{order.Id:D4}";
-        var dueDate = DateTime.UtcNow.AddDays(order.Client.PaymentTermsDays);
+        var dueDate = DateTime.UtcNow.AddDays(order.Client?.PaymentTermsDays ?? 30);
 
         var invoice = new Invoice
         {
@@ -143,10 +143,10 @@ public class InvoiceService
                         row.RelativeItem().Column(c =>
                         {
                             c.Item().Text("Bill To:").Bold();
-                            c.Item().Text(order.Client.CompanyName);
-                            c.Item().Text(order.Client.ContactPersonName);
-                            c.Item().Text(order.Client.ContactEmail);
-                            if (!string.IsNullOrEmpty(order.Client.BillingAddress))
+                            c.Item().Text(order.Client?.CompanyName ?? string.Empty);
+                            c.Item().Text(order.Client?.ContactPersonName ?? string.Empty);
+                            c.Item().Text(order.Client?.ContactEmail ?? string.Empty);
+                            if (!string.IsNullOrEmpty(order.Client?.BillingAddress))
                                 c.Item().Text(order.Client.BillingAddress);
                         });
                         row.ConstantItem(200).Column(c =>
@@ -154,7 +154,7 @@ public class InvoiceService
                             c.Item().Text($"Invoice Date: {invoice.InvoiceDate:dd MMM yyyy}");
                             c.Item().Text($"Due Date: {invoice.DueDate:dd MMM yyyy}");
                             c.Item().Text($"Order #: {order.OrderNumber}");
-                            c.Item().Text($"Payment Terms: {order.Client.PaymentTermsDays} days");
+                            c.Item().Text($"Payment Terms: {order.Client?.PaymentTermsDays ?? 30} days");
                         });
                     });
 

@@ -77,7 +77,18 @@ export default function CartPage() {
                 className="relative w-24 h-24 shrink-0 overflow-hidden"
                 style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }}
               >
-                <span className="absolute inset-0 flex items-center justify-center text-xs" style={{ color: "#C9B8A8" }}>img</span>
+                {item.variant?.imageUrl ? (
+                  <Image
+                    src={item.variant.imageUrl}
+                    alt={item.variant.sku}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="absolute inset-0 flex items-center justify-center text-xs" style={{ color: "#C9B8A8" }}>
+                    {item.variant?.size ?? "—"}
+                  </span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium mb-0.5" style={{ color: "#1C1A17" }}>
