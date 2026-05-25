@@ -1,0 +1,185 @@
+using BDP.API.Data;
+using BDP.API.Models;
+using BDP.API.Services;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.Json;
+
+namespace BDP.API.Controllers.Storefront;
+
+[ApiController]
+[Route("api/storefront/checkout")]
+public class StorefrontCheckoutController : ControllerBase
+{
+    private readonly AppDbContext _db;
+    private readonly ShippingCalculatorService _shipping;
+    private readonly PaystackService _paystack;
+    private readonly IConfiguration _config;
+
+    public StorefrontCheckoutController(
+        AppDbContext db,
+        ShippingCalculatorService shipping,
+        PaystackService paystack,
+        IConfiguration config)
+    {
+        _db = db;
+        _shipping = shipping;
+        _paystack = paystack;
+        _config = config;
+    }
+
+    public record ShippingQuoteAddress(string City, string Province, string PostalCode);
+    public record ShippingQuoteRequest(int CartId, ShippingQuoteAddress Address);
+
+    [HttpPost("shipping-quote")]
+    public async Task<IActionResult> ShippingQuote([FromBody] ShippingQuoteRequest req)
+    {
+        var cart = await _db.Carts
+            .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product)
+            .FirstOrDefaultAsync(c => c.Id == req.CartId);
+
+        if (cart == null) return NotFound("Cart not found.");
+
+        decimal totalWeight = 0;
+        decimal totalVolume = 0;
+        int totalQty = 0;
+
+        foreach (var item in cart.Items)
+        {
+            var product = item.ProductVariant.Product;
+            totalWeight += product.WeightKg * item.Quantity;
+            totalVolume += ShippingCalculator.ComputeVolumeCBM(product.LengthCm, product.WidthCm, product.HeightCm) * item.Quantity;
+            totalQty += item.Quantity;
+        }
+
+        var shippingZAR = await _shipping.CalculateAsync(totalWeight, totalVolume, totalQty);
+
+        return Ok(new { shippingZAR, estimatedDays = "28-42" });
+    }
+
+    public record CheckoutAddress(string RecipientName, string Line1, string? Line2, string City, string Province, string PostalCode, string Country = "ZA", string? Phone = null);
+    public record InitiateRequest(int CartId, CheckoutAddress ShippingAddress, CheckoutAddress BillingAddress, string? GuestEmail, string PaymentMethod = "Paystack_Card");
+
+    [HttpPost("initiate")]
+    public async Task<IActionResult> Initiate([FromBody] InitiateRequest req)
+    {
+        var cart = await _db.Carts
+            .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
+            .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product)
+            .FirstOrDefaultAsync(c => c.Id == req.CartId);
+
+        if (cart == null) return NotFound("Cart not found.");
+        if (!cart.Items.Any()) return BadRequest("Cart is empty.");
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = req.GuestEmail ?? User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(email))
+            return BadRequest("Email is required for checkout.");
+
+        // Server-side reprice
+        decimal subtotal = 0;
+        var orderItems = new List<OrderItem>();
+
+        foreach (var item in cart.Items)
+        {
+            var tiers = item.ProductVariant.PricingTiers.OrderBy(t => t.Quantity).ToList();
+            if (!tiers.Any()) return BadRequest($"Variant {item.ProductVariantId} has no pricing.");
+
+            var moq = tiers.First().Quantity;
+            if (item.Quantity < moq) return BadRequest($"Quantity {item.Quantity} is below MOQ of {moq} for variant {item.ProductVariantId}.");
+
+            var tier = tiers.LastOrDefault(t => t.Quantity <= item.Quantity) ?? tiers.First();
+            var lineTotal = tier.SalePriceZAR * item.Quantity;
+            subtotal += lineTotal;
+
+            orderItems.Add(new OrderItem
+            {
+                ProductVariantId = item.ProductVariantId,
+                PricingTierId = tier.Id,
+                CustomisationOptionId = item.CustomisationOptionId,
+                Quantity = item.Quantity,
+                UnitPriceZAR = tier.SalePriceZAR,
+                LineTotal = lineTotal,
+                CustomisationCostZAR = 0
+            });
+        }
+
+        var totalWeight = cart.Items.Sum(i => i.ProductVariant.Product.WeightKg * i.Quantity);
+        var totalVolume = cart.Items.Sum(i => ShippingCalculator.ComputeVolumeCBM(
+            i.ProductVariant.Product.LengthCm, i.ProductVariant.Product.WidthCm, i.ProductVariant.Product.HeightCm) * i.Quantity);
+        var shippingZAR = await _shipping.CalculateAsync(totalWeight, totalVolume, cart.Items.Sum(i => i.Quantity));
+
+        var totalZAR = subtotal + shippingZAR;
+
+        var orderNumber = $"SF-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
+        var order = new Order
+        {
+            OrderNumber = orderNumber,
+            Status = "Pending",
+            UserId = userId,
+            GuestEmail = string.IsNullOrEmpty(userId) ? email : null,
+            Channel = "Storefront_B2C",
+            FulfilmentStatus = "Pending",
+            SubtotalZAR = subtotal,
+            ShippingCostZAR = shippingZAR,
+            TotalZAR = totalZAR,
+            IsPaid = false,
+            PaymentMethod = req.PaymentMethod,
+            ShippingAddressJson = JsonSerializer.Serialize(req.ShippingAddress),
+            BillingAddressJson = JsonSerializer.Serialize(req.BillingAddress),
+            Items = orderItems
+        };
+
+        _db.Orders.Add(order);
+        await _db.SaveChangesAsync();
+
+        var (reference, authorizationUrl, accessCode) = await _paystack.InitializeTransactionAsync(email, totalZAR, order.Id);
+        order.PaystackPaymentReference = reference;
+        await _db.SaveChangesAsync();
+
+        return Ok(new
+        {
+            orderId = order.Id,
+            paystackReference = reference,
+            paystackAuthorizationUrl = authorizationUrl,
+            paystackPublicKey = _config["Paystack:PublicKey"],
+            amountZAR = totalZAR
+        });
+    }
+
+    [HttpPost("verify/{reference}")]
+    public async Task<IActionResult> Verify(string reference)
+    {
+        var result = await _paystack.VerifyPaymentAsync(reference);
+        if (result == null || result.Status != "success")
+            return Ok(new { success = false });
+
+        var order = await _db.Orders.FirstOrDefaultAsync(o => o.PaystackPaymentReference == reference);
+        if (order == null)
+        {
+            // Try matching by amount/reference stored after initiate — we store ref at initiate time below
+            return Ok(new { success = false, message = "Order not found." });
+        }
+
+        order.IsPaid = true;
+        order.PaidAt = DateTime.UtcNow;
+
+        // Clear the cart
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sessionToken = Request.Headers["X-Cart-Token"].FirstOrDefault();
+        Cart? cart = null;
+        if (!string.IsNullOrEmpty(userId))
+            cart = await _db.Carts.FirstOrDefaultAsync(c => c.UserId == userId);
+        else if (!string.IsNullOrEmpty(sessionToken))
+            cart = await _db.Carts.FirstOrDefaultAsync(c => c.SessionToken == sessionToken);
+
+        if (cart != null)
+            _db.Carts.Remove(cart);
+
+        await _db.SaveChangesAsync();
+
+        return Ok(new { success = true, orderId = order.Id });
+    }
+}

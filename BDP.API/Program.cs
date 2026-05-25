@@ -108,10 +108,14 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
+var storefrontUrl = Environment.GetEnvironmentVariable("STOREFRONT_URL") ?? "http://localhost:3000";
 var allowedOrigins = (Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")
     ?? builder.Configuration["AllowedOrigins"]
-    ?? "http://localhost:5173")
-    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    ?? "http://localhost:5173,http://localhost:3000")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+    .Append(storefrontUrl)
+    .Distinct()
+    .ToArray();
 
 builder.Services.AddCors(options =>
 {

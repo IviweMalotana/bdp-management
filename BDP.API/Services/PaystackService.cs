@@ -11,6 +11,7 @@ public class PaystackService
     private readonly HttpClient _http;
     private readonly string _secretKey;
     private readonly ILogger<PaystackService> _logger;
+    private readonly IConfiguration _config;
 
     public PaystackService(IHttpClientFactory httpFactory, IConfiguration config, ILogger<PaystackService> logger)
     {
@@ -20,6 +21,7 @@ public class PaystackService
         _http.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _secretKey);
         _logger = logger;
+        _config = config;
     }
 
     public async Task<PaystackCustomerResult?> CreateCustomerAsync(
@@ -64,6 +66,28 @@ public class PaystackService
         return result?.Data;
     }
 
+    public async Task<(string reference, string authorizationUrl, string accessCode)> InitializeTransactionAsync(
+        string email, decimal amountZAR, int orderId)
+    {
+        var amountKobo = (long)(amountZAR * 100);
+        var payload = new
+        {
+            email,
+            amount = amountKobo,
+            currency = "ZAR",
+            metadata = new { order_id = orderId, channel = "storefront" },
+            callback_url = _config["Paystack:StorefrontCallbackUrl"]
+        };
+        var response = await _http.PostAsync("/transaction/initialize",
+            new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
+        var json = await response.Content.ReadAsStringAsync();
+        _logger.LogInformation("Paystack initialize response: {Json}", json);
+        var result = JsonSerializer.Deserialize<PaystackResponse<PaystackInitializeResult>>(json);
+        if (result?.Data == null)
+            throw new InvalidOperationException($"Paystack initialization failed: {json}");
+        return (result.Data.Reference, result.Data.AuthorizationUrl, result.Data.AccessCode);
+    }
+
     public bool VerifyWebhookSignature(string rawBody, string signature)
     {
         if (string.IsNullOrEmpty(_secretKey)) return false;
@@ -103,4 +127,11 @@ public class PaystackTransactionResult
     [JsonPropertyName("status")] public string Status { get; set; } = string.Empty;
     [JsonPropertyName("amount")] public long Amount { get; set; }
     [JsonPropertyName("paid_at")] public DateTime? PaidAt { get; set; }
+}
+
+public class PaystackInitializeResult
+{
+    [JsonPropertyName("authorization_url")] public string AuthorizationUrl { get; set; } = string.Empty;
+    [JsonPropertyName("access_code")] public string AccessCode { get; set; } = string.Empty;
+    [JsonPropertyName("reference")] public string Reference { get; set; } = string.Empty;
 }

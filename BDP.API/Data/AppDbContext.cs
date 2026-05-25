@@ -29,6 +29,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<RecurringOrderItem> RecurringOrderItems => Set<RecurringOrderItem>();
     public DbSet<ShippingSettings> ShippingSettings => Set<ShippingSettings>();
     public DbSet<ShippingRate> ShippingRates => Set<ShippingRate>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -113,12 +116,34 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .HasForeignKey(si => si.ProductId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        // Client → Orders
+        // Client → Orders (nullable FK — storefront orders may have no client)
         builder.Entity<Order>()
             .HasOne(o => o.Client)
             .WithMany(c => c.Orders)
             .HasForeignKey(o => o.ClientId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // Cart → CartItems
+        builder.Entity<CartItem>()
+            .HasOne(ci => ci.Cart)
+            .WithMany(c => c.Items)
+            .HasForeignKey(ci => ci.CartId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // CartItem → ProductVariant
+        builder.Entity<CartItem>()
+            .HasOne(ci => ci.ProductVariant)
+            .WithMany()
+            .HasForeignKey(ci => ci.ProductVariantId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // CartItem → CustomisationOption
+        builder.Entity<CartItem>()
+            .HasOne(ci => ci.CustomisationOption)
+            .WithMany()
+            .HasForeignKey(ci => ci.CustomisationOptionId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Client → RecurringOrders
         builder.Entity<RecurringOrder>()
