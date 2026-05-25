@@ -46,7 +46,7 @@ export default function PDPClient({ product }: { product: Product }) {
   const moq = selectedVariant.moq || 1;
 
   const activeTier = [...tiers].reverse().find((t) => quantity >= t.quantity) ?? tiers[0];
-  const unitPrice = activeTier?.salePriceZAR ?? 0;
+  const unitPrice = activeTier ? activeTier.salePriceZAR / activeTier.quantity : 0;
   const lineTotal = unitPrice * quantity;
 
   function handleQuantityChange(n: number) {

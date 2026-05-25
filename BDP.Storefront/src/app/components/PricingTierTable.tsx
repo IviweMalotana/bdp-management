@@ -44,10 +44,10 @@ export default function PricingTierTable({ tiers, currentQuantity }: PricingTier
                 {tier.quantity}
               </td>
               <td className="py-2.5 text-right" style={{ color: "#1C1A17" }}>
-                {formatZAR(tier.salePriceZAR)}
+                {formatZAR(tier.salePriceZAR / tier.quantity)}
               </td>
               <td className="py-2.5 pr-2 text-right" style={{ color: "#4A4540" }}>
-                {formatZAR(tier.salePriceZAR * currentQuantity)}
+                {formatZAR((tier.salePriceZAR / tier.quantity) * currentQuantity)}
               </td>
             </tr>
           );

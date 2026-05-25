@@ -207,6 +207,7 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "White", "Clear", "DAR-30CL-WH-CLR",
                         new[] {
+                            (10,   3.50m, 4.50m, 12.05m,  128.50m),
                             (50,   3.50m, 4.50m, 12.05m,  600.00m),
                             (100,  3.50m, 4.50m, 12.05m, 1175.00m),
                             (250,  3.50m, 4.50m, 12.05m, 2875.00m),
@@ -224,6 +225,7 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "White", "Clear", "DEL-30CL-WH-CLR",
                         new[] {
+                            (10,   2.58m, 3.58m, 9.59m,  102.50m),
                             (50,   2.58m, 3.58m, 9.59m,  479.50m),
                             (100,  2.58m, 3.58m, 9.59m,  950.00m),
                             (250,  2.58m, 3.58m, 9.59m, 2325.00m),
@@ -302,6 +304,7 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "Silver", "Clear", "DAW-30CL-SI-CLR",
                         new[] {
+                            (10,   2.15m, 3.15m, 8.44m,   90.00m),
                             (50,   2.15m, 3.15m, 8.44m,  421.50m),
                             (100,  2.15m, 3.15m, 8.44m,  831.50m),
                             (250,  2.15m, 3.15m, 8.44m, 2025.00m),

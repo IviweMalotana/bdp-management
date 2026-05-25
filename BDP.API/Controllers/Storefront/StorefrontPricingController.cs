@@ -49,7 +49,7 @@ public class StorefrontPricingController : ControllerBase
 
             // highest tier where Quantity <= requested
             var matchedTier = tiers.LastOrDefault(t => t.Quantity <= line.Quantity) ?? tiers.First();
-            var unitPrice = matchedTier.SalePriceZAR;
+            var unitPrice = matchedTier.Quantity > 0 ? matchedTier.SalePriceZAR / matchedTier.Quantity : 0m;
             var lineTotal = unitPrice * line.Quantity;
 
             decimal customCost = 0;
@@ -61,7 +61,7 @@ public class StorefrontPricingController : ControllerBase
                     var cTiers = co.PricingTiers.OrderBy(t => t.Quantity).ToList();
                     var cTier = cTiers.LastOrDefault(t => t.Quantity <= line.Quantity) ?? cTiers.FirstOrDefault();
                     if (cTier != null)
-                        customCost = cTier.SalePriceZAR * line.Quantity;
+                        customCost = (cTier.Quantity > 0 ? cTier.SalePriceZAR / cTier.Quantity : 0m) * line.Quantity;
                 }
             }
 

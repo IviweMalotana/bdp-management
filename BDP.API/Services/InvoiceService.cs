@@ -43,7 +43,7 @@ public class InvoiceService
         {
             InvoiceNumber = invoiceNumber,
             OrderId = order.Id,
-            ClientId = order.ClientId,
+            ClientId = order.ClientId ?? 0,
             InvoiceDate = DateTime.UtcNow,
             DueDate = dueDate,
             SubtotalZAR = order.SubtotalZAR,

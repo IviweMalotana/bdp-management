@@ -40,7 +40,7 @@ public class StorefrontProductsController : ControllerBase
         var items = products.Select(p =>
         {
             var allTiers = p.Variants.SelectMany(v => v.PricingTiers).ToList();
-            var basePrice = allTiers.Any() ? allTiers.Min(t => t.SalePriceZAR) : 0m;
+            var basePrice = allTiers.Any() ? allTiers.Min(t => t.Quantity > 0 ? t.SalePriceZAR / t.Quantity : 0m) : 0m;
             var lowestMoq = allTiers.Any() ? allTiers.Min(t => t.Quantity) : 0;
             return new
             {
@@ -156,7 +156,7 @@ public class StorefrontProductsController : ControllerBase
             collection.Name,
             collection.Slug,
             collection.Description,
-            collection.Url,
+            collection.ImageUrl,
             products = collection.ProductCollections.Select(pc =>
             {
                 var p = pc.Product;

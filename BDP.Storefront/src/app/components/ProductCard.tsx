@@ -48,8 +48,13 @@ export default function ProductCard({ slug, name, category, primaryUrl, basePric
           {name}
         </h3>
         <p className="text-sm" style={{ color: "#4A4540" }}>
-          from {formatZAR(basePrice)}/unit{lowestMoq > 0 ? ` · min ${lowestMoq}` : ""}
+          from {formatZAR(basePrice)}/unit
         </p>
+        {lowestMoq > 0 && (
+          <p className="text-xs mt-0.5" style={{ color: "#C9B8A8" }}>
+            from {lowestMoq} bottles
+          </p>
+        )}
         <p className="text-xs mt-1 opacity-60" style={{ color: "#1C1A17" }}>
           Shop →
         </p>

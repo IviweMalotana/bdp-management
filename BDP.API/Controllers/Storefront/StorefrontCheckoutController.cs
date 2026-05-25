@@ -91,7 +91,8 @@ public class StorefrontCheckoutController : ControllerBase
             if (item.Quantity < moq) return BadRequest($"Quantity {item.Quantity} is below MOQ of {moq} for variant {item.ProductVariantId}.");
 
             var tier = tiers.LastOrDefault(t => t.Quantity <= item.Quantity) ?? tiers.First();
-            var lineTotal = tier.SalePriceZAR * item.Quantity;
+            var unitPrice = tier.Quantity > 0 ? tier.SalePriceZAR / tier.Quantity : 0m;
+            var lineTotal = unitPrice * item.Quantity;
             subtotal += lineTotal;
 
             orderItems.Add(new OrderItem
@@ -100,7 +101,7 @@ public class StorefrontCheckoutController : ControllerBase
                 PricingTierId = tier.Id,
                 CustomisationOptionId = item.CustomisationOptionId,
                 Quantity = item.Quantity,
-                UnitPriceZAR = tier.SalePriceZAR,
+                UnitPriceZAR = unitPrice,
                 LineTotal = lineTotal,
                 CustomisationCostZAR = 0
             });

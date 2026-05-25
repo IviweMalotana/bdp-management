@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@400;500&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -18,8 +19,6 @@
 
   --shadow-card: 0 1px 4px rgba(28, 26, 23, 0.06);
 }
-
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@400;500&display=swap");
 
 * {
   box-sizing: border-box;

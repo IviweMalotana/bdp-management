@@ -354,7 +354,7 @@ public class OrdersController : ControllerBase
     {
         Id = o.Id,
         OrderNumber = o.OrderNumber,
-        ClientId = o.ClientId,
+        ClientId = o.ClientId ?? 0,
         ClientName = o.Client?.CompanyName ?? string.Empty,
         Status = o.Status,
         OrderDate = o.OrderDate,

@@ -27,7 +27,7 @@ public class Order
     public string? PaymentMethod { get; set; }
     public string FulfilmentStatus { get; set; } = "Pending";
 
-    public Client? Client { get; set; };
+    public Client? Client { get; set; }
     public RecurringOrder? RecurringOrder { get; set; }
     public List<OrderItem> Items { get; set; } = new();
     public List<Invoice> Invoices { get; set; } = new();
