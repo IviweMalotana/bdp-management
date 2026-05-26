@@ -36,7 +36,7 @@ const addressSchema = z.object({
   city: z.string().min(2),
   province: z.string().min(2),
   postalCode: z.string().min(4),
-  phone: z.string().optional(),
+  phone: z.string().min(7, "Phone number is required"),
   country: z.string().min(2),
 });
 
@@ -327,7 +327,7 @@ export default function CheckoutPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <InputField label="Postal code" {...register("shipping.postalCode")} error={errors.shipping?.postalCode?.message} />
-              <InputField label="Phone (optional)" type="tel" {...register("shipping.phone")} />
+              <InputField label="Phone" type="tel" {...register("shipping.phone")} error={errors.shipping?.phone?.message} />
             </div>
           </div>
 
