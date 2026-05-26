@@ -26,6 +26,8 @@ public class Order
     public string? BillingAddressJson { get; set; }
     public string? PaymentMethod { get; set; }
     public string FulfilmentStatus { get; set; } = "Pending";
+    public string? ShippingServiceCode { get; set; }
+    public string? ShippingServiceName { get; set; }
 
     public Client? Client { get; set; }
     public RecurringOrder? RecurringOrder { get; set; }

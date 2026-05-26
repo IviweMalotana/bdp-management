@@ -59,7 +59,16 @@ public class StorefrontCheckoutController : ControllerBase
     }
 
     public record CheckoutAddress(string RecipientName, string Line1, string? Line2, string City, string Province, string PostalCode, string Country = "ZA", string? Phone = null);
-    public record InitiateRequest(int CartId, CheckoutAddress ShippingAddress, CheckoutAddress BillingAddress, string? GuestEmail, string PaymentMethod = "Paystack_Card");
+    public record InitiateRequest(
+        int CartId,
+        CheckoutAddress ShippingAddress,
+        CheckoutAddress BillingAddress,
+        string? GuestEmail,
+        string PaymentMethod = "Paystack_Card",
+        string? ShippingServiceCode = null,
+        string? ShippingServiceName = null,
+        decimal? ShippingPriceZAR = null
+    );
 
     [HttpPost("initiate")]
     public async Task<IActionResult> Initiate([FromBody] InitiateRequest req)
@@ -111,7 +120,10 @@ public class StorefrontCheckoutController : ControllerBase
         var totalWeight = cart.Items.Sum(i => i.ProductVariant.Product.WeightKg * i.Quantity);
         var totalVolume = cart.Items.Sum(i => ShippingCalculator.ComputeVolumeCBM(
             i.ProductVariant.Product.LengthCm, i.ProductVariant.Product.WidthCm, i.ProductVariant.Product.HeightCm) * i.Quantity);
-        var shippingZAR = await _shipping.CalculateAsync(totalWeight, totalVolume, cart.Items.Sum(i => i.Quantity));
+        // If client provided a shipping option price, use it; otherwise fall back to calculator
+        var shippingZAR = req.ShippingPriceZAR.HasValue && req.ShippingPriceZAR.Value > 0
+            ? req.ShippingPriceZAR.Value
+            : await _shipping.CalculateAsync(totalWeight, totalVolume, cart.Items.Sum(i => i.Quantity));
 
         var totalZAR = subtotal + shippingZAR;
 
@@ -131,6 +143,8 @@ public class StorefrontCheckoutController : ControllerBase
             PaymentMethod = req.PaymentMethod,
             ShippingAddressJson = JsonSerializer.Serialize(req.ShippingAddress),
             BillingAddressJson = JsonSerializer.Serialize(req.BillingAddress),
+            ShippingServiceCode = req.ShippingServiceCode,
+            ShippingServiceName = req.ShippingServiceName,
             Items = orderItems
         };
 

@@ -237,6 +237,22 @@ export async function uploadArtwork(
   return res.json();
 }
 
+export interface ShippingOption {
+  code: string;
+  name: string;
+  description: string;
+  transitDaysMin: number;
+  transitDaysMax: number;
+  priceZAR: number;
+  customsIncluded: boolean;
+  carrier: string;
+  icon: "air" | "sea";
+}
+
+export function getShippingOptions(country: string, units: number): Promise<ShippingOption[]> {
+  return request(`/api/storefront/shipping/options?country=${encodeURIComponent(country)}&units=${units}`);
+}
+
 export async function removeArtwork(
   cartItemId: number,
   sessionToken: string,
