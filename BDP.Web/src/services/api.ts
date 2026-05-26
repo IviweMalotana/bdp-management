@@ -231,6 +231,21 @@ export const orders = {
 
   getInvoice: (id: number) =>
     http.get<Invoice>(`/orders/${id}/invoice`).then((r) => r.data),
+
+  createShipment: (id: number, body: object) =>
+    http.post(`/orders/${id}/shipment`, body).then((r) => r.data),
+
+  getLabel: (id: number) =>
+    http.get(`/orders/${id}/shipment/label`).then((r) => r.data),
+
+  cancelShipment: (id: number) =>
+    http.delete(`/orders/${id}/shipment`).then((r) => r.data),
+
+  getYunInfo: (id: number) =>
+    http.get(`/orders/${id}/shipment/info`).then((r) => r.data),
+
+  markShipped: (id: number, body: { trackingNumber: string; trackingCarrier?: string }) =>
+    http.patch<Order>(`/orders/${id}/mark-shipped`, body).then((r) => r.data),
 }
 
 // ── Invoices ──────────────────────────────────────────────────────────────────

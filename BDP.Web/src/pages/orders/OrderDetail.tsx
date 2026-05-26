@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, FileText, Download, ChevronDown } from 'lucide-react'
+import { ArrowLeft, FileText, Download, ChevronDown, Truck, X, Info } from 'lucide-react'
 import type { Order, Invoice } from '../../types'
 import { orders as ordersApi } from '../../services/api'
 import OrderStatusTimeline from '../../components/OrderStatusTimeline'
@@ -19,6 +19,27 @@ export default function OrderDetail() {
   const [statusOpen, setStatusOpen] = useState(false)
   const [invoicing, setInvoicing] = useState(false)
   const [invoiceError, setInvoiceError] = useState('')
+  const [fulfilmentTab, setFulfilmentTab] = useState<'yun' | 'manual'>('yun')
+  const [shipForm, setShipForm] = useState({
+    productCode: '',
+    weightKg: '',
+    lengthCm: '30',
+    widthCm: '20',
+    heightCm: '10',
+    pieces: '1',
+    declaredValueUSD: '10',
+    recipientName: '',
+    recipientPhone: '',
+    recipientAddress: '',
+    recipientCity: '',
+    recipientPostcode: '',
+    countryCode: 'ZA',
+  })
+  const [manualForm, setManualForm] = useState({ trackingNumber: '', trackingCarrier: 'YunExpress' })
+  const [shipping, setShipping] = useState(false)
+  const [shipError, setShipError] = useState('')
+  const [yunInfo, setYunInfo] = useState<{ status?: string; waybillNumber?: string; productName?: string; createdAt?: string } | null>(null)
+  const [loadingYunInfo, setLoadingYunInfo] = useState(false)
 
   const load = () => {
     const orderId = Number(id)
@@ -27,7 +48,15 @@ export default function OrderDetail() {
       ordersApi.getById(orderId),
       ordersApi.getInvoice(orderId).catch(() => null),
     ])
-      .then(([o, inv]) => { setOrder(o); setInvoice(inv) })
+      .then(([o, inv]) => {
+        setOrder(o)
+        setInvoice(inv)
+        setShipForm(prev => ({
+          ...prev,
+          productCode: o.shippingServiceCode ?? '',
+          countryCode: 'ZA',
+        }))
+      })
       .finally(() => setLoading(false))
   }
 
@@ -52,6 +81,88 @@ export default function OrderDetail() {
       setInvoiceError(e?.response?.data?.message ?? 'Failed to generate invoice')
     } finally {
       setInvoicing(false)
+    }
+  }
+
+  const handleCreateShipment = async () => {
+    if (!order) return
+    setShipping(true); setShipError('')
+    try {
+      await ordersApi.createShipment(order.id, {
+        productCode: shipForm.productCode,
+        weightKg: parseFloat(shipForm.weightKg) || 0,
+        lengthCm: parseFloat(shipForm.lengthCm) || 30,
+        widthCm: parseFloat(shipForm.widthCm) || 20,
+        heightCm: parseFloat(shipForm.heightCm) || 10,
+        pieces: parseInt(shipForm.pieces) || 1,
+        declaredValueUSD: parseFloat(shipForm.declaredValueUSD) || 10,
+        recipientName: shipForm.recipientName,
+        recipientPhone: shipForm.recipientPhone,
+        recipientAddress: shipForm.recipientAddress,
+        recipientCity: shipForm.recipientCity,
+        recipientPostcode: shipForm.recipientPostcode,
+        countryCode: shipForm.countryCode,
+      })
+      load()
+    } catch (e: any) {
+      setShipError(e?.response?.data?.message ?? 'Failed to create shipment')
+    } finally {
+      setShipping(false)
+    }
+  }
+
+  const handleMarkShipped = async () => {
+    if (!order || !manualForm.trackingNumber) return
+    setShipping(true); setShipError('')
+    try {
+      await ordersApi.markShipped(order.id, {
+        trackingNumber: manualForm.trackingNumber,
+        trackingCarrier: manualForm.trackingCarrier || 'Manual',
+      })
+      load()
+    } catch (e: any) {
+      setShipError(e?.response?.data?.message ?? 'Failed to mark as shipped')
+    } finally {
+      setShipping(false)
+    }
+  }
+
+  const handlePrintLabel = async () => {
+    if (!order) return
+    try {
+      const data = await ordersApi.getLabel(order.id)
+      if (data?.labelUrl) {
+        window.open(data.labelUrl, '_blank')
+      }
+    } catch (e: any) {
+      setShipError(e?.response?.data?.message ?? 'Failed to retrieve label')
+    }
+  }
+
+  const handleCancelShipment = async () => {
+    if (!order) return
+    if (!window.confirm('Cancel this shipment with YunExpress? This cannot be undone.')) return
+    setShipping(true); setShipError('')
+    try {
+      await ordersApi.cancelShipment(order.id)
+      load()
+    } catch (e: any) {
+      setShipError(e?.response?.data?.message ?? 'Failed to cancel shipment')
+    } finally {
+      setShipping(false)
+    }
+  }
+
+  const handleGetYunInfo = async () => {
+    if (!order) return
+    setLoadingYunInfo(true)
+    try {
+      const info = await ordersApi.getYunInfo(order.id)
+      setYunInfo(info)
+    } catch {
+      setYunInfo(null)
+    } finally {
+      setLoadingYunInfo(false)
     }
   }
 
@@ -144,6 +255,236 @@ export default function OrderDetail() {
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
         <OrderStatusTimeline currentStatus={order.status} />
       </div>
+
+      {/* Fulfilment panel */}
+      {order.status !== 'Delivered' && order.status !== 'Cancelled' && (
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-800 flex items-center gap-2">
+            <Truck size={16} className="text-indigo-400" />
+            <h2 className="font-semibold text-white">Fulfilment</h2>
+          </div>
+
+          <div className="p-5">
+            {order.trackingNumber ? (
+              // ── Shipped state ──────────────────────────────────────────────
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span className="font-mono text-white text-lg">{order.trackingNumber}</span>
+                  {order.trackingCarrier && (
+                    <span className="text-xs px-2 py-0.5 rounded bg-indigo-900/50 text-indigo-300 font-medium">
+                      {order.trackingCarrier}
+                    </span>
+                  )}
+                  {order.shippedDate && (
+                    <span className="text-xs text-gray-500">
+                      Shipped on {new Date(order.shippedDate).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={handlePrintLabel}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-white rounded-lg text-sm"
+                  >
+                    <Download size={14} /> Print Label
+                  </button>
+                  <button
+                    onClick={handleGetYunInfo}
+                    disabled={loadingYunInfo}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-white rounded-lg text-sm disabled:opacity-50"
+                  >
+                    <Info size={14} /> {loadingYunInfo ? 'Loading…' : 'YunExpress Info'}
+                  </button>
+                  <button
+                    onClick={handleCancelShipment}
+                    disabled={shipping}
+                    className="flex items-center gap-1.5 px-3 py-2 bg-red-900/30 border border-red-800 hover:bg-red-900/50 text-red-400 rounded-lg text-sm disabled:opacity-50"
+                  >
+                    <X size={14} /> Cancel Shipment
+                  </button>
+                </div>
+
+                {yunInfo && (
+                  <div className="bg-gray-800 rounded-lg p-4 text-sm space-y-1">
+                    {yunInfo.status && <p className="text-gray-300"><span className="text-gray-500">Status:</span> {yunInfo.status}</p>}
+                    {yunInfo.productName && <p className="text-gray-300"><span className="text-gray-500">Service:</span> {yunInfo.productName}</p>}
+                    {yunInfo.createdAt && <p className="text-gray-300"><span className="text-gray-500">Created:</span> {yunInfo.createdAt}</p>}
+                  </div>
+                )}
+
+                {shipError && (
+                  <div className="px-4 py-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">{shipError}</div>
+                )}
+              </div>
+            ) : (
+              // ── Not yet shipped ────────────────────────────────────────────
+              <div className="space-y-4">
+                {/* Tab switcher */}
+                <div className="flex gap-1 bg-gray-800 rounded-lg p-1 w-fit">
+                  <button
+                    onClick={() => setFulfilmentTab('yun')}
+                    className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${fulfilmentTab === 'yun' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Create via YunExpress API
+                  </button>
+                  <button
+                    onClick={() => setFulfilmentTab('manual')}
+                    className={`px-4 py-1.5 text-sm rounded-md font-medium transition-colors ${fulfilmentTab === 'manual' ? 'bg-indigo-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                  >
+                    Enter tracking manually
+                  </button>
+                </div>
+
+                {fulfilmentTab === 'yun' ? (
+                  <div className="space-y-3">
+                    {/* Product code */}
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Product Code</label>
+                      <input
+                        type="text"
+                        value={shipForm.productCode}
+                        onChange={e => setShipForm(p => ({ ...p, productCode: e.target.value }))}
+                        placeholder="e.g. YWEN001"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder:text-gray-600 focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    {/* Weight + dimensions */}
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { label: 'Weight kg', key: 'weightKg', type: 'number' },
+                        { label: 'Length cm', key: 'lengthCm', type: 'number' },
+                        { label: 'Width cm', key: 'widthCm', type: 'number' },
+                        { label: 'Height cm', key: 'heightCm', type: 'number' },
+                      ].map(({ label, key, type }) => (
+                        <div key={key}>
+                          <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                          <input
+                            type={type}
+                            value={(shipForm as any)[key]}
+                            onChange={e => setShipForm(p => ({ ...p, [key]: e.target.value }))}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {/* Pieces + declared value */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Pieces', key: 'pieces', type: 'number' },
+                        { label: 'Declared Value USD', key: 'declaredValueUSD', type: 'number' },
+                      ].map(({ label, key, type }) => (
+                        <div key={key}>
+                          <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                          <input
+                            type={type}
+                            value={(shipForm as any)[key]}
+                            onChange={e => setShipForm(p => ({ ...p, [key]: e.target.value }))}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {/* Recipient name + phone */}
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        { label: 'Recipient Name', key: 'recipientName' },
+                        { label: 'Phone', key: 'recipientPhone' },
+                      ].map(({ label, key }) => (
+                        <div key={key}>
+                          <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                          <input
+                            type="text"
+                            value={(shipForm as any)[key]}
+                            onChange={e => setShipForm(p => ({ ...p, [key]: e.target.value }))}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    {/* Address, city, postcode, country */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="col-span-2">
+                        <label className="block text-xs text-gray-500 mb-1">Address</label>
+                        <input
+                          type="text"
+                          value={shipForm.recipientAddress}
+                          onChange={e => setShipForm(p => ({ ...p, recipientAddress: e.target.value }))}
+                          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                      {[
+                        { label: 'City', key: 'recipientCity' },
+                        { label: 'Postcode', key: 'recipientPostcode' },
+                      ].map(({ label, key }) => (
+                        <div key={key}>
+                          <label className="block text-xs text-gray-500 mb-1">{label}</label>
+                          <input
+                            type="text"
+                            value={(shipForm as any)[key]}
+                            onChange={e => setShipForm(p => ({ ...p, [key]: e.target.value }))}
+                            className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                          />
+                        </div>
+                      ))}
+                      <div>
+                        <label className="block text-xs text-gray-500 mb-1">Country Code</label>
+                        <input
+                          type="text"
+                          value={shipForm.countryCode}
+                          onChange={e => setShipForm(p => ({ ...p, countryCode: e.target.value }))}
+                          className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleCreateShipment}
+                      disabled={shipping}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
+                    >
+                      <Truck size={15} />
+                      {shipping ? 'Creating shipment…' : 'Create Shipment'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-w-sm">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Tracking Number</label>
+                      <input
+                        type="text"
+                        value={manualForm.trackingNumber}
+                        onChange={e => setManualForm(p => ({ ...p, trackingNumber: e.target.value }))}
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">Carrier</label>
+                      <input
+                        type="text"
+                        value={manualForm.trackingCarrier}
+                        onChange={e => setManualForm(p => ({ ...p, trackingCarrier: e.target.value }))}
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500"
+                      />
+                    </div>
+                    <button
+                      onClick={handleMarkShipped}
+                      disabled={shipping || !manualForm.trackingNumber}
+                      className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
+                    >
+                      <Truck size={15} />
+                      {shipping ? 'Marking shipped…' : 'Mark as Shipped'}
+                    </button>
+                  </div>
+                )}
+
+                {shipError && (
+                  <div className="px-4 py-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">{shipError}</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Items table */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">

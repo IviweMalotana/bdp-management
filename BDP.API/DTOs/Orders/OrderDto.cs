@@ -20,5 +20,11 @@ public class OrderDto
     public int? RecurringOrderId { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string? TrackingNumber { get; set; }
+    public string? TrackingCarrier { get; set; }
+    public string? YunOrderId { get; set; }
+    public string FulfilmentStatus { get; set; } = "Pending";
+    public string? ShippingServiceCode { get; set; }
+    public string? ShippingServiceName { get; set; }
     public List<OrderItemDto> Items { get; set; } = new();
 }

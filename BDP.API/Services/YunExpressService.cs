@@ -34,7 +34,7 @@ public class YunExpressService
 
     private string? AppKey => _config["YunExpress:AppKey"];
     private string? AppToken => _config["YunExpress:AppToken"];
-    private bool HasCredentials => !string.IsNullOrWhiteSpace(AppKey) && !string.IsNullOrWhiteSpace(AppToken);
+    public bool HasCredentials => !string.IsNullOrWhiteSpace(AppKey) && !string.IsNullOrWhiteSpace(AppToken);
 
     public async Task<List<ShippingOption>> GetRatesAsync(string countryCode, int weightGrams)
     {
@@ -269,6 +269,210 @@ public class YunExpressService
         {
             _logger.LogWarning(ex, "YunExpress tracking fetch failed for {TrackingNumber}", trackingNumber);
             return new List<TrackingEvent>();
+        }
+    }
+
+    // ── Order management ───────────────────────────────────────────────────────
+
+    public record CreateOrderRequest(
+        string OrderReference,
+        string CountryCode,
+        string ProductCode,
+        decimal WeightKg,
+        decimal LengthCm,
+        decimal WidthCm,
+        decimal HeightCm,
+        int Pieces,
+        decimal DeclaredValueUSD,
+        string RecipientName,
+        string RecipientPhone,
+        string RecipientAddress,
+        string RecipientCity,
+        string RecipientPostcode
+    );
+
+    public record CreateOrderResult(
+        bool Success,
+        string? WaybillNumber,
+        string? YunOrderId,
+        string? LabelUrl,
+        string? ErrorMessage
+    );
+
+    public async Task<CreateOrderResult> CreateOrderAsync(CreateOrderRequest req)
+    {
+        try
+        {
+            var client = _http.CreateClient();
+            var payload = new
+            {
+                appKey = AppKey,
+                appToken = AppToken,
+                orderNumber = req.OrderReference,
+                countryCode = req.CountryCode,
+                productType = req.ProductCode,
+                weight = req.WeightKg,
+                length = req.LengthCm,
+                width = req.WidthCm,
+                height = req.HeightCm,
+                pieces = req.Pieces,
+                declaredValue = req.DeclaredValueUSD,
+                recipientName = req.RecipientName,
+                recipientPhone = req.RecipientPhone,
+                recipientAddress = req.RecipientAddress,
+                recipientCity = req.RecipientCity,
+                recipientPostcode = req.RecipientPostcode,
+            };
+
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{BaseUrl}/addOrder", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YunExpress addOrder returned {Status}", response.StatusCode);
+                return new CreateOrderResult(false, null, null, null, $"YunExpress API error: {response.StatusCode}");
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(body);
+
+            var result = doc.RootElement.TryGetProperty("result", out var r) && r.GetBoolean();
+            if (!result)
+            {
+                var msg = doc.RootElement.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+                return new CreateOrderResult(false, null, null, null, msg);
+            }
+
+            string? waybill = null, yunId = null, labelUrl = null;
+            if (doc.RootElement.TryGetProperty("data", out var data))
+            {
+                if (data.TryGetProperty("waybillNumber", out var w)) waybill = w.GetString();
+                if (data.TryGetProperty("yunOrderId", out var y)) yunId = y.GetString();
+                if (data.TryGetProperty("labelUrl", out var l)) labelUrl = l.GetString();
+            }
+
+            return new CreateOrderResult(true, waybill, yunId, labelUrl, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "YunExpress CreateOrderAsync failed for {OrderRef}", req.OrderReference);
+            return new CreateOrderResult(false, null, null, null, ex.Message);
+        }
+    }
+
+    public async Task<(byte[]? PdfBytes, string? LabelUrl)> GetLabelAsync(string waybillNumber)
+    {
+        try
+        {
+            var client = _http.CreateClient();
+            var payload = new { appKey = AppKey, appToken = AppToken, waybillNumber };
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{BaseUrl}/printLabel", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YunExpress printLabel returned {Status}", response.StatusCode);
+                return (null, null);
+            }
+
+            var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
+            if (contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                return (bytes, null);
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(body);
+            if (doc.RootElement.TryGetProperty("data", out var data))
+            {
+                if (data.TryGetProperty("labelUrl", out var lu) && !string.IsNullOrEmpty(lu.GetString()))
+                {
+                    var url = lu.GetString()!;
+                    // Fetch the PDF from the URL
+                    var pdfResponse = await client.GetAsync(url);
+                    if (pdfResponse.IsSuccessStatusCode)
+                    {
+                        var pdfBytes = await pdfResponse.Content.ReadAsByteArrayAsync();
+                        return (pdfBytes, url);
+                    }
+                    return (null, url);
+                }
+            }
+
+            return (null, null);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "YunExpress GetLabelAsync failed for {WaybillNumber}", waybillNumber);
+            return (null, null);
+        }
+    }
+
+    public async Task<bool> CancelOrderAsync(string yunOrderId)
+    {
+        try
+        {
+            var client = _http.CreateClient();
+            var payload = new { appKey = AppKey, appToken = AppToken, yunOrderId };
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{BaseUrl}/cancelOrder", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YunExpress cancelOrder returned {Status}", response.StatusCode);
+                return false;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(body);
+            return doc.RootElement.TryGetProperty("result", out var r) && r.GetBoolean();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "YunExpress CancelOrderAsync failed for {YunOrderId}", yunOrderId);
+            return false;
+        }
+    }
+
+    public record YunOrderInfo(string? Status, string? WaybillNumber, string? ProductName, string? CreatedAt);
+
+    public async Task<YunOrderInfo?> GetOrderInfoAsync(string waybillNumber)
+    {
+        try
+        {
+            var client = _http.CreateClient();
+            var payload = new { appKey = AppKey, appToken = AppToken, waybillNumber };
+            var json = JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await client.PostAsync($"{BaseUrl}/getOrderInfo", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YunExpress getOrderInfo returned {Status}", response.StatusCode);
+                return null;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var doc = JsonDocument.Parse(body);
+
+            if (!doc.RootElement.TryGetProperty("data", out var data))
+                return null;
+
+            var status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
+            var waybill = data.TryGetProperty("waybillNumber", out var w) ? w.GetString() : null;
+            var productName = data.TryGetProperty("productName", out var p) ? p.GetString() : null;
+            var createdAt = data.TryGetProperty("createTime", out var c) ? c.GetString() : null;
+
+            return new YunOrderInfo(status, waybill, productName, createdAt);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "YunExpress GetOrderInfoAsync failed for {WaybillNumber}", waybillNumber);
+            return null;
         }
     }
 

@@ -30,6 +30,7 @@ public class Order
     public string? ShippingServiceName { get; set; }
     public string? TrackingNumber { get; set; }
     public string? TrackingCarrier { get; set; }
+    public string? YunOrderId { get; set; }  // YunExpress internal order ID (needed for cancel/info)
 
     public Client? Client { get; set; }
     public RecurringOrder? RecurringOrder { get; set; }

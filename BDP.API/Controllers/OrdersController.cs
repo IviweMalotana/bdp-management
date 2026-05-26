@@ -16,11 +16,16 @@ public class OrdersController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly InvoiceService _invoiceService;
+    private readonly YunExpressService _yunExpress;
+    private readonly EmailService _email;
 
-    public OrdersController(AppDbContext context, InvoiceService invoiceService)
+    public OrdersController(AppDbContext context, InvoiceService invoiceService,
+        YunExpressService yunExpress, EmailService email)
     {
         _context = context;
         _invoiceService = invoiceService;
+        _yunExpress = yunExpress;
+        _email = email;
     }
 
     // GET /api/orders?status=X&from=Y&to=Z&page=1&pageSize=20
@@ -329,6 +334,185 @@ public class OrdersController : ControllerBase
         });
     }
 
+    // ── Fulfilment endpoints ───────────────────────────────────────────────────
+
+    public record CreateShipmentRequest(
+        string ProductCode,
+        decimal WeightKg,
+        decimal LengthCm,
+        decimal WidthCm,
+        decimal HeightCm,
+        int Pieces,
+        decimal DeclaredValueUSD,
+        string RecipientName,
+        string RecipientPhone,
+        string RecipientAddress,
+        string RecipientCity,
+        string RecipientPostcode,
+        string CountryCode = "ZA"
+    );
+
+    public record MarkShippedRequest(string TrackingNumber, string? TrackingCarrier = "Manual");
+
+    // POST /api/orders/{id}/shipment
+    [HttpPost("{id:int}/shipment")]
+    public async Task<IActionResult> CreateShipment(int id, [FromBody] CreateShipmentRequest dto)
+    {
+        var order = await _context.Orders
+            .Include(o => o.Client)
+            .Include(o => o.Items).ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Product)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
+        if (!string.IsNullOrEmpty(order.TrackingNumber))
+            return BadRequest(new { message = "Order already has a tracking number." });
+        if (!_yunExpress.HasCredentials)
+            return BadRequest(new { message = "YunExpress credentials not configured. Set YunExpress__AppKey and YunExpress__AppToken in Railway." });
+
+        var result = await _yunExpress.CreateOrderAsync(new YunExpressService.CreateOrderRequest(
+            OrderReference: order.OrderNumber,
+            CountryCode: dto.CountryCode,
+            ProductCode: dto.ProductCode,
+            WeightKg: dto.WeightKg,
+            LengthCm: dto.LengthCm,
+            WidthCm: dto.WidthCm,
+            HeightCm: dto.HeightCm,
+            Pieces: dto.Pieces,
+            DeclaredValueUSD: dto.DeclaredValueUSD,
+            RecipientName: dto.RecipientName,
+            RecipientPhone: dto.RecipientPhone,
+            RecipientAddress: dto.RecipientAddress,
+            RecipientCity: dto.RecipientCity,
+            RecipientPostcode: dto.RecipientPostcode
+        ));
+
+        if (!result.Success)
+            return StatusCode(502, new { message = result.ErrorMessage });
+
+        order.TrackingNumber = result.WaybillNumber;
+        order.TrackingCarrier = "YunExpress";
+        order.YunOrderId = result.YunOrderId;
+        order.Status = "Shipped";
+        order.ShippedDate = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        await TrySendShippedEmail(order);
+
+        return Ok(new { trackingNumber = result.WaybillNumber, yunOrderId = result.YunOrderId, labelUrl = result.LabelUrl });
+    }
+
+    // GET /api/orders/{id}/shipment/label
+    [HttpGet("{id:int}/shipment/label")]
+    public async Task<IActionResult> GetShipmentLabel(int id)
+    {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
+        if (string.IsNullOrEmpty(order.TrackingNumber))
+            return BadRequest(new { message = "Order has no tracking number." });
+
+        var (pdfBytes, labelUrl) = await _yunExpress.GetLabelAsync(order.TrackingNumber);
+
+        if (pdfBytes != null && pdfBytes.Length > 0)
+            return File(pdfBytes, "application/pdf", $"label-{order.OrderNumber}.pdf");
+        if (!string.IsNullOrEmpty(labelUrl))
+            return Ok(new { labelUrl });
+
+        return StatusCode(502, new { message = "Could not retrieve label from YunExpress." });
+    }
+
+    // DELETE /api/orders/{id}/shipment
+    [HttpDelete("{id:int}/shipment")]
+    public async Task<IActionResult> CancelShipment(int id)
+    {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
+        if (string.IsNullOrEmpty(order.YunOrderId))
+            return BadRequest(new { message = "Order has no YunExpress order ID." });
+
+        var success = await _yunExpress.CancelOrderAsync(order.YunOrderId);
+        if (!success)
+            return StatusCode(502, new { message = "YunExpress could not cancel the shipment." });
+
+        order.TrackingNumber = null;
+        order.YunOrderId = null;
+        order.TrackingCarrier = null;
+        order.Status = "Confirmed";
+        order.ShippedDate = null;
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Shipment cancelled." });
+    }
+
+    // GET /api/orders/{id}/shipment/info
+    [HttpGet("{id:int}/shipment/info")]
+    public async Task<IActionResult> GetShipmentInfo(int id)
+    {
+        var order = await _context.Orders.FindAsync(id);
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
+        if (string.IsNullOrEmpty(order.TrackingNumber))
+            return BadRequest(new { message = "Order has no tracking number." });
+
+        var info = await _yunExpress.GetOrderInfoAsync(order.TrackingNumber);
+        if (info == null)
+            return StatusCode(502, new { message = "Could not retrieve order info from YunExpress." });
+
+        return Ok(info);
+    }
+
+    // PATCH /api/orders/{id}/mark-shipped
+    [HttpPatch("{id:int}/mark-shipped")]
+    public async Task<IActionResult> MarkShipped(int id, [FromBody] MarkShippedRequest dto)
+    {
+        var order = await _context.Orders
+            .Include(o => o.Client)
+            .Include(o => o.Items).ThenInclude(oi => oi.ProductVariant).ThenInclude(pv => pv.Product)
+            .FirstOrDefaultAsync(o => o.Id == id);
+
+        if (order == null) return NotFound(new { message = $"Order {id} not found." });
+
+        order.TrackingNumber = dto.TrackingNumber;
+        order.TrackingCarrier = dto.TrackingCarrier ?? "Manual";
+        order.Status = "Shipped";
+        order.ShippedDate = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+
+        await TrySendShippedEmail(order);
+
+        return Ok(MapToDto(order));
+    }
+
+    private async Task TrySendShippedEmail(Order order)
+    {
+        var email = order.GuestEmail;
+        if (string.IsNullOrEmpty(email) && order.Client != null)
+            email = order.Client.ContactEmail;
+        if (string.IsNullOrEmpty(email)) return;
+
+        string recipientName = order.Client?.ContactPersonName ?? "Customer";
+        try
+        {
+            var addr = System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement>(
+                order.ShippingAddressJson ?? "{}");
+            if (addr.TryGetProperty("recipientName", out var rn))
+                recipientName = rn.GetString() ?? recipientName;
+        }
+        catch { }
+
+        var data = new EmailTemplates.OrderShippedData(
+            RecipientName: recipientName,
+            OrderNumber: order.OrderNumber,
+            TrackingNumber: order.TrackingNumber,
+            TrackingCarrier: order.TrackingCarrier,
+            ShippingServiceName: order.ShippingServiceName,
+            TransitDaysMin: null,
+            TransitDaysMax: null,
+            ShippingAddress: order.ShippingAddressJson ?? ""
+        );
+
+        await _email.SendAsync(email, recipientName,
+            $"Your BDP order {order.OrderNumber} is on its way", EmailTemplates.OrderShipped(data));
+    }
+
     // ── Helpers ────────────────────────────────────────────────────────────
     private async Task<string> GenerateOrderNumberAsync(int year)
     {
@@ -370,6 +554,12 @@ public class OrdersController : ControllerBase
         RecurringOrderId = o.RecurringOrderId,
         Notes = o.Notes,
         CreatedAt = o.CreatedAt,
+        TrackingNumber = o.TrackingNumber,
+        TrackingCarrier = o.TrackingCarrier,
+        YunOrderId = o.YunOrderId,
+        FulfilmentStatus = o.FulfilmentStatus,
+        ShippingServiceCode = o.ShippingServiceCode,
+        ShippingServiceName = o.ShippingServiceName,
         Items = o.Items?.Select(oi => new OrderItemDto
         {
             Id = oi.Id,

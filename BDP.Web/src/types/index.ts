@@ -291,6 +291,13 @@ export interface Order {
   notes: string | null
   createdAt: string
   items: OrderItem[]
+  // fulfilment fields
+  trackingNumber: string | null
+  trackingCarrier: string | null
+  yunOrderId: string | null
+  fulfilmentStatus: string
+  shippingServiceCode: string | null
+  shippingServiceName: string | null
   // legacy compat
   customerId?: number
   customerName?: string
