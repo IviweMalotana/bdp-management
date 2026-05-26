@@ -231,6 +231,94 @@ public class ClientsController : ControllerBase
         return Ok(orders.Select(MapRecurring));
     }
 
+    // ── B2B Application Management ────────────────────────────────────────────
+
+    [HttpGet("pending-b2b")]
+    public async Task<IActionResult> GetPendingB2BApplications()
+    {
+        var pendingUsers = await _context.Users
+            .Where(u => u.B2BStatus == "Pending" && u.B2BClientId.HasValue)
+            .ToListAsync();
+
+        var clientIds = pendingUsers
+            .Select(u => u.B2BClientId!.Value)
+            .ToList();
+
+        var clients = await _context.Clients
+            .Where(c => clientIds.Contains(c.Id))
+            .ToListAsync();
+
+        var result = pendingUsers.Select(u =>
+        {
+            var client = clients.FirstOrDefault(c => c.Id == u.B2BClientId);
+            return new
+            {
+                userId = u.Id,
+                email = u.Email,
+                firstName = u.FirstName,
+                lastName = u.LastName,
+                phone = u.Phone,
+                client = client == null ? null : (object)new
+                {
+                    id = client.Id,
+                    companyName = client.CompanyName,
+                    tradingName = client.TradingName,
+                    companyRegistrationNumber = client.CompanyRegistrationNumber,
+                    vatNumber = client.VatNumber,
+                    contactPersonName = client.ContactPersonName,
+                    contactPhone = client.ContactPhone,
+                    billingAddress = client.BillingAddress,
+                    industry = client.Industry,
+                    requestedPaymentTermsDays = client.PaymentTermsDays,
+                    createdAt = client.CreatedAt
+                }
+            };
+        }).ToList();
+
+        return Ok(result);
+    }
+
+    public record ApproveB2BRequest(decimal CreditLimit, int PaymentTermsDays);
+
+    [HttpPost("{id}/approve-b2b")]
+    public async Task<IActionResult> ApproveB2B(int id, [FromBody] ApproveB2BRequest req)
+    {
+        var client = await _context.Clients.FindAsync(id);
+        if (client == null) return NotFound(new { message = "Client not found." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.B2BClientId == id);
+        if (user == null) return NotFound(new { message = "No user linked to this client." });
+
+        client.IsActive = true;
+        client.CreditLimit = req.CreditLimit;
+        client.PaymentTermsDays = req.PaymentTermsDays;
+        user.B2BStatus = "Approved";
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Application approved.", clientId = id });
+    }
+
+    [HttpPost("{id}/reject-b2b")]
+    public async Task<IActionResult> RejectB2B(int id)
+    {
+        var client = await _context.Clients.FindAsync(id);
+        if (client == null) return NotFound(new { message = "Client not found." });
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.B2BClientId == id);
+        if (user == null) return NotFound(new { message = "No user linked to this client." });
+
+        // Reset user to B2C — they can re-apply
+        user.B2BStatus = "NA";
+        user.AccountType = "B2C";
+        user.B2BClientId = null;
+
+        // Soft-delete client (keep for audit trail)
+        client.IsActive = false;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { message = "Application rejected. User may re-apply." });
+    }
+
     private static ClientDto MapToDto(Client c) => new()
     {
         Id = c.Id,

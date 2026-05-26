@@ -25,6 +25,11 @@ for (int i = 0; i < 5; i++)
 if (wwwrootPath != null)
     builder.Environment.WebRootPath = wwwrootPath;
 
+// Ensure upload directories exist (Railway ephemeral FS — files lost on redeploy)
+var uploadsBase = wwwrootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
+Directory.CreateDirectory(Path.Combine(uploadsBase, "uploads", "artwork"));
+Directory.CreateDirectory(Path.Combine(uploadsBase, "invoices"));
+
 // ── Connection string ──────────────────────────────────────────────────────
 // Railway provides DATABASE_URL as postgresql://user:pass@host:port/db
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");

@@ -13,8 +13,8 @@ RUN dotnet publish -c Release -o /publish
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Create wwwroot so static file middleware is happy
-RUN mkdir -p /app/wwwroot/invoices
+# Create wwwroot directories so static file middleware is happy
+RUN mkdir -p /app/wwwroot/invoices /app/wwwroot/uploads/artwork
 
 COPY --from=build /publish ./
 

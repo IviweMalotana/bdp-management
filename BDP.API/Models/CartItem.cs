@@ -12,4 +12,5 @@ public class CartItem
     public Cart Cart { get; set; } = null!;
     public ProductVariant ProductVariant { get; set; } = null!;
     public CustomisationOption? CustomisationOption { get; set; }
+    public List<CartItemArtwork> Artworks { get; set; } = new();
 }

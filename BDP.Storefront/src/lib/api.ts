@@ -173,3 +173,81 @@ export function getOrderById(jwt: string, id: number) {
     headers: { Authorization: `Bearer ${jwt}` },
   });
 }
+
+export function getRecurringOrders(jwt: string) {
+  return request("/api/storefront/me/recurring", {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
+export function getRecurringOrderById(jwt: string, id: number) {
+  return request(`/api/storefront/me/recurring/${id}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
+export function createRecurringOrder(jwt: string, body: unknown) {
+  return request("/api/storefront/me/recurring", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${jwt}` },
+    body: JSON.stringify(body),
+  });
+}
+
+export function pauseRecurringOrder(jwt: string, id: number) {
+  return request(`/api/storefront/me/recurring/${id}/pause`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
+export function resumeRecurringOrder(jwt: string, id: number) {
+  return request(`/api/storefront/me/recurring/${id}/resume`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
+export function cancelRecurringOrder(jwt: string, id: number) {
+  return request(`/api/storefront/me/recurring/${id}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
+export async function uploadArtwork(
+  cartItemId: number,
+  file: File,
+  notes: string | undefined,
+  sessionToken: string,
+  jwt?: string
+): Promise<{ id: number; fileName: string; fileUrl: string; notes: string | null }> {
+  const form = new FormData();
+  form.append("file", file);
+  if (notes) form.append("notes", notes);
+  const res = await fetch(`${BASE}/api/storefront/artwork/cart-items/${cartItemId}`, {
+    method: "POST",
+    headers: {
+      "X-Cart-Token": sessionToken,
+      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+    },
+    body: form,
+  });
+  if (!res.ok) throw new Error(`Upload failed: ${await res.text()}`);
+  return res.json();
+}
+
+export async function removeArtwork(
+  cartItemId: number,
+  sessionToken: string,
+  jwt?: string
+): Promise<void> {
+  const res = await fetch(`${BASE}/api/storefront/artwork/cart-items/${cartItemId}`, {
+    method: "DELETE",
+    headers: {
+      "X-Cart-Token": sessionToken,
+      ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
+    },
+  });
+  if (!res.ok) throw new Error(`Remove failed: ${await res.text()}`);
+}

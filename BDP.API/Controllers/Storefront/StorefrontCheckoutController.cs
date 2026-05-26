@@ -67,6 +67,7 @@ public class StorefrontCheckoutController : ControllerBase
         var cart = await _db.Carts
             .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
             .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product)
+            .Include(c => c.Items).ThenInclude(i => i.Artworks)
             .FirstOrDefaultAsync(c => c.Id == req.CartId);
 
         if (cart == null) return NotFound("Cart not found.");
@@ -135,6 +136,29 @@ public class StorefrontCheckoutController : ControllerBase
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
+
+        // Copy artwork from cart items to the newly-created order items
+        var cartItemsList = cart.Items.ToList();
+        for (int i = 0; i < cartItemsList.Count; i++)
+        {
+            var cartItem = cartItemsList[i];
+            if (!cartItem.Artworks.Any()) continue;
+
+            var orderItem = order.Items[i];
+            foreach (var a in cartItem.Artworks)
+            {
+                _db.OrderItemArtworks.Add(new OrderItemArtwork
+                {
+                    OrderItemId = orderItem.Id,
+                    FileName = a.FileName,
+                    FileUrl = a.FileUrl,
+                    Notes = a.Notes,
+                    UploadedAt = a.UploadedAt
+                });
+            }
+        }
+        if (cartItemsList.Any(ci => ci.Artworks.Any()))
+            await _db.SaveChangesAsync();
 
         var (reference, authorizationUrl, accessCode) = await _paystack.InitializeTransactionAsync(email, totalZAR, order.Id);
         order.PaystackPaymentReference = reference;

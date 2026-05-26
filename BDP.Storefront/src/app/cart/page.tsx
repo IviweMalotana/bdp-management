@@ -6,6 +6,7 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { getCart, updateCartItem, removeCartItem } from "@/lib/api";
 import QuantityInput from "../components/QuantityInput";
+import ArtworkUpload from "../components/ArtworkUpload";
 
 function formatZAR(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -104,6 +105,11 @@ export default function CartPage() {
                   value={item.quantity}
                   min={1}
                   onChange={(qty) => handleUpdateQty(item.id, qty)}
+                />
+                <ArtworkUpload
+                  cartItemId={item.id}
+                  sessionToken={getSessionToken()}
+                  jwt={jwt ?? undefined}
                 />
               </div>
               <div className="flex flex-col items-end justify-between">

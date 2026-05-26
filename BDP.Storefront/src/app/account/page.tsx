@@ -143,6 +143,21 @@ export default function AccountPage() {
         </div>
       )}
 
+      {/* Recurring orders — B2B Approved only */}
+      {me?.accountType === "B2B" && me.b2bStatus === "Approved" && (
+        <div className="mt-8 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 style={{ fontFamily: "var(--font-display)", color: "#1C1A17" }} className="text-xl">
+              Recurring orders
+            </h2>
+            <Link href="/account/recurring" className="text-xs underline" style={{ color: "#4A4540" }}>
+              Manage
+            </Link>
+          </div>
+          <p className="text-sm" style={{ color: "#4A4540" }}>Set up automatic replenishment orders on your preferred schedule.</p>
+        </div>
+      )}
+
       {/* Recent orders */}
       <div>
         <div className="flex items-center justify-between mb-4">

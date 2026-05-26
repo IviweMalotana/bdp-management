@@ -32,6 +32,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
+    public DbSet<CartItemArtwork> CartItemArtworks => Set<CartItemArtwork>();
+    public DbSet<OrderItemArtwork> OrderItemArtworks => Set<OrderItemArtwork>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -137,6 +139,18 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .WithMany()
             .HasForeignKey(ci => ci.ProductVariantId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // CartItemArtwork → CartItem
+        builder.Entity<CartItemArtwork>()
+            .HasOne(a => a.CartItem).WithMany(ci => ci.Artworks)
+            .HasForeignKey(a => a.CartItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // OrderItemArtwork → OrderItem
+        builder.Entity<OrderItemArtwork>()
+            .HasOne(a => a.OrderItem).WithMany()
+            .HasForeignKey(a => a.OrderItemId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // CartItem → CustomisationOption
         builder.Entity<CartItem>()
