@@ -144,29 +144,36 @@ public class YunExpressService
 
         if (!zoneRates.TryGetValue(zone, out var r)) r = zoneRates["REST"];
 
-        options.Add(new ShippingOption
-        {
-            Code = "YUN_AIR_EXPRESS",
-            Name = "Air Express",
-            Description = "Priority tracked delivery · Duties settled at delivery",
-            TransitDaysMin = r.AirExpMin,
-            TransitDaysMax = r.AirExpMax,
-            PriceZAR = Math.Round(weightKg * r.AirExp, 2),
-            CustomsIncluded = false,
-            Icon = "air"
-        });
+        // Air options: YunExpress air typically handles up to 30kg (75 units at 400g)
+        // Above that, only sea freight is practical
+        const int AirMaxGrams = 30_000;
 
-        options.Add(new ShippingOption
+        if (weightGrams <= AirMaxGrams)
         {
-            Code = "YUN_AIR_STANDARD",
-            Name = "Air Standard",
-            Description = "Tracked delivery · Duties settled at delivery",
-            TransitDaysMin = r.AirStdMin,
-            TransitDaysMax = r.AirStdMax,
-            PriceZAR = Math.Round(weightKg * r.AirStd, 2),
-            CustomsIncluded = false,
-            Icon = "air"
-        });
+            options.Add(new ShippingOption
+            {
+                Code = "YUN_AIR_EXPRESS",
+                Name = "Air Express",
+                Description = "Priority tracked delivery · Duties settled at delivery",
+                TransitDaysMin = r.AirExpMin,
+                TransitDaysMax = r.AirExpMax,
+                PriceZAR = Math.Round(weightKg * r.AirExp, 2),
+                CustomsIncluded = false,
+                Icon = "air"
+            });
+
+            options.Add(new ShippingOption
+            {
+                Code = "YUN_AIR_STANDARD",
+                Name = "Air Standard",
+                Description = "Tracked delivery · Duties settled at delivery",
+                TransitDaysMin = r.AirStdMin,
+                TransitDaysMax = r.AirStdMax,
+                PriceZAR = Math.Round(weightKg * r.AirStd, 2),
+                CustomsIncluded = false,
+                Icon = "air"
+            });
+        }
 
         // Sea only practical for 5kg+ shipments
         if (weightGrams >= 5000)
