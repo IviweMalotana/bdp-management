@@ -1,4 +1,5 @@
 using BDP.API.Data;
+using BDP.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,8 +13,13 @@ namespace BDP.API.Controllers.Storefront;
 public class StorefrontOrdersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly YunExpressService _yunExpress;
 
-    public StorefrontOrdersController(AppDbContext db) => _db = db;
+    public StorefrontOrdersController(AppDbContext db, YunExpressService yunExpress)
+    {
+        _db = db;
+        _yunExpress = yunExpress;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetOrders()
@@ -67,6 +73,12 @@ public class StorefrontOrdersController : ControllerBase
             order.PaidAt,
             order.PaystackPaymentReference,
             order.ShippingAddressJson,
+            order.ShippingServiceCode,
+            order.ShippingServiceName,
+            order.TrackingNumber,
+            order.TrackingCarrier,
+            order.ShippedDate,
+            order.DeliveredDate,
             order.CreatedAt,
             items = order.Items.Select(i => new
             {
@@ -78,6 +90,30 @@ public class StorefrontOrdersController : ControllerBase
                 i.UnitPriceZAR,
                 i.LineTotal
             })
+        });
+    }
+
+    [HttpGet("{id:int}/tracking")]
+    public async Task<IActionResult> GetTracking(int id)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email  = User.FindFirstValue(ClaimTypes.Email);
+
+        var order = await _db.Orders
+            .FirstOrDefaultAsync(o => o.Id == id && (o.UserId == userId || o.GuestEmail == email));
+
+        if (order == null) return NotFound();
+
+        if (string.IsNullOrWhiteSpace(order.TrackingNumber))
+            return Ok(new { trackingNumber = (string?)null, carrier = (string?)null, events = Array.Empty<object>() });
+
+        var events = await _yunExpress.GetTrackingAsync(order.TrackingNumber);
+
+        return Ok(new
+        {
+            trackingNumber = order.TrackingNumber,
+            carrier        = order.TrackingCarrier ?? "YunExpress",
+            events         = events.Select(e => new { e.Time, e.Description, e.Location })
         });
     }
 }

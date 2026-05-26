@@ -174,6 +174,12 @@ export function getOrderById(jwt: string, id: number) {
   });
 }
 
+export function getOrderTracking(jwt: string, id: number) {
+  return request(`/api/storefront/me/orders/${id}/tracking`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+}
+
 export function getRecurringOrders(jwt: string) {
   return request("/api/storefront/me/recurring", {
     headers: { Authorization: `Bearer ${jwt}` },

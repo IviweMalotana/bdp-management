@@ -28,6 +28,8 @@ public class Order
     public string FulfilmentStatus { get; set; } = "Pending";
     public string? ShippingServiceCode { get; set; }
     public string? ShippingServiceName { get; set; }
+    public string? TrackingNumber { get; set; }
+    public string? TrackingCarrier { get; set; }
 
     public Client? Client { get; set; }
     public RecurringOrder? RecurringOrder { get; set; }

@@ -206,6 +206,72 @@ public class YunExpressService
         return options;
     }
 
+    // ── Tracking ───────────────────────────────────────────────────────────────
+
+    public record TrackingEvent(string Time, string Description, string Location);
+
+    /// <summary>
+    /// Fetches tracking events from YunExpress for a given waybill/tracking number.
+    /// Returns an empty list if credentials are absent or the API call fails.
+    /// </summary>
+    public async Task<List<TrackingEvent>> GetTrackingAsync(string trackingNumber)
+    {
+        if (!HasCredentials)
+        {
+            _logger.LogInformation("YunExpress credentials not configured — cannot fetch tracking");
+            return new List<TrackingEvent>();
+        }
+
+        try
+        {
+            var client = _http.CreateClient();
+            var payload = new
+            {
+                appKey = AppKey,
+                appToken = AppToken,
+                waybillNumber = trackingNumber,
+            };
+
+            var json = System.Text.Json.JsonSerializer.Serialize(payload);
+            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+
+            // YunExpress tracking endpoint (confirmed from partner docs)
+            var response = await client.PostAsync($"{BaseUrl}/getTrace", content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YunExpress tracking API returned {Status}", response.StatusCode);
+                return new List<TrackingEvent>();
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+            var doc = System.Text.Json.JsonDocument.Parse(body);
+
+            // Expected shape:
+            // { "result": true, "data": [{ "time": "2024-01-01 12:00", "description": "...", "location": "..." }] }
+            var events = new List<TrackingEvent>();
+            if (doc.RootElement.TryGetProperty("data", out var data))
+            {
+                foreach (var item in data.EnumerateArray())
+                {
+                    var time = item.TryGetProperty("time", out var t) ? t.GetString() ?? "" : "";
+                    var desc = item.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
+                    var loc  = item.TryGetProperty("location", out var l)  ? l.GetString() ?? "" : "";
+                    events.Add(new TrackingEvent(time, desc, loc));
+                }
+            }
+
+            // Most recent first
+            events.Reverse();
+            return events;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "YunExpress tracking fetch failed for {TrackingNumber}", trackingNumber);
+            return new List<TrackingEvent>();
+        }
+    }
+
     private static string MapToZone(string countryCode) => countryCode.ToUpper() switch
     {
         "ZA" => "ZA",
