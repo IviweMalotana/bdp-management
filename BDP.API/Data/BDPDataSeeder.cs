@@ -169,7 +169,17 @@ public static class BDPDataSeeder
 
     private static async Task SeedProductsAsync(AppDbContext context)
     {
-        if (await context.Products.AnyAsync()) return;
+        // If products exist but have no variants, they are empty shells from an earlier seed run.
+        // Clear them so the full seed (with variants + pricing tiers) can run cleanly.
+        if (await context.Products.AnyAsync())
+        {
+            var hasVariants = await context.ProductVariants.AnyAsync();
+            if (hasVariants) return; // fully seeded — nothing to do
+
+            // Remove shell products left over from an incomplete seed
+            context.Products.RemoveRange(context.Products);
+            await context.SaveChangesAsync();
+        }
 
         var settings = await context.ShippingSettings.FindAsync(1);
         decimal cnyPerCbm = settings?.CnyPerCbm   ?? 2000m;
