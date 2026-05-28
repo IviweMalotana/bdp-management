@@ -169,19 +169,6 @@ public static class BDPDataSeeder
 
     private static async Task SeedProductsAsync(AppDbContext context)
     {
-        // If products exist but have no variants, they are empty shells from an earlier seed run.
-        // Clear them so the full seed (with variants + pricing tiers) can run cleanly.
-        if (await context.Products.AnyAsync())
-        {
-            var hasVariants = await context.ProductVariants.AnyAsync();
-            if (hasVariants) return; // fully seeded — nothing to do
-
-            // Remove shell products left over from an incomplete seed
-            // Use raw SQL to avoid EF change-tracker issues and FK ordering
-            await context.Database.ExecuteSqlRawAsync("DELETE FROM \"Products\"");
-            await context.SaveChangesAsync();
-        }
-
         var settings = await context.ShippingSettings.FindAsync(1);
         decimal cnyPerCbm = settings?.CnyPerCbm   ?? 2000m;
         decimal cnyPerKg  = settings?.CnyPerKg    ?? 10m;
@@ -329,26 +316,35 @@ public static class BDPDataSeeder
 
         foreach (var def in productDefs)
         {
-            var product = new Product
+            // Upsert: find the shell product by name (if it was seeded without variants)
+            // or create a fresh one. Never delete — avoids FK violations on ShipmentItems.
+            var product = await context.Products.FirstOrDefaultAsync(p => p.Name == def.Name);
+            if (product == null)
             {
-                Name = def.Name,
-                Category = def.Category,
-                Slug = def.Slug,
-                Link1688 = def.Link1688,
-                MetaTitle = def.Name,
-                MetaDescription = string.Empty,
-                MetaKeywords = string.Empty,
-                SupplierId = def.SupplierId,
-                WeightKg = def.WeightKg,
-                LengthCm = def.LengthCm,
-                WidthCm = def.WidthCm,
-                HeightCm = def.HeightCm,
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow,
-            };
+                product = new Product { CreatedAt = DateTime.UtcNow };
+                context.Products.Add(product);
+            }
 
-            context.Products.Add(product);
+            // Always refresh all fields so shell records are corrected.
+            product.Name = def.Name;
+            product.Category = def.Category;
+            product.Slug = def.Slug;
+            product.Link1688 = def.Link1688;
+            product.MetaTitle = def.Name;
+            product.MetaDescription = string.Empty;
+            product.MetaKeywords = string.Empty;
+            product.SupplierId = def.SupplierId;
+            product.WeightKg = def.WeightKg;
+            product.LengthCm = def.LengthCm;
+            product.WidthCm = def.WidthCm;
+            product.HeightCm = def.HeightCm;
+            product.UpdatedAt = DateTime.UtcNow;
+
             await context.SaveChangesAsync();
+
+            // Skip variant seeding if this product already has them.
+            if (await context.ProductVariants.AnyAsync(v => v.ProductId == product.Id))
+                continue;
 
             foreach (var v in def.Variants)
             {
