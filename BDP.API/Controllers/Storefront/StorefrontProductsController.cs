@@ -22,6 +22,7 @@ public class StorefrontProductsController : ControllerBase
         var query = _db.Products
             .Include(p => p.Images)
             .Include(p => p.Variants).ThenInclude(v => v.PricingTiers)
+            .Where(p => p.Variants.Any())   // hide shell products with no variants
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(category))
@@ -179,6 +180,7 @@ public class StorefrontProductsController : ControllerBase
     public async Task<IActionResult> GetCategories()
     {
         var categories = await _db.Products
+            .Where(p => p.Variants.Any())   // exclude shell products
             .GroupBy(p => p.Category)
             .Select(g => new { category = g.Key, productCount = g.Count() })
             .OrderBy(c => c.category)
