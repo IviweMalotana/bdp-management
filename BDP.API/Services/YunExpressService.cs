@@ -1,5 +1,7 @@
+using System.Security;
 using System.Text;
 using System.Text.Json;
+using System.Xml;
 
 namespace BDP.API.Services;
 
@@ -22,7 +24,6 @@ public class YunExpressService
     private readonly IHttpClientFactory _http;
     private readonly ILogger<YunExpressService> _logger;
 
-    // Confirmed base URL from AfterShip integration docs
     private const string BaseUrl = "https://yfoms.yunexpress.com/default/svc/web-service";
 
     public YunExpressService(IConfiguration config, IHttpClientFactory http, ILogger<YunExpressService> logger)
@@ -35,6 +36,63 @@ public class YunExpressService
     private string? AppKey => _config["YunExpress:AppKey"];
     private string? AppToken => _config["YunExpress:AppToken"];
     public bool HasCredentials => !string.IsNullOrWhiteSpace(AppKey) && !string.IsNullOrWhiteSpace(AppToken);
+
+    // ── SOAP helper ────────────────────────────────────────────────────────────
+
+    private async Task<JsonElement?> CallSoapAsync(string service, object paramsObj)
+    {
+        try
+        {
+            var paramsJson = JsonSerializer.Serialize(paramsObj);
+            var escapedParams = SecurityElement.Escape(paramsJson) ?? paramsJson;
+
+            var soapEnvelope = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<SOAP-ENV:Envelope xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:ns1=""http://www.example.org/Ec/"">
+  <SOAP-ENV:Body>
+    <ns1:callService>
+      <paramsJson>{escapedParams}</paramsJson>
+      <appToken>{SecurityElement.Escape(AppToken ?? "")}</appToken>
+      <appKey>{SecurityElement.Escape(AppKey ?? "")}</appKey>
+      <service>{SecurityElement.Escape(service)}</service>
+    </ns1:callService>
+  </SOAP-ENV:Body>
+</SOAP-ENV:Envelope>";
+
+            var client = _http.CreateClient();
+            var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
+
+            var response = await client.PostAsync(BaseUrl, content);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("YunExpress SOAP call {Service} returned {Status}", service, response.StatusCode);
+                return null;
+            }
+
+            var body = await response.Content.ReadAsStringAsync();
+
+            var xmlDoc = new XmlDocument();
+            xmlDoc.LoadXml(body);
+
+            var returnNode = xmlDoc.GetElementsByTagName("return")[0];
+            if (returnNode == null)
+            {
+                _logger.LogWarning("YunExpress SOAP response for {Service} has no <return> element", service);
+                return null;
+            }
+
+            var jsonText = returnNode.InnerText;
+            var doc = JsonDocument.Parse(jsonText);
+            return doc.RootElement.Clone();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "YunExpress SOAP call failed for service {Service}", service);
+            return null;
+        }
+    }
+
+    // ── Rates ──────────────────────────────────────────────────────────────────
 
     public async Task<List<ShippingOption>> GetRatesAsync(string countryCode, int weightGrams)
     {
@@ -60,50 +118,25 @@ public class YunExpressService
 
     private async Task<List<ShippingOption>> FetchLiveRatesAsync(string countryCode, int weightGrams)
     {
-        var client = _http.CreateClient();
-        var weightKg = (decimal)weightGrams / 1000m;
+        var weightKg = Math.Round((decimal)weightGrams / 1000m, 3);
 
-        // YunExpress API auth: appKey + appToken in request body
-        // Endpoint and exact field names to be confirmed once portal credentials are available.
-        // Built from AfterShip integration docs: yfoms.yunexpress.com/default/svc/web-service
-        var payload = new
+        var result = await CallSoapAsync("getFreight", new
         {
-            appKey = AppKey,
-            appToken = AppToken,
-            countryCode = countryCode.ToUpper(),
-            weight = Math.Round(weightKg, 3),
-            // productType omitted — returns all available services
-        };
+            country_code = countryCode.ToUpper(),
+            weight = weightKg
+        });
 
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        if (result == null) return new List<ShippingOption>();
 
-        // TODO: Confirm exact sub-path once portal is found. Common patterns:
-        //   POST {BaseUrl}/getfreight
-        //   POST {BaseUrl}/queryfreight
-        var response = await client.PostAsync($"{BaseUrl}/getfreight", content);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogWarning("YunExpress API returned {Status}", response.StatusCode);
-            return new List<ShippingOption>();
-        }
-
-        var body = await response.Content.ReadAsStringAsync();
-        var doc = JsonDocument.Parse(body);
-
-        // TODO: Map actual response fields once portal docs are confirmed
-        // Expected shape: { "result": true, "data": [{ "productCode": "...", "productName": "...", "freight": 12.50, "time": "7-14" }] }
         var options = new List<ShippingOption>();
-        if (doc.RootElement.TryGetProperty("data", out var data))
+        if (result.Value.TryGetProperty("data", out var data))
         {
+            var zarRate = _config.GetValue<decimal>("YunExpress:UsdToZarRate", 18.5m);
             foreach (var item in data.EnumerateArray())
             {
                 var code = item.TryGetProperty("productCode", out var c) ? c.GetString() ?? "" : "";
                 var name = item.TryGetProperty("productName", out var n) ? n.GetString() ?? "" : "";
                 var freight = item.TryGetProperty("freight", out var f) ? f.GetDecimal() : 0m;
-                // Convert USD freight to ZAR at configured rate (default R18.50)
-                var zarRate = _config.GetValue<decimal>("YunExpress:UsdToZarRate", 18.5m);
                 options.Add(new ShippingOption
                 {
                     Code = code,
@@ -144,7 +177,7 @@ public class YunExpressService
 
         if (!zoneRates.TryGetValue(zone, out var r)) r = zoneRates["REST"];
 
-        // Air options: YunExpress air typically handles up to 30kg (75 units at 400g)
+        // Air options: YunExpress air typically handles up to 30kg (75 units at 400g each)
         // Above that, only sea freight is practical
         const int AirMaxGrams = 30_000;
 
@@ -224,39 +257,18 @@ public class YunExpressService
 
         try
         {
-            var client = _http.CreateClient();
-            var payload = new
-            {
-                appKey = AppKey,
-                appToken = AppToken,
-                waybillNumber = trackingNumber,
-            };
+            var result = await CallSoapAsync("getOrderTracking", new { order_numbers = trackingNumber });
 
-            var json = System.Text.Json.JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+            if (result == null) return new List<TrackingEvent>();
 
-            // YunExpress tracking endpoint (confirmed from partner docs)
-            var response = await client.PostAsync($"{BaseUrl}/getTrace", content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("YunExpress tracking API returned {Status}", response.StatusCode);
-                return new List<TrackingEvent>();
-            }
-
-            var body = await response.Content.ReadAsStringAsync();
-            var doc = System.Text.Json.JsonDocument.Parse(body);
-
-            // Expected shape:
-            // { "result": true, "data": [{ "time": "2024-01-01 12:00", "description": "...", "location": "..." }] }
             var events = new List<TrackingEvent>();
-            if (doc.RootElement.TryGetProperty("data", out var data))
+            if (result.Value.TryGetProperty("data", out var data))
             {
                 foreach (var item in data.EnumerateArray())
                 {
-                    var time = item.TryGetProperty("time", out var t) ? t.GetString() ?? "" : "";
-                    var desc = item.TryGetProperty("description", out var d) ? d.GetString() ?? "" : "";
-                    var loc  = item.TryGetProperty("location", out var l)  ? l.GetString() ?? "" : "";
+                    var time = item.TryGetProperty("acceptTime", out var t) ? t.GetString() ?? "" : "";
+                    var loc  = item.TryGetProperty("acceptAddress", out var l) ? l.GetString() ?? "" : "";
+                    var desc = item.TryGetProperty("remark", out var d) ? d.GetString() ?? "" : "";
                     events.Add(new TrackingEvent(time, desc, loc));
                 }
             }
@@ -303,53 +315,54 @@ public class YunExpressService
     {
         try
         {
-            var client = _http.CreateClient();
-            var payload = new
+            var result = await CallSoapAsync("createOrder", new
             {
-                appKey = AppKey,
-                appToken = AppToken,
-                orderNumber = req.OrderReference,
-                countryCode = req.CountryCode,
-                productType = req.ProductCode,
-                weight = req.WeightKg,
-                length = req.LengthCm,
-                width = req.WidthCm,
-                height = req.HeightCm,
-                pieces = req.Pieces,
-                declaredValue = req.DeclaredValueUSD,
-                recipientName = req.RecipientName,
-                recipientPhone = req.RecipientPhone,
-                recipientAddress = req.RecipientAddress,
-                recipientCity = req.RecipientCity,
-                recipientPostcode = req.RecipientPostcode,
-            };
+                platform = "OTHER",
+                shipping_method = req.ProductCode,
+                reference_no = req.OrderReference,
+                country_code = req.CountryCode,
+                province = req.RecipientAddress,
+                city = req.RecipientCity,
+                district = "",
+                address1 = req.RecipientAddress,
+                name = req.RecipientName,
+                phone = "",
+                cell_phone = req.RecipientPhone,
+                email = "",
+                order_business_type = "b2c",
+                products = new[]
+                {
+                    new
+                    {
+                        product_sku = "PKG",
+                        product_title = "Cosmetic Packaging",
+                        product_title_en = "Cosmetic Packaging",
+                        product_quantity = req.Pieces,
+                        product_declared_value = req.DeclaredValueUSD,
+                        product_weight = req.WeightKg
+                    }
+                }
+            });
 
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync($"{BaseUrl}/addOrder", content);
+            if (result == null)
+                return new CreateOrderResult(false, null, null, null, "YunExpress SOAP call failed");
 
-            if (!response.IsSuccessStatusCode)
+            var success = result.Value.TryGetProperty("result", out var r) && r.GetBoolean();
+            if (!success)
             {
-                _logger.LogWarning("YunExpress addOrder returned {Status}", response.StatusCode);
-                return new CreateOrderResult(false, null, null, null, $"YunExpress API error: {response.StatusCode}");
-            }
-
-            var body = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(body);
-
-            var result = doc.RootElement.TryGetProperty("result", out var r) && r.GetBoolean();
-            if (!result)
-            {
-                var msg = doc.RootElement.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+                var msg = result.Value.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
                 return new CreateOrderResult(false, null, null, null, msg);
             }
 
             string? waybill = null, yunId = null, labelUrl = null;
-            if (doc.RootElement.TryGetProperty("data", out var data))
+            if (result.Value.TryGetProperty("data", out var data))
             {
-                if (data.TryGetProperty("waybillNumber", out var w)) waybill = w.GetString();
-                if (data.TryGetProperty("yunOrderId", out var y)) yunId = y.GetString();
-                if (data.TryGetProperty("labelUrl", out var l)) labelUrl = l.GetString();
+                if (data.TryGetProperty("waybill_code", out var wc)) waybill = wc.GetString();
+                else if (data.TryGetProperty("tracking_no", out var tn)) waybill = tn.GetString();
+                else if (data.TryGetProperty("order_number", out var on1)) waybill = on1.GetString();
+
+                if (data.TryGetProperty("order_number", out var oid)) yunId = oid.GetString();
+                if (data.TryGetProperty("label_url", out var lu)) labelUrl = lu.GetString();
             }
 
             return new CreateOrderResult(true, waybill, yunId, labelUrl, null);
@@ -365,33 +378,17 @@ public class YunExpressService
     {
         try
         {
-            var client = _http.CreateClient();
-            var payload = new { appKey = AppKey, appToken = AppToken, waybillNumber };
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync($"{BaseUrl}/printLabel", content);
+            var result = await CallSoapAsync("getLabel", new { order_numbers = waybillNumber });
 
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("YunExpress printLabel returned {Status}", response.StatusCode);
-                return (null, null);
-            }
+            if (result == null) return (null, null);
 
-            var contentType = response.Content.Headers.ContentType?.MediaType ?? "";
-            if (contentType.Contains("pdf", StringComparison.OrdinalIgnoreCase))
+            if (result.Value.TryGetProperty("data", out var data))
             {
-                var bytes = await response.Content.ReadAsByteArrayAsync();
-                return (bytes, null);
-            }
-
-            var body = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(body);
-            if (doc.RootElement.TryGetProperty("data", out var data))
-            {
-                if (data.TryGetProperty("labelUrl", out var lu) && !string.IsNullOrEmpty(lu.GetString()))
+                // Prefer a direct URL
+                if (data.TryGetProperty("label_url", out var lu) && !string.IsNullOrEmpty(lu.GetString()))
                 {
                     var url = lu.GetString()!;
-                    // Fetch the PDF from the URL
+                    var client = _http.CreateClient();
                     var pdfResponse = await client.GetAsync(url);
                     if (pdfResponse.IsSuccessStatusCode)
                     {
@@ -399,6 +396,13 @@ public class YunExpressService
                         return (pdfBytes, url);
                     }
                     return (null, url);
+                }
+
+                // Fall back to base64-encoded PDF
+                if (data.TryGetProperty("file_data", out var fd) && !string.IsNullOrEmpty(fd.GetString()))
+                {
+                    var bytes = Convert.FromBase64String(fd.GetString()!);
+                    return (bytes, null);
                 }
             }
 
@@ -415,21 +419,9 @@ public class YunExpressService
     {
         try
         {
-            var client = _http.CreateClient();
-            var payload = new { appKey = AppKey, appToken = AppToken, yunOrderId };
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync($"{BaseUrl}/cancelOrder", content);
-
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("YunExpress cancelOrder returned {Status}", response.StatusCode);
-                return false;
-            }
-
-            var body = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(body);
-            return doc.RootElement.TryGetProperty("result", out var r) && r.GetBoolean();
+            var result = await CallSoapAsync("cancelOrder", new { order_numbers = yunOrderId });
+            if (result == null) return false;
+            return result.Value.TryGetProperty("result", out var r) && r.GetBoolean();
         }
         catch (Exception ex)
         {
@@ -444,28 +436,17 @@ public class YunExpressService
     {
         try
         {
-            var client = _http.CreateClient();
-            var payload = new { appKey = AppKey, appToken = AppToken, waybillNumber };
-            var json = JsonSerializer.Serialize(payload);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
-            var response = await client.PostAsync($"{BaseUrl}/getOrderInfo", content);
+            var result = await CallSoapAsync("getOrderInfo", new { order_numbers = waybillNumber });
 
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("YunExpress getOrderInfo returned {Status}", response.StatusCode);
-                return null;
-            }
+            if (result == null) return null;
 
-            var body = await response.Content.ReadAsStringAsync();
-            var doc = JsonDocument.Parse(body);
-
-            if (!doc.RootElement.TryGetProperty("data", out var data))
+            if (!result.Value.TryGetProperty("data", out var data))
                 return null;
 
             var status = data.TryGetProperty("status", out var s) ? s.GetString() : null;
-            var waybill = data.TryGetProperty("waybillNumber", out var w) ? w.GetString() : null;
-            var productName = data.TryGetProperty("productName", out var p) ? p.GetString() : null;
-            var createdAt = data.TryGetProperty("createTime", out var c) ? c.GetString() : null;
+            var waybill = data.TryGetProperty("waybill_code", out var w) ? w.GetString() : null;
+            var productName = data.TryGetProperty("shipping_method", out var p) ? p.GetString() : null;
+            var createdAt = data.TryGetProperty("create_time", out var c) ? c.GetString() : null;
 
             return new YunOrderInfo(status, waybill, productName, createdAt);
         }
