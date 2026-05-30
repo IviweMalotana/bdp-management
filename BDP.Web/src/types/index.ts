@@ -470,6 +470,8 @@ export interface ShippingSettings {
   cnyPerCbm: number
   cnyPerKg: number
   cnyToZarRate: number
+  bufferCNY?: number
+  profitCNY?: number
   updatedAt?: string
   notes?: string
 }

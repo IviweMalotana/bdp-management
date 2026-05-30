@@ -325,7 +325,7 @@ export const shipping = {
   getSettings: () =>
     http.get<ShippingSettings>('/shipping/settings').then((r) => r.data),
 
-  updateSettings: (data: { cnyPerCbm: number; cnyPerKg: number; cnyToZarRate: number }) =>
+  updateSettings: (data: { cnyPerCbm: number; cnyPerKg: number; cnyToZarRate: number; bufferCNY?: number; profitCNY?: number }) =>
     http.put<ShippingSettings>('/shipping/settings', data).then((r) => r.data),
 }
 

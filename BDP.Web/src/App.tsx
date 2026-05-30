@@ -34,6 +34,7 @@ import InvoiceDetail from './pages/invoices/InvoiceDetail'
 import CollectionsList from './pages/collections/CollectionsList'
 import CollectionForm from './pages/collections/CollectionForm'
 import PendingApplications from './pages/b2b/PendingApplications'
+import CataloguePage from './pages/catalogue/CataloguePage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
@@ -109,6 +110,9 @@ export default function App() {
 
             {/* B2B Applications */}
             <Route path="/b2b/pending" element={<PendingApplications />} />
+
+            {/* Catalogue */}
+            <Route path="/catalogue" element={<CataloguePage />} />
           </Route>
         </Route>
 

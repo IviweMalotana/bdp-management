@@ -13,10 +13,10 @@ public class CreateVariantDto
 public class ProductVariantDto
 {
     public int Id { get; set; }
-    public string Size { get; set; } = string.Empty;
-    public string BottleColour { get; set; } = string.Empty;
-    public string LidColour { get; set; } = string.Empty;
-    public string Texture { get; set; } = string.Empty;
+    public string? Size { get; set; }
+    public string? BottleColour { get; set; }
+    public string? LidColour { get; set; }
+    public string? Texture { get; set; }
     public string SKU { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public List<VariantPricingTierDto> PricingTiers { get; set; } = new();

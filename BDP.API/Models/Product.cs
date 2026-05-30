@@ -17,6 +17,9 @@ public class Product
     public decimal LengthCm { get; set; }
     public decimal WidthCm { get; set; }
     public decimal HeightCm { get; set; }
+    public string? SupplierItemNumber { get; set; }   // e.g. "HX-Y17"
+    public string? ProductType { get; set; }           // e.g. "Cream Jar"
+    public string? ShapeStyle { get; set; }            // e.g. "Slanted Shoulder Cylindrical"
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

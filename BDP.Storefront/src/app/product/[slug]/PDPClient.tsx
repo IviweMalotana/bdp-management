@@ -1,10 +1,9 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { addToCart } from "@/lib/api";
-import VariantSelector from "@/app/components/VariantSelector";
 import QuantityInput from "@/app/components/QuantityInput";
 import PricingTierTable from "@/app/components/PricingTierTable";
 
@@ -12,12 +11,42 @@ function formatZAR(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-interface Tier { id: number; quantity: number; salePriceZAR: number }
-interface Variant {
-  id: number; size: string; bottleColour: string; lidColour: string;
-  texture: string; sku: string; moq: number; pricingTiers: Tier[];
+function unique<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
 }
-interface CustomisationOption { id: number; type: string; minimumQuantity: number; pricingTiers: Tier[] }
+
+interface Tier { id: number; quantity: number; salePriceZAR: number; costPerUnitZAR?: number }
+interface Variant {
+  id: number;
+  // Legacy
+  size?: string | null;
+  bottleColour?: string | null;
+  lidColour?: string | null;
+  texture?: string | null;
+  sku?: string | null;
+  // Catalogue
+  skuId?: string | null;
+  specificationSize?: string | null;
+  colorVariantName?: string | null;
+  baseBodyColor?: string | null;
+  baseBodyFinish?: string | null;
+  lidCapColor?: string | null;
+  lidCapFinish?: string | null;
+  lidCapMaterial?: string | null;
+  closureType?: string | null;
+  bodyMaterial?: string | null;
+  accessoriesIncluded?: string | null;
+  unitPriceCNY?: number;
+  moq: number;
+  pricingTiers: Tier[];
+}
+interface CustomisationOption {
+  id: number;
+  type: string;
+  minimumQuantity: number;
+  pricePerUnitZAR?: number | null;
+  pricingTiers: Tier[];
+}
 interface ProductImage { url: string; altText: string; isPrimary: boolean }
 
 interface Product {
@@ -29,12 +58,252 @@ interface Product {
   customisationOptions: CustomisationOption[];
 }
 
+// Helper: is this a catalogue-based product (has skuId / specificationSize)?
+function isCatalogueBased(variants: Variant[]): boolean {
+  return variants.some((v) => v.skuId || v.specificationSize);
+}
+
+// Derive display size from variant
+function variantSize(v: Variant): string {
+  return v.specificationSize ?? v.size ?? "";
+}
+
+// Derive display body label from variant
+function variantBodyLabel(v: Variant): string {
+  if (v.baseBodyColor && v.baseBodyFinish) return `${v.baseBodyColor} ${v.baseBodyFinish}`;
+  if (v.baseBodyColor) return v.baseBodyColor;
+  return v.bottleColour ?? "";
+}
+
+// Derive display lid label from variant
+function variantLidLabel(v: Variant): string {
+  if (v.lidCapColor && v.lidCapMaterial) return `${v.lidCapColor} ${v.lidCapMaterial}`;
+  if (v.lidCapColor) return v.lidCapColor;
+  return v.lidColour ?? "";
+}
+
+// ── Catalogue-based multi-step selector ─────────────────────────────────────
+
+function CatalogueVariantSelector({
+  variants,
+  selectedId,
+  onSelect,
+}: {
+  variants: Variant[];
+  selectedId: number;
+  onSelect: (v: Variant) => void;
+}) {
+  const selected = variants.find((v) => v.id === selectedId) ?? variants[0];
+
+  const sizes = useMemo(() => unique(variants.map(variantSize).filter(Boolean)), [variants]);
+
+  const activeSize = variantSize(selected);
+
+  const variantsForSize = useMemo(
+    () => (activeSize ? variants.filter((v) => variantSize(v) === activeSize) : variants),
+    [variants, activeSize]
+  );
+
+  const bodyOptions = useMemo(
+    () => unique(variantsForSize.map(variantBodyLabel).filter(Boolean)),
+    [variantsForSize]
+  );
+
+  const activeBody = variantBodyLabel(selected);
+
+  const variantsForBody = useMemo(
+    () => variantsForSize.filter((v) => variantBodyLabel(v) === activeBody),
+    [variantsForSize, activeBody]
+  );
+
+  const lidOptions = useMemo(
+    () => unique(variantsForBody.map(variantLidLabel).filter(Boolean)),
+    [variantsForBody]
+  );
+
+  const activeLid = variantLidLabel(selected);
+
+  function pickSize(size: string) {
+    const candidate =
+      variants.find(
+        (v) => variantSize(v) === size && variantBodyLabel(v) === activeBody && variantLidLabel(v) === activeLid
+      ) ??
+      variants.find((v) => variantSize(v) === size && variantBodyLabel(v) === activeBody) ??
+      variants.find((v) => variantSize(v) === size);
+    if (candidate) onSelect(candidate);
+  }
+
+  function pickBody(body: string) {
+    const candidate =
+      variantsForSize.find(
+        (v) => variantBodyLabel(v) === body && variantLidLabel(v) === activeLid
+      ) ?? variantsForSize.find((v) => variantBodyLabel(v) === body);
+    if (candidate) onSelect(candidate);
+  }
+
+  function pickLid(lid: string) {
+    const candidate = variantsForBody.find((v) => variantLidLabel(v) === lid);
+    if (candidate) onSelect(candidate);
+  }
+
+  const pill = (active: boolean) =>
+    `px-3 py-1.5 text-sm border transition-colors cursor-pointer ${
+      active ? "border-ink bg-ink text-cream" : "border-sand text-ink hover:border-ink"
+    }`;
+
+  return (
+    <div className="space-y-4">
+      {sizes.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Size</p>
+          <div className="flex flex-wrap gap-2">
+            {sizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => pickSize(s)}
+                className={pill(activeSize === s)}
+                style={{ borderRadius: "2px" }}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {bodyOptions.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Body Colour &amp; Finish</p>
+          <div className="flex flex-wrap gap-2">
+            {bodyOptions.map((b) => (
+              <button
+                key={b}
+                type="button"
+                onClick={() => pickBody(b)}
+                className={pill(activeBody === b)}
+                style={{ borderRadius: "2px" }}
+              >
+                {b}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {lidOptions.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Lid</p>
+          <div className="flex flex-wrap gap-2">
+            {lidOptions.map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => pickLid(l)}
+                className={pill(activeLid === l)}
+                style={{ borderRadius: "2px" }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {selected && (
+        <p className="text-xs font-mono" style={{ color: "#C9B8A8" }}>
+          SKU: {selected.skuId ?? selected.sku ?? "—"}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// ── Legacy variant selector (existing behaviour) ─────────────────────────────
+
+function LegacyVariantSelector({
+  variants,
+  selectedId,
+  onSelect,
+}: {
+  variants: Variant[];
+  selectedId: number;
+  onSelect: (v: Variant) => void;
+}) {
+  const selected = variants.find((v) => v.id === selectedId) ?? variants[0];
+
+  const sizes = unique(variants.map((v) => v.size ?? "").filter(Boolean));
+  const colours = unique(variants.map((v) => v.bottleColour ?? "").filter(Boolean));
+  const textures = unique(variants.map((v) => v.texture ?? "").filter(Boolean));
+
+  function pickVariant(overrides: Partial<{ size: string; bottleColour: string; texture: string }>) {
+    const candidate = variants.find(
+      (v) =>
+        v.size === (overrides.size ?? selected.size) &&
+        v.bottleColour === (overrides.bottleColour ?? selected.bottleColour) &&
+        v.texture === (overrides.texture ?? selected.texture)
+    );
+    if (candidate) onSelect(candidate);
+  }
+
+  const pill = (active: boolean) =>
+    `px-3 py-1.5 text-sm border transition-colors cursor-pointer ${
+      active ? "border-ink bg-ink text-cream" : "border-sand text-ink hover:border-ink"
+    }`;
+
+  return (
+    <div className="space-y-4">
+      {sizes.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Size</p>
+          <div className="flex flex-wrap gap-2">
+            {sizes.map((s) => (
+              <button key={s} type="button" onClick={() => pickVariant({ size: s })}
+                className={pill(selected.size === s)} style={{ borderRadius: "2px" }}>{s}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      {colours.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Colour</p>
+          <div className="flex flex-wrap gap-2">
+            {colours.map((c) => (
+              <button key={c} type="button" onClick={() => pickVariant({ bottleColour: c })}
+                className={pill(selected.bottleColour === c)} style={{ borderRadius: "2px" }}>{c}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      {textures.length > 1 && (
+        <div>
+          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Finish</p>
+          <div className="flex flex-wrap gap-2">
+            {textures.map((t) => (
+              <button key={t} type="button" onClick={() => pickVariant({ texture: t })}
+                className={pill(selected.texture === t)} style={{ borderRadius: "2px" }}>{t}</button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main PDP component ───────────────────────────────────────────────────────
+
+const MIN_QTY = 10;
+
 export default function PDPClient({ product }: { product: Product }) {
-  const [selectedVariant, setSelectedVariant] = useState<Variant>(product.variants[0] ?? {} as Variant);
-  const [quantity, setQuantity] = useState(selectedVariant.moq || 1);
+  const [selectedVariant, setSelectedVariant] = useState<Variant>(product.variants[0] ?? ({} as Variant));
+  const [quantity, setQuantity] = useState(Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY));
   const [selectedImage, setSelectedImage] = useState(0);
-  const [customisationOpen, setCustomisationOpen] = useState(false);
-  const [selectedCustomisation, setSelectedCustomisation] = useState<number | null>(null);
+
+  // Customisation toggles
+  const [silkScreen, setSilkScreen] = useState(false);
+  const [hotStamping, setHotStamping] = useState(false);
+  const [colourChange, setColourChange] = useState(false);
+
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
   const [moqError, setMoqError] = useState("");
@@ -43,21 +312,52 @@ export default function PDPClient({ product }: { product: Product }) {
   const { jwt } = useAuthStore();
 
   const tiers = selectedVariant.pricingTiers ?? [];
-  const moq = selectedVariant.moq || 1;
+  const moq = Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY);
 
+  // Determine unit price from pricing tiers
   const activeTier = [...tiers].reverse().find((t) => quantity >= t.quantity) ?? tiers[0];
-  const unitPrice = activeTier ? activeTier.salePriceZAR / activeTier.quantity : 0;
+  const unitPrice = activeTier
+    ? (activeTier.costPerUnitZAR ?? activeTier.salePriceZAR / activeTier.quantity)
+    : 0;
+
   const lineTotal = unitPrice * quantity;
+
+  // Customisation add-ons
+  const customisationEnabled = quantity >= 100;
+
+  const silkOption = product.customisationOptions.find((co) => co.type === "SilkScreen");
+  const hotOption = product.customisationOptions.find((co) => co.type === "HotStamping");
+  const colourOption = product.customisationOptions.find((co) => co.type === "ColourChange");
+
+  function customisationCost(option: CustomisationOption | undefined, enabled: boolean): number {
+    if (!enabled || !option) return 0;
+    // If flat pricePerUnitZAR is set (ColourChange), use it
+    if (option.pricePerUnitZAR != null) return option.pricePerUnitZAR * quantity;
+    // Otherwise find tier
+    const tier = [...option.pricingTiers].reverse().find((t) => quantity >= t.quantity) ?? option.pricingTiers[0];
+    return tier ? tier.salePriceZAR : 0;
+  }
+
+  const silkCost = customisationCost(silkOption, silkScreen);
+  const hotCost = customisationCost(hotOption, hotStamping);
+  const colourCost = customisationCost(colourOption, colourChange);
+  const grandTotal = lineTotal + silkCost + hotCost + colourCost;
 
   function handleQuantityChange(n: number) {
     setQuantity(n);
     if (n < moq) setMoqError(`Minimum order is ${moq} units`);
     else setMoqError("");
+    // Disable customisations if dropping below threshold
+    if (n < 100) {
+      setSilkScreen(false);
+      setHotStamping(false);
+      setColourChange(false);
+    }
   }
 
   function handleVariantSelect(v: Variant) {
     setSelectedVariant(v);
-    setQuantity(Math.max(quantity, v.moq || 1));
+    setQuantity(Math.max(quantity, v.moq || MIN_QTY, MIN_QTY));
   }
 
   async function handleAddToCart() {
@@ -65,7 +365,9 @@ export default function PDPClient({ product }: { product: Product }) {
     setAdding(true);
     try {
       const token = getSessionToken();
-      const result = await addToCart(token, selectedVariant.id, quantity, selectedCustomisation ?? undefined, jwt ?? undefined);
+      // Pass first selected customisation ID (silk screen or hot stamping — not colour change which is handled separately)
+      const customisationId = silkScreen ? silkOption?.id : hotStamping ? hotOption?.id : undefined;
+      const result = await addToCart(token, selectedVariant.id, quantity, customisationId, jwt ?? undefined);
       setCart(result as Parameters<typeof setCart>[0]);
       setAdded(true);
       setTimeout(() => setAdded(false), 2000);
@@ -77,6 +379,9 @@ export default function PDPClient({ product }: { product: Product }) {
   }
 
   const images = product.images.length > 0 ? product.images : [{ url: "", altText: product.name, isPrimary: true }];
+  const useCatalogueSel = isCatalogueBased(product.variants);
+
+  const customisationTooltip = "Available from 100 units";
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-16">
@@ -91,9 +396,7 @@ export default function PDPClient({ product }: { product: Product }) {
               <Image
                 src={images[selectedImage].url}
                 alt={images[selectedImage].altText || product.name}
-                fill
-                className="object-cover"
-                priority
+                fill className="object-cover" priority
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -114,9 +417,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     backgroundColor: "#EDE4D8",
                   }}
                 >
-                  {img.url && (
-                    <Image src={img.url} alt={img.altText} fill className="object-cover" />
-                  )}
+                  {img.url && <Image src={img.url} alt={img.altText} fill className="object-cover" />}
                 </button>
               ))}
             </div>
@@ -143,11 +444,19 @@ export default function PDPClient({ product }: { product: Product }) {
           {/* Variant selector */}
           {product.variants.length > 1 && (
             <div className="mb-6">
-              <VariantSelector
-                variants={product.variants}
-                selectedId={selectedVariant.id}
-                onSelect={handleVariantSelect}
-              />
+              {useCatalogueSel ? (
+                <CatalogueVariantSelector
+                  variants={product.variants}
+                  selectedId={selectedVariant.id}
+                  onSelect={handleVariantSelect}
+                />
+              ) : (
+                <LegacyVariantSelector
+                  variants={product.variants}
+                  selectedId={selectedVariant.id}
+                  onSelect={handleVariantSelect}
+                />
+              )}
             </div>
           )}
 
@@ -158,6 +467,7 @@ export default function PDPClient({ product }: { product: Product }) {
             </p>
             <QuantityInput value={quantity} min={moq} onChange={handleQuantityChange} />
             {moqError && <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{moqError}</p>}
+            <p className="text-xs mt-1" style={{ color: "#C9B8A8" }}>Minimum order: {MIN_QTY} units</p>
           </div>
 
           {/* Pricing tier table */}
@@ -167,57 +477,87 @@ export default function PDPClient({ product }: { product: Product }) {
             </div>
           )}
 
-          {/* Customisation */}
-          {product.customisationOptions.length > 0 && (
-            <div className="mb-6 border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
-              <button
-                type="button"
-                onClick={() => setCustomisationOpen(!customisationOpen)}
-                className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium"
-                style={{ color: "#1C1A17" }}
-              >
-                Add your logo?
-                <span>{customisationOpen ? "−" : "+"}</span>
-              </button>
-              {customisationOpen && (
-                <div className="px-4 pb-4 border-t" style={{ borderColor: "#C9B8A8" }}>
-                  {quantity < 100 && (
-                    <p className="text-xs mt-3 mb-3" style={{ color: "#D4A89A" }}>
-                      Customisation requires a minimum of 100 units.
-                    </p>
-                  )}
-                  <div className="space-y-2 mt-3">
-                    <button
-                      onClick={() => setSelectedCustomisation(null)}
-                      className="block text-sm w-full text-left py-1 hover:opacity-70"
-                      style={{ color: selectedCustomisation === null ? "#1C1A17" : "#4A4540", fontWeight: selectedCustomisation === null ? 500 : 400 }}
-                    >
-                      No customisation
-                    </button>
-                    {product.customisationOptions.map((co) => (
-                      <button
-                        key={co.id}
-                        onClick={() => setSelectedCustomisation(co.id)}
-                        className="block text-sm w-full text-left py-1 hover:opacity-70"
-                        style={{ color: selectedCustomisation === co.id ? "#1C1A17" : "#4A4540", fontWeight: selectedCustomisation === co.id ? 500 : 400 }}
-                      >
-                        {co.type} (min {co.minimumQuantity} units)
-                      </button>
-                    ))}
-                  </div>
-                </div>
+          {/* Customisation panel */}
+          <div className="mb-6 border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
+            <div className="px-4 py-3 border-b" style={{ borderColor: "#C9B8A8" }}>
+              <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>Personalise your order</p>
+              {!customisationEnabled && (
+                <p className="text-xs mt-0.5" style={{ color: "#D4A89A" }}>
+                  Customisation options are available from 100 units
+                </p>
               )}
             </div>
-          )}
+            <div className="px-4 py-4 space-y-3">
+              {/* Silk Screen */}
+              {silkOption && (
+                <CustomisationToggle
+                  label="Silk Screen"
+                  enabled={customisationEnabled}
+                  checked={silkScreen}
+                  onChange={setSilkScreen}
+                  cost={customisationEnabled ? silkCost : null}
+                  tooltip={customisationEnabled ? undefined : customisationTooltip}
+                />
+              )}
+              {/* Hot Stamping */}
+              {hotOption && (
+                <CustomisationToggle
+                  label="Hot Stamping"
+                  enabled={customisationEnabled}
+                  checked={hotStamping}
+                  onChange={setHotStamping}
+                  cost={customisationEnabled ? hotCost : null}
+                  tooltip={customisationEnabled ? undefined : customisationTooltip}
+                />
+              )}
+              {/* Colour Change */}
+              <CustomisationToggle
+                label="Colour Change"
+                subLabel="+R2.00/unit"
+                enabled={customisationEnabled}
+                checked={colourChange}
+                onChange={setColourChange}
+                cost={customisationEnabled ? colourCost : null}
+                tooltip={customisationEnabled ? undefined : customisationTooltip}
+              />
+            </div>
+          </div>
 
-          {/* Total */}
-          <div className="mb-6">
-            <p className="text-3xl font-light" style={{ fontFamily: "var(--font-display)", color: "#1C1A17" }}>
-              {formatZAR(lineTotal)} total
-            </p>
-            <p className="text-sm" style={{ color: "#4A4540" }}>
-              {formatZAR(unitPrice)} per unit
-            </p>
+          {/* Price summary */}
+          <div className="mb-6 border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
+            <div className="px-4 py-4 space-y-2">
+              <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
+                <span>{quantity} units × {formatZAR(unitPrice)}</span>
+                <span>{formatZAR(lineTotal)}</span>
+              </div>
+              {silkScreen && silkCost > 0 && (
+                <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
+                  <span>+ Silk Screen</span>
+                  <span>{formatZAR(silkCost)}</span>
+                </div>
+              )}
+              {hotStamping && hotCost > 0 && (
+                <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
+                  <span>+ Hot Stamping</span>
+                  <span>{formatZAR(hotCost)}</span>
+                </div>
+              )}
+              {colourChange && colourCost > 0 && (
+                <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
+                  <span>+ Colour Change</span>
+                  <span>{formatZAR(colourCost)}</span>
+                </div>
+              )}
+              <div
+                className="flex justify-between font-medium pt-2 border-t"
+                style={{ borderColor: "#C9B8A8", color: "#1C1A17" }}
+              >
+                <span>Total</span>
+                <span className="text-xl" style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}>
+                  {formatZAR(grandTotal)}
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Add to cart */}
@@ -243,6 +583,15 @@ export default function PDPClient({ product }: { product: Product }) {
             <dl className="py-3 space-y-2 text-sm" style={{ color: "#4A4540" }}>
               <div className="flex gap-4"><dt className="w-24 shrink-0">Weight</dt><dd>{product.weightKg} kg</dd></div>
               <div className="flex gap-4"><dt className="w-24 shrink-0">Dimensions</dt><dd>{product.lengthCm} × {product.widthCm} × {product.heightCm} cm</dd></div>
+              {selectedVariant.bodyMaterial && (
+                <div className="flex gap-4"><dt className="w-24 shrink-0">Material</dt><dd>{selectedVariant.bodyMaterial}</dd></div>
+              )}
+              {selectedVariant.closureType && (
+                <div className="flex gap-4"><dt className="w-24 shrink-0">Closure</dt><dd>{selectedVariant.closureType}</dd></div>
+              )}
+              {selectedVariant.accessoriesIncluded && (
+                <div className="flex gap-4"><dt className="w-24 shrink-0">Includes</dt><dd>{selectedVariant.accessoriesIncluded}</dd></div>
+              )}
               {product.usageSuitability && (
                 <div className="flex gap-4"><dt className="w-24 shrink-0">Suitable for</dt><dd>{product.usageSuitability}</dd></div>
               )}
@@ -251,5 +600,49 @@ export default function PDPClient({ product }: { product: Product }) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ── Customisation toggle row ─────────────────────────────────────────────────
+
+function CustomisationToggle({
+  label,
+  subLabel,
+  enabled,
+  checked,
+  onChange,
+  cost,
+  tooltip,
+}: {
+  label: string;
+  subLabel?: string;
+  enabled: boolean;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  cost: number | null;
+  tooltip?: string;
+}) {
+  return (
+    <label
+      className={`flex items-center justify-between gap-3 ${enabled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
+      title={tooltip}
+    >
+      <div className="flex items-center gap-3">
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={!enabled}
+          onChange={(e) => onChange(e.target.checked)}
+          className="w-4 h-4 accent-ink"
+        />
+        <span className="text-sm" style={{ color: "#1C1A17" }}>
+          {label}
+          {subLabel && <span className="text-xs ml-1" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
+        </span>
+      </div>
+      {cost != null && cost > 0 && (
+        <span className="text-sm" style={{ color: "#4A4540" }}>{formatZAR(cost)}</span>
+      )}
+    </label>
   );
 }

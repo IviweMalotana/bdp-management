@@ -6,6 +6,8 @@ public class ShippingSettingsDto
     public decimal CnyPerCbm { get; set; }
     public decimal CnyPerKg { get; set; }
     public decimal CnyToZarRate { get; set; }
+    public decimal BufferCNY { get; set; }
+    public decimal ProfitCNY { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
 
@@ -14,4 +16,6 @@ public class UpdateShippingSettingsDto
     public decimal CnyPerCbm { get; set; }
     public decimal CnyPerKg { get; set; }
     public decimal CnyToZarRate { get; set; }
+    public decimal? BufferCNY { get; set; }
+    public decimal? ProfitCNY { get; set; }
 }

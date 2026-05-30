@@ -17,6 +17,7 @@ import {
   Layers,
   Globe,
   UserCheck,
+  BookOpen,
 } from 'lucide-react'
 
 const NAV = [
@@ -34,6 +35,7 @@ const NAV = [
   { to: '/invoices',          label: 'Invoices',        icon: FileText },
   { to: '/collections',       label: 'Collections',     icon: Layers },
   { to: '/b2b/pending',       label: 'Applications',    icon: UserCheck },
+  { to: '/catalogue',         label: 'Catalogue',       icon: BookOpen },
   { divider: true,            label: 'System' },
   { to: '/shipping-rates',    label: 'Shipping Rates',  icon: Globe },
   { to: '/settings/shipping', label: 'Settings',        icon: Settings },

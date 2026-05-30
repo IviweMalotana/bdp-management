@@ -317,6 +317,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<Invoice>()
             .Property(i => i.TotalZAR).HasPrecision(18, 4);
 
+        // Decimal precision — ProductVariant (catalogue fields)
+        builder.Entity<ProductVariant>()
+            .Property(pv => pv.UnitPriceCNY).HasPrecision(18, 4);
+
         // Decimal precision — ShippingSettings
         builder.Entity<ShippingSettings>()
             .Property(ss => ss.CnyPerCbm).HasPrecision(18, 4);
@@ -324,6 +328,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(ss => ss.CnyPerKg).HasPrecision(18, 4);
         builder.Entity<ShippingSettings>()
             .Property(ss => ss.CnyToZarRate).HasPrecision(18, 4);
+        builder.Entity<ShippingSettings>()
+            .Property(ss => ss.BufferCNY).HasPrecision(18, 4);
+        builder.Entity<ShippingSettings>()
+            .Property(ss => ss.ProfitCNY).HasPrecision(18, 4);
 
         // Decimal precision — ShippingRate
         builder.Entity<ShippingRate>().Property(r => r.RatePerKg).HasPrecision(18, 4);
@@ -368,6 +376,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             CnyPerCbm = 2000m,
             CnyPerKg = 10m,
             CnyToZarRate = 2.40m,
+            BufferCNY = 3.00m,
+            ProfitCNY = 1.00m,
             UpdatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
         });
     }

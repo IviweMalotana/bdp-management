@@ -73,6 +73,27 @@ public class StorefrontProductsController : ControllerBase
 
         if (product == null) return NotFound();
 
+        // Build customisation options list — includes supplier options + hardcoded ColourChange
+        var supplierOptions = product.Supplier.CustomisationOptions.Select(co => new StorefrontCustomisationOption
+        {
+            Id = co.Id,
+            Type = co.Type,
+            MinimumQuantity = co.MinimumQuantity,
+            PricePerUnitZAR = null,
+            PricingTiers = co.PricingTiers.OrderBy(t => t.Quantity)
+                .Select(t => new StorefrontTier { Id = t.Id, Quantity = t.Quantity, SalePriceZAR = t.SalePriceZAR })
+                .ToList(),
+        }).ToList();
+
+        supplierOptions.Add(new StorefrontCustomisationOption
+        {
+            Id = 0,
+            Type = "ColourChange",
+            MinimumQuantity = 100,
+            PricePerUnitZAR = 2.00m,
+            PricingTiers = new List<StorefrontTier>(),
+        });
+
         return Ok(new
         {
             product.Id,
@@ -89,31 +110,35 @@ public class StorefrontProductsController : ControllerBase
             variants = product.Variants.Select(v => new
             {
                 v.Id,
+                // Legacy fields
                 v.Size,
                 v.BottleColour,
                 v.LidColour,
                 v.Texture,
                 v.SKU,
-                moq = v.PricingTiers.Any() ? v.PricingTiers.Min(t => t.Quantity) : 0,
+                // Catalogue fields
+                skuId = v.SkuId,
+                specificationSize = v.SpecificationSize,
+                colorVariantName = v.ColorVariantName,
+                baseBodyColor = v.BaseBodyColor,
+                baseBodyFinish = v.BaseBodyFinish,
+                lidCapColor = v.LidCapColor,
+                lidCapFinish = v.LidCapFinish,
+                lidCapMaterial = v.LidCapMaterial,
+                closureType = v.ClosureType,
+                bodyMaterial = v.BodyMaterial,
+                accessoriesIncluded = v.AccessoriesIncluded,
+                unitPriceCNY = v.UnitPriceCNY,
+                moq = v.PricingTiers.Any() ? v.PricingTiers.Min(t => t.Quantity) : (v.SupplierMoq > 0 ? v.SupplierMoq : 10),
                 pricingTiers = v.PricingTiers.OrderBy(t => t.Quantity).Select(t => new
                 {
                     t.Id,
                     t.Quantity,
-                    t.SalePriceZAR
+                    t.SalePriceZAR,
+                    t.CostPerUnitZAR,
                 })
             }),
-            customisationOptions = product.Supplier.CustomisationOptions.Select(co => new
-            {
-                co.Id,
-                co.Type,
-                co.MinimumQuantity,
-                pricingTiers = co.PricingTiers.OrderBy(t => t.Quantity).Select(t => new
-                {
-                    t.Id,
-                    t.Quantity,
-                    t.SalePriceZAR
-                })
-            })
+            customisationOptions = supplierOptions,
         });
     }
 
@@ -188,4 +213,22 @@ public class StorefrontProductsController : ControllerBase
 
         return Ok(categories);
     }
+}
+
+// ── Helper DTOs for type-safe customisation option serialisation ──────────────
+
+internal class StorefrontTier
+{
+    public int Id { get; set; }
+    public int Quantity { get; set; }
+    public decimal SalePriceZAR { get; set; }
+}
+
+internal class StorefrontCustomisationOption
+{
+    public int Id { get; set; }
+    public string Type { get; set; } = string.Empty;
+    public int MinimumQuantity { get; set; }
+    public decimal? PricePerUnitZAR { get; set; }
+    public List<StorefrontTier> PricingTiers { get; set; } = new();
 }
