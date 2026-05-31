@@ -15,6 +15,7 @@ public static class BDPDataSeeder
         await SeedRolesAndAdminAsync(userManager, roleManager);
         await SeedSuppliersAsync(context);
         await DeduplicateSuppliersAsync(context);
+        await CleanupShellProductsAsync(context);
         await SeedCustomisationSettingsAsync(context);
         await SeedCustomisationOptionsAsync(context);
         await SeedProductsAsync(context);
@@ -126,6 +127,23 @@ public static class BDPDataSeeder
         }
 
         await context.SaveChangesAsync();
+    }
+
+    // ─── Shell Product Cleanup ───────────────────────────────────────────────
+    // Removes products that have no variants — they were created by the old seeder
+    // and are safe to delete (no variants = no order items referencing them).
+
+    private static async Task CleanupShellProductsAsync(AppDbContext context)
+    {
+        var shells = await context.Products
+            .Where(p => !p.Variants.Any())
+            .ToListAsync();
+
+        if (shells.Any())
+        {
+            context.Products.RemoveRange(shells);
+            await context.SaveChangesAsync();
+        }
     }
 
     // ─── Customisation Settings (global pricing) ─────────────────────────────
