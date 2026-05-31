@@ -141,6 +141,8 @@ builder.Services.AddScoped<BDP.API.Services.EmailService>();
 builder.Services.AddScoped<BDP.API.Services.YunExpressService>();
 builder.Services.AddScoped<BDP.API.Services.InvoiceService>();
 builder.Services.AddScoped<BDP.API.Services.CatalogueImportService>();
+builder.Services.AddScoped<BDP.API.Services.GoogleDriveService>();   // Used for uploading AI-generated product images
+builder.Services.AddScoped<BDP.API.Services.CurrencyService>();
 builder.Services.AddSingleton<BDP.API.Services.RecurringOrderService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BDP.API.Services.RecurringOrderService>());
 
@@ -176,5 +178,14 @@ if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("SEED_
     var roles  = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     await BDP.API.Data.BDPDataSeeder.SeedAsync(db, users, roles);
 }
+
+// Fire-and-forget currency rate refresh on startup (non-blocking)
+_ = Task.Run(async () =>
+{
+    await Task.Delay(5000); // Allow DB to be ready
+    using var scope = app.Services.CreateScope();
+    var currencySvc = scope.ServiceProvider.GetRequiredService<BDP.API.Services.CurrencyService>();
+    await currencySvc.RefreshRatesAsync();
+});
 
 app.Run($"http://0.0.0.0:{port}");

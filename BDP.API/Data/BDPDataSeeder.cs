@@ -19,6 +19,7 @@ public static class BDPDataSeeder
         await SeedCustomisationSettingsAsync(context);
         await SeedCustomisationOptionsAsync(context);
         await SeedProductsAsync(context);
+        await SeedCurrencyRatesAsync(context);
     }
 
     // ─── Roles & Admin ───────────────────────────────────────────────────────
@@ -470,6 +471,50 @@ public static class BDPDataSeeder
                 await context.SaveChangesAsync();
             }
         }
+    }
+
+    // ─── Currency Rates ───────────────────────────────────────────────────────
+
+    private static async Task SeedCurrencyRatesAsync(AppDbContext context)
+    {
+        var currencies = new[]
+        {
+            new { Code = "ZAR", Symbol = "R",   Name = "South African Rand", Flag = "🇿🇦", Region = "South Africa",   Rate = 1m },
+            new { Code = "GBP", Symbol = "£",   Name = "British Pound",      Flag = "🇬🇧", Region = "United Kingdom", Rate = 0.043m },
+            new { Code = "USD", Symbol = "$",   Name = "US Dollar",          Flag = "🇺🇸", Region = "United States",  Rate = 0.054m },
+            new { Code = "EUR", Symbol = "€",   Name = "Euro",               Flag = "🇪🇺", Region = "European Union", Rate = 0.050m },
+            new { Code = "AUD", Symbol = "A$",  Name = "Australian Dollar",  Flag = "🇦🇺", Region = "Australia",      Rate = 0.083m },
+        };
+
+        foreach (var c in currencies)
+        {
+            var existing = await context.CurrencyRates.FirstOrDefaultAsync(r => r.Code == c.Code);
+            if (existing == null)
+            {
+                context.CurrencyRates.Add(new BDP.API.Models.CurrencyRate
+                {
+                    Code = c.Code,
+                    Symbol = c.Symbol,
+                    Name = c.Name,
+                    Flag = c.Flag,
+                    Region = c.Region,
+                    RateFromZAR = c.Rate,
+                    IsActive = true,
+                    LastUpdated = DateTime.UtcNow,
+                });
+            }
+            else
+            {
+                // Keep symbol/name/flag/region in sync; do not overwrite live rate
+                existing.Symbol = c.Symbol;
+                existing.Name = c.Name;
+                existing.Flag = c.Flag;
+                existing.Region = c.Region;
+                existing.IsActive = true;
+            }
+        }
+
+        await context.SaveChangesAsync();
     }
 
     // ─── Records ─────────────────────────────────────────────────────────────

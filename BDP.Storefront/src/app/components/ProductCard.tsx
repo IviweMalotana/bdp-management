@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import Price from "./Price";
 
 interface ProductCardProps {
   slug: string;
@@ -8,10 +9,6 @@ interface ProductCardProps {
   primaryUrl?: string;
   basePrice: number;
   lowestMoq: number;
-}
-
-function formatZAR(n: number) {
-  return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export default function ProductCard({ slug, name, category, primaryUrl, basePrice, lowestMoq }: ProductCardProps) {
@@ -48,7 +45,7 @@ export default function ProductCard({ slug, name, category, primaryUrl, basePric
           {name}
         </h3>
         <p className="text-sm" style={{ color: "#4A4540" }}>
-          from {formatZAR(basePrice)}/unit
+          from <Price zarAmount={basePrice} />/unit
         </p>
         {lowestMoq > 0 && (
           <p className="text-xs mt-0.5" style={{ color: "#C9B8A8" }}>

@@ -35,6 +35,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CustomerAddress> CustomerAddresses => Set<CustomerAddress>();
     public DbSet<CartItemArtwork> CartItemArtworks => Set<CartItemArtwork>();
     public DbSet<OrderItemArtwork> OrderItemArtworks => Set<OrderItemArtwork>();
+    public DbSet<CurrencyRate> CurrencyRates => Set<CurrencyRate>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -350,6 +351,12 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
         builder.Entity<ShippingRate>()
             .HasIndex(r => new { r.Country, r.ShippingType })
             .IsUnique();
+
+        // Decimal precision — CurrencyRate
+        builder.Entity<CurrencyRate>()
+            .Property(cr => cr.RateFromZAR).HasPrecision(18, 8);
+        builder.Entity<CurrencyRate>()
+            .HasIndex(cr => cr.Code).IsUnique();
 
         SeedData(builder);
     }

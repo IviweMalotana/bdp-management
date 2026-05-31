@@ -3,8 +3,10 @@ import { useState, useMemo } from "react";
 import Image from "next/image";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { useCurrencyStore } from "@/store/currencyStore";
 import { addToCart } from "@/lib/api";
 import QuantityInput from "@/app/components/QuantityInput";
+import { convertFromZAR, formatCurrency } from "@/lib/currency";
 
 function formatZAR(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -296,6 +298,13 @@ export default function PDPClient({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY));
   const [selectedImage, setSelectedImage] = useState(0);
 
+  const selectedCurrency = useCurrencyStore((s) => s.selected);
+  const curr = selectedCurrency ?? { code: "ZAR", symbol: "R", rateFromZAR: 1 };
+
+  function formatPrice(zar: number) {
+    return formatCurrency(convertFromZAR(zar, curr.rateFromZAR), curr.symbol, curr.code);
+  }
+
   // Customisation toggles — silk screen and hot stamping are mutually exclusive
   const [printMethod, setPrintMethod] = useState<"SilkScreen" | "HotStamping" | null>(null);
   const [colourChange, setColourChange] = useState(false);
@@ -473,7 +482,7 @@ export default function PDPClient({ product }: { product: Product }) {
                 className="text-3xl"
                 style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
               >
-                {formatZAR(unitPrice)}
+                {formatPrice(unitPrice)}
               </span>
               <span className="text-sm" style={{ color: "#C9B8A8" }}>per unit</span>
             </div>
@@ -497,12 +506,13 @@ export default function PDPClient({ product }: { product: Product }) {
                         type="SilkScreen"
                         inputType="checkbox"
                         label="Silk Screen Printing"
-                        subLabel={`+${formatZAR(silkOption.pricePerUnitZAR)}/unit`}
+                        subLabel={`+${formatPrice(silkOption.pricePerUnitZAR)}/unit`}
                         processingNote="+7 days production"
                         enabled={silkEnabled}
                         checked={silkScreen}
                         onChange={(v) => setPrintMethod(v ? "SilkScreen" : null)}
                         cost={silkEnabled && silkScreen ? silkCost : null}
+                        formatAmount={formatPrice}
                         lockedMessage={silkEnabled ? undefined : `Available from ${silkOption.minimumQuantity.toLocaleString()} units`}
                       />
                     )}
@@ -511,12 +521,13 @@ export default function PDPClient({ product }: { product: Product }) {
                         type="HotStamping"
                         inputType="checkbox"
                         label="Hot Stamping"
-                        subLabel={`+${formatZAR(hotOption.pricePerUnitZAR)}/unit`}
+                        subLabel={`+${formatPrice(hotOption.pricePerUnitZAR)}/unit`}
                         processingNote="+7 days production"
                         enabled={hotEnabled}
                         checked={hotStamping}
                         onChange={(v) => setPrintMethod(v ? "HotStamping" : null)}
                         cost={hotEnabled && hotStamping ? hotCost : null}
+                        formatAmount={formatPrice}
                         lockedMessage={hotEnabled ? undefined : `Available from ${hotOption.minimumQuantity.toLocaleString()} units`}
                       />
                     )}
@@ -531,12 +542,13 @@ export default function PDPClient({ product }: { product: Product }) {
                     type="ColourChange"
                     inputType="checkbox"
                     label="Colour Change"
-                    subLabel={`+${formatZAR(colourOption.pricePerUnitZAR)}/unit`}
+                    subLabel={`+${formatPrice(colourOption.pricePerUnitZAR)}/unit`}
                     processingNote="+2 days production"
                     enabled={colourEnabled}
                     checked={colourChange}
                     onChange={setColourChange}
                     cost={colourEnabled ? colourCost : null}
+                    formatAmount={formatPrice}
                     lockedMessage={colourEnabled ? undefined : `Available from ${colourOption.minimumQuantity.toLocaleString()} units`}
                   />
                 </div>
@@ -548,25 +560,25 @@ export default function PDPClient({ product }: { product: Product }) {
           <div className="mb-6 border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
             <div className="px-4 py-4 space-y-2">
               <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
-                <span>{quantity} × {formatZAR(unitPrice)}</span>
-                <span>{formatZAR(lineTotal)}</span>
+                <span>{quantity} × {formatPrice(unitPrice)}</span>
+                <span>{formatPrice(lineTotal)}</span>
               </div>
               {silkScreen && silkCost > 0 && (
                 <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
                   <span>Silk Screen ({quantity} units)</span>
-                  <span>{formatZAR(silkCost)}</span>
+                  <span>{formatPrice(silkCost)}</span>
                 </div>
               )}
               {hotStamping && hotCost > 0 && (
                 <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
                   <span>Hot Stamping ({quantity} units)</span>
-                  <span>{formatZAR(hotCost)}</span>
+                  <span>{formatPrice(hotCost)}</span>
                 </div>
               )}
               {colourChange && colourCost > 0 && (
                 <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
                   <span>Colour Change ({quantity} units)</span>
-                  <span>{formatZAR(colourCost)}</span>
+                  <span>{formatPrice(colourCost)}</span>
                 </div>
               )}
               <div
@@ -578,7 +590,7 @@ export default function PDPClient({ product }: { product: Product }) {
                   className="text-3xl"
                   style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
                 >
-                  {formatZAR(grandTotal)}
+                  {formatPrice(grandTotal)}
                 </span>
               </div>
             </div>
@@ -651,6 +663,7 @@ function CustomisationToggle({
   checked,
   onChange,
   cost,
+  formatAmount = formatZAR,
   lockedMessage,
 }: {
   type: string;
@@ -662,6 +675,7 @@ function CustomisationToggle({
   checked: boolean;
   onChange: (v: boolean) => void;
   cost: number | null;
+  formatAmount?: (n: number) => string;
   lockedMessage?: string;
 }) {
   const description = CUSTOMISATION_DESCRIPTIONS[type];
@@ -694,7 +708,7 @@ function CustomisationToggle({
           </div>
         </div>
         {cost != null && cost > 0 && (
-          <span className="text-sm shrink-0 font-medium" style={{ color: "#1C1A17" }}>{formatZAR(cost)}</span>
+          <span className="text-sm shrink-0 font-medium" style={{ color: "#1C1A17" }}>{formatAmount(cost)}</span>
         )}
       </label>
     </div>

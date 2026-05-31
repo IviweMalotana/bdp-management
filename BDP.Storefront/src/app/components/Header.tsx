@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
+import { useCurrencyStore } from "@/store/currencyStore";
 
 interface Collection {
   id: number;
@@ -147,6 +148,9 @@ export default function Header() {
 
         {/* Right icons */}
         <div className="flex items-center gap-4">
+          <div className="hidden md:block">
+            <CurrencySelector />
+          </div>
           <Link href={accountHref} className="hidden md:block text-sm" style={{ color: "#4A4540" }}>
             {accountLabel}
           </Link>
@@ -248,9 +252,99 @@ export default function Header() {
             >
               {accountLabel}
             </Link>
+            <MobileCurrencyPills onClose={() => setDrawerOpen(false)} />
           </div>
         </div>
       )}
     </header>
+  );
+}
+
+// ── Currency selector (desktop dropdown) ────────────────────────────────────
+
+function CurrencySelector() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const { currencies, selected, setSelected } = useCurrencyStore();
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  if (!currencies.length) return null;
+
+  const display = selected ?? currencies.find((c) => c.code === "ZAR") ?? currencies[0];
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1 text-sm hover:opacity-70 transition-opacity"
+        style={{ color: "#1C1A17" }}
+      >
+        <span>{display.flag}</span>
+        <span>{display.code}</span>
+        <span className="text-xs" style={{ color: "#C9B8A8" }}>▾</span>
+      </button>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-1 z-50 min-w-40 border shadow-sm"
+          style={{ backgroundColor: "#FEFCFA", borderColor: "#C9B8A8", borderRadius: "2px" }}
+        >
+          {currencies.map((c) => (
+            <button
+              key={c.code}
+              onClick={() => { setSelected(c); setOpen(false); }}
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:opacity-70 transition-opacity"
+              style={{
+                backgroundColor: selected?.code === c.code ? "#EDE4D8" : "transparent",
+                color: "#1C1A17",
+              }}
+            >
+              <span>{c.flag}</span>
+              <span className="font-medium">{c.code}</span>
+              <span className="text-xs ml-auto" style={{ color: "#C9B8A8" }}>{c.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Currency pills (mobile drawer) ──────────────────────────────────────────
+
+function MobileCurrencyPills({ onClose }: { onClose: () => void }) {
+  const { currencies, selected, setSelected } = useCurrencyStore();
+  if (!currencies.length) return null;
+
+  return (
+    <div className="mt-4">
+      <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#C9B8A8" }}>Currency</p>
+      <div className="flex flex-wrap gap-2">
+        {currencies.map((c) => (
+          <button
+            key={c.code}
+            onClick={() => { setSelected(c); onClose(); }}
+            className="flex items-center gap-1 px-3 py-1.5 text-sm border transition-colors"
+            style={{
+              borderColor: selected?.code === c.code ? "#1C1A17" : "#C9B8A8",
+              backgroundColor: selected?.code === c.code ? "#EDE4D8" : "transparent",
+              color: "#1C1A17",
+              borderRadius: "2px",
+            }}
+          >
+            <span>{c.flag}</span>
+            <span>{c.code}</span>
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
