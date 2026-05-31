@@ -1,4 +1,5 @@
 using BDP.API.Data;
+using BDP.API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -67,23 +68,27 @@ public class StorefrontProductsController : ControllerBase
             .Include(p => p.Variants)
                 .ThenInclude(v => v.PricingTiers)
             .Include(p => p.Supplier)
-                .ThenInclude(s => s.CustomisationOptions)
-                    .ThenInclude(co => co.PricingTiers)
             .FirstOrDefaultAsync(p => p.Slug == slug);
 
         if (product == null) return NotFound();
 
-        // Build customisation options list — includes supplier options + hardcoded ColourChange
-        var supplierOptions = product.Supplier.CustomisationOptions.Select(co => new StorefrontCustomisationOption
-        {
-            Id = co.Id,
-            Type = co.Type,
-            MinimumQuantity = co.MinimumQuantity,
-            PricePerUnitZAR = null,
-            PricingTiers = co.PricingTiers.OrderBy(t => t.Quantity)
-                .Select(t => new StorefrontTier { Id = t.Id, Quantity = t.Quantity, SalePriceZAR = t.SalePriceZAR })
-                .ToList(),
-        }).ToList();
+        // Customisation options (Silk Screen, Hot Stamping) come from Charlie Branding
+        // regardless of which supplier made the bottle — Charlie prints on any bottle.
+        var charlie = await _db.Suppliers
+            .Include(s => s.CustomisationOptions).ThenInclude(co => co.PricingTiers)
+            .FirstOrDefaultAsync(s => EF.Functions.ILike(s.Name, "%Charlie%"));
+
+        var supplierOptions = (charlie?.CustomisationOptions ?? new List<CustomisationOption>())
+            .Select(co => new StorefrontCustomisationOption
+            {
+                Id = co.Id,
+                Type = co.Type,
+                MinimumQuantity = co.MinimumQuantity,
+                PricePerUnitZAR = null,
+                PricingTiers = co.PricingTiers.OrderBy(t => t.Quantity)
+                    .Select(t => new StorefrontTier { Id = t.Id, Quantity = t.Quantity, SalePriceZAR = t.SalePriceZAR })
+                    .ToList(),
+            }).ToList();
 
         supplierOptions.Add(new StorefrontCustomisationOption
         {

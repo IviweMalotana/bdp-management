@@ -5,7 +5,6 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { addToCart } from "@/lib/api";
 import QuantityInput from "@/app/components/QuantityInput";
-import PricingTierTable from "@/app/components/PricingTierTable";
 
 function formatZAR(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -470,10 +469,16 @@ export default function PDPClient({ product }: { product: Product }) {
             <p className="text-xs mt-1" style={{ color: "#C9B8A8" }}>Minimum order: {MIN_QTY} units</p>
           </div>
 
-          {/* Pricing tier table */}
-          {tiers.length > 0 && (
-            <div className="mb-6">
-              <PricingTierTable tiers={tiers} currentQuantity={quantity} />
+          {/* Unit price */}
+          {unitPrice > 0 && (
+            <div className="mb-6 flex items-baseline gap-3">
+              <span
+                className="text-3xl"
+                style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
+              >
+                {formatZAR(unitPrice)}
+              </span>
+              <span className="text-sm" style={{ color: "#C9B8A8" }}>per unit</span>
             </div>
           )}
 
@@ -527,33 +532,36 @@ export default function PDPClient({ product }: { product: Product }) {
           <div className="mb-6 border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
             <div className="px-4 py-4 space-y-2">
               <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
-                <span>{quantity} units × {formatZAR(unitPrice)}</span>
+                <span>{quantity} × {formatZAR(unitPrice)}</span>
                 <span>{formatZAR(lineTotal)}</span>
               </div>
               {silkScreen && silkCost > 0 && (
                 <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
-                  <span>+ Silk Screen</span>
+                  <span>Silk Screen ({quantity} units)</span>
                   <span>{formatZAR(silkCost)}</span>
                 </div>
               )}
               {hotStamping && hotCost > 0 && (
                 <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
-                  <span>+ Hot Stamping</span>
+                  <span>Hot Stamping ({quantity} units)</span>
                   <span>{formatZAR(hotCost)}</span>
                 </div>
               )}
               {colourChange && colourCost > 0 && (
                 <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
-                  <span>+ Colour Change</span>
+                  <span>Colour Change ({quantity} units)</span>
                   <span>{formatZAR(colourCost)}</span>
                 </div>
               )}
               <div
-                className="flex justify-between font-medium pt-2 border-t"
-                style={{ borderColor: "#C9B8A8", color: "#1C1A17" }}
+                className="flex justify-between items-baseline pt-3 border-t"
+                style={{ borderColor: "#C9B8A8" }}
               >
-                <span>Total</span>
-                <span className="text-xl" style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}>
+                <span className="text-xs uppercase tracking-widest" style={{ color: "#4A4540" }}>Order total</span>
+                <span
+                  className="text-3xl"
+                  style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
+                >
                   {formatZAR(grandTotal)}
                 </span>
               </div>
