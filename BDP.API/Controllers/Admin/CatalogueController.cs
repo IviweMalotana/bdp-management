@@ -14,13 +14,16 @@ public class CatalogueController : ControllerBase
 {
     private readonly AppDbContext _db;
     private readonly CatalogueImportService _importService;
+    private readonly GoogleDriveService _driveService;
 
     public CatalogueController(
         AppDbContext db,
-        CatalogueImportService importService)
+        CatalogueImportService importService,
+        GoogleDriveService driveService)
     {
         _db = db;
         _importService = importService;
+        _driveService = driveService;
     }
 
     /// <summary>
@@ -241,6 +244,41 @@ public class CatalogueController : ControllerBase
 
         await _db.SaveChangesAsync();
         return Ok(new { collectionsCreated, assignmentsAdded });
+    }
+
+    /// <summary>
+    /// Temporary test endpoint to verify Google Drive integration is working.
+    /// Uploads a small text file to your "BDP - AI Generated Images" folder.
+    /// </summary>
+    [HttpPost("test-drive-upload")]
+    public async Task<IActionResult> TestDriveUpload()
+    {
+        if (!_driveService.IsConfigured)
+        {
+            return BadRequest(new 
+            { 
+                success = false, 
+                message = "GoogleDriveService is not configured. Make sure GoogleDrive:ServiceAccountJsonPath and GoogleDrive:DefaultFolderId are set in user secrets." 
+            });
+        }
+
+        var testContent = $"Hello from BDP - Test upload at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC";
+        var bytes = System.Text.Encoding.UTF8.GetBytes(testContent);
+
+        var link = await _driveService.UploadFileAsync(bytes, "bdp-drive-test.txt", "text/plain");
+
+        if (string.IsNullOrEmpty(link))
+        {
+            return StatusCode(500, new { success = false, message = "Upload failed. Check logs for details (service account permissions, folder sharing, etc.)." });
+        }
+
+        return Ok(new
+        {
+            success = true,
+            message = "Test file uploaded successfully!",
+            fileName = "bdp-drive-test.txt",
+            driveLink = link
+        });
     }
 
     public class GenerateImagesRequest
