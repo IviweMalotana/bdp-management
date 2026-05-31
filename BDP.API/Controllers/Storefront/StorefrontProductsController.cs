@@ -116,6 +116,7 @@ public class StorefrontProductsController : ControllerBase
             product.Slug,
             product.Name,
             product.Category,
+            productType = product.ProductType,
             product.Description,
             product.UsageSuitability,
             product.WeightKg,

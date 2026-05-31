@@ -47,7 +47,7 @@ interface CustomisationOption {
 interface ProductImage { url: string; altText: string; isPrimary: boolean }
 
 interface Product {
-  id: number; slug: string; name: string; category: string;
+  id: number; slug: string; name: string; category: string; productType?: string;
   description?: string; usageSuitability?: string;
   weightKg: number; lengthCm: number; widthCm: number; heightCm: number;
   images: ProductImage[];
@@ -418,15 +418,18 @@ export default function PDPClient({ product }: { product: Product }) {
 
         {/* Details */}
         <div>
-          <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#C9B8A8" }}>
+          <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#C9B8A8" }}>
             {product.category}
           </p>
           <h1
-            className="text-4xl md:text-5xl leading-tight mb-4"
+            className="text-4xl md:text-5xl leading-tight mb-2"
             style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
           >
             {product.name}
           </h1>
+          {product.productType && product.productType !== product.category && (
+            <p className="text-sm mb-4" style={{ color: "#4A4540" }}>{product.productType}</p>
+          )}
           {product.description && (
             <p className="text-sm mb-6" style={{ color: "#4A4540", lineHeight: 1.8 }}>
               {product.description}

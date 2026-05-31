@@ -118,24 +118,30 @@ public class CatalogueImportService
                     _db.Products.Add(product);
                 }
 
-                product.Name = firstRow.Product_Name?.Trim() ?? product.Name;
+                // ── Assign a unique human name if needed ───────────────────────
+                // A human name is always a single word. If the current name is blank,
+                // a legacy multi-word slug-style name, or absent, assign a fresh one.
+                bool needsName = string.IsNullOrWhiteSpace(product.Name)
+                    || product.Name.Contains(' ');   // single-word = human name already assigned
+
+                if (needsName)
+                    product.Name = await ProductNameService.AssignUniqueNameAsync(_db);
+
                 product.Category = firstRow.Product_Type?.Trim() ?? product.Category;
                 product.SupplierItemNumber = supplierItemNumber;
                 product.ProductType = firstRow.Product_Type?.Trim();
                 product.ShapeStyle = firstRow.Shape_Style?.Trim();
-                product.Slug = Slugify($"{firstRow.Product_Name} {supplierItemNumber}");
+                product.Slug = Slugify($"{product.Name} {supplierItemNumber}");
                 product.UpdatedAt = DateTime.UtcNow;
 
                 if (supplier != null)
                     product.SupplierId = supplier.Id;
 
-                // Ensure non-nullable string fields have defaults
-                if (string.IsNullOrWhiteSpace(product.MetaTitle))
-                    product.MetaTitle = product.Name;
-                if (string.IsNullOrWhiteSpace(product.MetaDescription))
-                    product.MetaDescription = product.Name;
-                if (string.IsNullOrWhiteSpace(product.MetaKeywords))
-                    product.MetaKeywords = string.Empty;
+                // ── Regenerate SEO content from CSV data ────────────────────────
+                product.MetaTitle = ProductSeoGenerator.GenerateSeoTitle(firstRow);
+                product.Description = ProductSeoGenerator.GenerateDescription(firstRow, group);
+                product.MetaDescription = ProductSeoGenerator.GenerateMetaDescription(firstRow);
+                product.MetaKeywords = ProductSeoGenerator.GenerateMetaKeywords(firstRow);
 
                 await _db.SaveChangesAsync();
 

@@ -3,6 +3,7 @@ using BDP.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace BDP.API.Controllers.Admin;
 
@@ -103,5 +104,99 @@ public class CatalogueController : ControllerBase
         });
 
         return Ok(new { total, page, pageSize, items });
+    }
+
+    /// <summary>
+    /// POST /api/admin/catalogue/refresh-seo
+    /// Retroactively assigns human names and regenerates SEO fields for all products.
+    /// </summary>
+    [HttpPost("refresh-seo")]
+    public async Task<IActionResult> RefreshSeo()
+    {
+        var products = await _db.Products
+            .Include(p => p.Variants)
+            .ToListAsync();
+
+        int updated = 0;
+
+        foreach (var product in products)
+        {
+            bool changed = false;
+
+            // Assign unique human name if missing or still a multi-word legacy name
+            bool needsName = string.IsNullOrWhiteSpace(product.Name)
+                || product.Name.Contains(' ');
+
+            if (needsName)
+            {
+                product.Name = await ProductNameService.AssignUniqueNameAsync(_db);
+                // Re-slug using new name so URLs stay consistent
+                product.Slug = SlugifyStatic($"{product.Name} {product.SupplierItemNumber}");
+                changed = true;
+            }
+
+            // Derive SEO inputs from first variant (if any)
+            var firstVariant = product.Variants.FirstOrDefault();
+            var variantCount = product.Variants.Count;
+            var sampleNames = product.Variants
+                .Where(v => !string.IsNullOrWhiteSpace(v.ColorVariantName))
+                .Select(v => v.ColorVariantName!)
+                .Distinct()
+                .Take(3)
+                .ToList();
+
+            var metaTitle = ProductSeoGenerator.GenerateSeoTitleFromFields(
+                firstVariant?.SpecificationSize,
+                firstVariant?.BaseBodyFinish,
+                firstVariant?.BodyMaterial,
+                product.ProductType ?? product.Category);
+
+            var description = ProductSeoGenerator.GenerateDescriptionFromFields(
+                firstVariant?.SpecificationSize,
+                firstVariant?.BaseBodyFinish,
+                firstVariant?.BodyMaterial,
+                product.ProductType ?? product.Category,
+                firstVariant?.ClosureType,
+                variantCount,
+                sampleNames);
+
+            var metaDesc = ProductSeoGenerator.GenerateMetaDescriptionFromFields(
+                firstVariant?.SpecificationSize,
+                firstVariant?.BaseBodyFinish,
+                firstVariant?.BodyMaterial,
+                product.ProductType ?? product.Category,
+                firstVariant?.ClosureType);
+
+            var metaKw = ProductSeoGenerator.GenerateMetaKeywordsFromFields(
+                firstVariant?.SpecificationSize,
+                firstVariant?.BaseBodyFinish,
+                firstVariant?.BodyMaterial,
+                product.ProductType ?? product.Category,
+                firstVariant?.ClosureType);
+
+            if (product.MetaTitle != metaTitle || product.Description != description
+                || product.MetaDescription != metaDesc || product.MetaKeywords != metaKw || changed)
+            {
+                product.MetaTitle = metaTitle;
+                product.Description = description;
+                product.MetaDescription = metaDesc;
+                product.MetaKeywords = metaKw;
+                product.UpdatedAt = DateTime.UtcNow;
+                updated++;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { updated });
+    }
+
+    private static string SlugifyStatic(string? input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        var slug = input.ToLowerInvariant();
+        slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+        slug = Regex.Replace(slug, @"\s+", "-");
+        slug = Regex.Replace(slug, @"-+", "-");
+        return slug.Trim('-');
     }
 }
