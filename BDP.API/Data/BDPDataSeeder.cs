@@ -97,9 +97,9 @@ public static class BDPDataSeeder
     {
         var defs = new[]
         {
-            new { Type = "ColourChange", Price = 5.00m,  MOQ = 1000 },
-            new { Type = "SilkScreen",  Price = 14.00m, MOQ = 1000 },
-            new { Type = "HotStamping", Price = 14.00m, MOQ = 1000 },
+            new { Type = "ColourChange", Price = 2.00m,  MOQ = 1000 },
+            new { Type = "SilkScreen",  Price = 11.00m, MOQ = 1000 },
+            new { Type = "HotStamping", Price = 11.00m, MOQ = 1000 },
         };
         foreach (var d in defs)
         {
@@ -113,6 +113,13 @@ public static class BDPDataSeeder
                     IsActive = true,
                     DefaultMinimumQuantity = d.MOQ,
                 });
+            }
+            else
+            {
+                // Always keep prices in sync with approved values
+                existing.PricePerUnitZAR = d.Price;
+                existing.DefaultMinimumQuantity = d.MOQ;
+                existing.IsActive = true;
             }
         }
         await context.SaveChangesAsync();
