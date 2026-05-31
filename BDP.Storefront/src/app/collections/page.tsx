@@ -28,13 +28,13 @@ export default async function CollectionsPage() {
         collections
       </h1>
       <p className="text-sm mb-16 max-w-lg" style={{ color: "#4A4540", lineHeight: 1.8 }}>
-        Curated sets of packaging for specific use cases — from hotel amenity lines to skincare starter kits.
+        Browse by packaging type — dropper bottles, cream jars, pump bottles, and more. Each collection brings together wholesale options for cosmetic brands, skincare manufacturers, and private label suppliers.
       </p>
 
       {collections.length === 0 ? (
         <div className="text-center py-20">
           <p className="text-lg mb-6" style={{ color: "#4A4540" }}>
-            Collections are being curated. Browse all packaging in the meantime.
+            Collections are being built from the product catalogue. Browse all packaging in the meantime.
           </p>
           <Link
             href="/shop"

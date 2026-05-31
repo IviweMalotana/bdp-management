@@ -1,18 +1,45 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 
+interface Collection {
+  id: number;
+  name: string;
+  slug: string;
+}
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5252";
+
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const shopRef = useRef<HTMLDivElement>(null);
   const items = useCartStore((s) => s.items);
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
   const { jwt, firstName } = useAuthStore();
 
-  const navLinks = [
-    { href: "/shop", label: "Shop" },
-    { href: "/collections", label: "Collections" },
+  useEffect(() => {
+    fetch(`${API}/api/storefront/collections`)
+      .then((r) => r.json())
+      .then((data: Collection[]) => setCollections(data))
+      .catch(() => {});
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (shopRef.current && !shopRef.current.contains(e.target as Node)) {
+        setShopOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const staticNavLinks = [
     { href: "/customise", label: "Customise" },
     { href: "/for-business", label: "For Business" },
     { href: "/about", label: "About" },
@@ -43,7 +70,70 @@ export default function Header() {
 
         {/* Nav — desktop */}
         <nav className="hidden md:flex items-center gap-8">
-          {navLinks.map((l) => (
+          {/* Shop dropdown */}
+          <div ref={shopRef} className="relative">
+            <button
+              onClick={() => setShopOpen((v) => !v)}
+              className="flex items-center gap-1 text-sm font-medium tracking-wide hover:opacity-70 transition-opacity"
+              style={{ color: "#1C1A17", fontFamily: "var(--font-body)" }}
+            >
+              Shop
+              <svg
+                width="10"
+                height="10"
+                viewBox="0 0 10 10"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                style={{ transform: shopOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.15s" }}
+              >
+                <polyline points="1,3 5,7 9,3" />
+              </svg>
+            </button>
+
+            {shopOpen && (
+              <div
+                className="absolute top-full left-0 mt-2 w-52 py-2 z-50 shadow-lg"
+                style={{ backgroundColor: "#F5EFE6", border: "1px solid #C9B8A8", borderRadius: "2px" }}
+              >
+                <Link
+                  href="/shop"
+                  onClick={() => setShopOpen(false)}
+                  className="block px-4 py-2 text-sm hover:bg-[#EDE4D8] transition-colors"
+                  style={{ color: "#1C1A17" }}
+                >
+                  All Packaging
+                </Link>
+                {collections.length > 0 && (
+                  <>
+                    <div className="my-1.5 border-t" style={{ borderColor: "#C9B8A8" }} />
+                    {collections.map((c) => (
+                      <Link
+                        key={c.id}
+                        href={`/collections/${c.slug}`}
+                        onClick={() => setShopOpen(false)}
+                        className="block px-4 py-2 text-sm hover:bg-[#EDE4D8] transition-colors"
+                        style={{ color: "#1C1A17" }}
+                      >
+                        {c.name}
+                      </Link>
+                    ))}
+                    <div className="my-1.5 border-t" style={{ borderColor: "#C9B8A8" }} />
+                  </>
+                )}
+                <Link
+                  href="/collections"
+                  onClick={() => setShopOpen(false)}
+                  className="block px-4 py-2 text-sm hover:bg-[#EDE4D8] transition-colors"
+                  style={{ color: "#4A4540" }}
+                >
+                  All Collections →
+                </Link>
+              </div>
+            )}
+          </div>
+
+          {staticNavLinks.map((l) => (
             <Link
               key={l.href}
               href={l.href}
@@ -108,7 +198,38 @@ export default function Header() {
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            {navLinks.map((l) => (
+            <Link
+              href="/shop"
+              className="text-lg font-medium"
+              style={{ color: "#1C1A17" }}
+              onClick={() => setDrawerOpen(false)}
+            >
+              Shop
+            </Link>
+            {collections.length > 0 && (
+              <div className="pl-4 space-y-2 border-l" style={{ borderColor: "#C9B8A8" }}>
+                {collections.map((c) => (
+                  <Link
+                    key={c.id}
+                    href={`/collections/${c.slug}`}
+                    className="block text-sm"
+                    style={{ color: "#4A4540" }}
+                    onClick={() => setDrawerOpen(false)}
+                  >
+                    {c.name}
+                  </Link>
+                ))}
+                <Link
+                  href="/collections"
+                  className="block text-sm"
+                  style={{ color: "#4A4540" }}
+                  onClick={() => setDrawerOpen(false)}
+                >
+                  All Collections →
+                </Link>
+              </div>
+            )}
+            {staticNavLinks.map((l) => (
               <Link
                 key={l.href}
                 href={l.href}

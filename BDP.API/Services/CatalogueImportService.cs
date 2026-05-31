@@ -145,6 +145,12 @@ public class CatalogueImportService
 
                 await _db.SaveChangesAsync();
 
+                // ── Auto-assign to collection based on product type ───────────
+                if (!string.IsNullOrWhiteSpace(product.ProductType))
+                {
+                    await EnsureProductInCollectionAsync(_db, product, product.ProductType);
+                }
+
                 // ── Upsert each variant ────────────────────────────────────────
                 foreach (var row in group)
                 {
@@ -232,6 +238,67 @@ public class CatalogueImportService
 
         return result;
     }
+
+    public static async Task EnsureProductInCollectionAsync(AppDbContext context, Product product, string productType)
+    {
+        var collectionName = MapProductTypeToCollection(productType);
+        var slug = Slugify(collectionName);
+
+        var collection = await context.Collections.FirstOrDefaultAsync(c => c.Slug == slug);
+        if (collection == null)
+        {
+            collection = new Collection
+            {
+                Name = collectionName,
+                Slug = slug,
+                Description = GenerateCollectionDescription(collectionName),
+                ImageUrl = null,
+            };
+            context.Collections.Add(collection);
+            await context.SaveChangesAsync();
+        }
+
+        var alreadyIn = await context.ProductCollections
+            .AnyAsync(pc => pc.CollectionId == collection.Id && pc.ProductId == product.Id);
+        if (!alreadyIn)
+        {
+            context.ProductCollections.Add(new ProductCollection
+            {
+                CollectionId = collection.Id,
+                ProductId = product.Id,
+            });
+            await context.SaveChangesAsync();
+        }
+    }
+
+    private static string MapProductTypeToCollection(string productType)
+    {
+        var lower = productType.ToLowerInvariant();
+        if (lower.Contains("dropper") || lower.Contains("essential oil")) return "Dropper Bottles";
+        if (lower.Contains("cream jar") || lower.Contains("jar")) return "Cream Jars";
+        if (lower.Contains("pump")) return "Pump Bottles";
+        if (lower.Contains("serum")) return "Serum Bottles";
+        if (lower.Contains("spray") || lower.Contains("mist")) return "Spray Bottles";
+        if (lower.Contains("lotion")) return "Lotion Bottles";
+        if (lower.Contains("shampoo") || lower.Contains("conditioner")) return "Shampoo & Conditioner Bottles";
+        if (lower.Contains("airless")) return "Airless Bottles";
+        if (lower.Contains("tube")) return "Tubes";
+        return productType.TrimEnd('s') + "s";
+    }
+
+    private static string GenerateCollectionDescription(string collectionName) => collectionName switch
+    {
+        "Dropper Bottles" => "Premium glass dropper bottles for essential oils, serums, and facial oils. Available in multiple sizes and finishes for aromatherapy brands, skincare manufacturers, and hotel amenity collections.",
+        "Cream Jars" => "Wholesale glass cream jars for face creams, body butters, and cosmetic formulations. Ideal for skincare brands, spa collections, and private label manufacturing.",
+        "Pump Bottles" => "Cosmetic pump bottles for lotions, serums, shampoos, and liquid dispensing. Suitable for haircare brands, skincare manufacturers, and hotel amenity suppliers.",
+        "Serum Bottles" => "Glass serum bottles designed for facial oils, vitamin C serums, and high-value cosmetic formulations. Frosted, clear, and coloured finishes available.",
+        "Spray Bottles" => "Fine mist spray bottles for toners, facial mists, room sprays, and perfume packaging. Suitable for skincare, fragrance, and hospitality brands.",
+        "Lotion Bottles" => "Wholesale lotion and body cream bottles. Ideal for skincare brands, body care manufacturers, and hotel amenity packaging.",
+        "Shampoo & Conditioner Bottles" => "Wholesale shampoo and conditioner bottles for haircare brands, professional salons, and hotel amenity collections.",
+        "Airless Bottles" => "Airless pump bottles that protect sensitive formulations from oxidation. Premium packaging for luxury skincare and anti-ageing products.",
+        "Tubes" => "Cosmetic squeeze tubes for creams, gels, sunscreens, and serums. Suitable for skincare, haircare, and professional cosmetic manufacturers.",
+        _ => $"Wholesale {collectionName.ToLowerInvariant()} for cosmetic brands, skincare manufacturers, and private label suppliers."
+    };
 
     private static string Slugify(string? input)
     {

@@ -190,6 +190,86 @@ public class CatalogueController : ControllerBase
         return Ok(new { updated });
     }
 
+    /// <summary>
+    /// POST /api/admin/catalogue/rebuild-collections
+    /// Retroactively assigns all products with a ProductType to their correct collection.
+    /// </summary>
+    [HttpPost("rebuild-collections")]
+    public async Task<IActionResult> RebuildCollections()
+    {
+        var products = await _db.Products
+            .Where(p => !string.IsNullOrEmpty(p.ProductType))
+            .ToListAsync();
+
+        int collectionsCreated = 0;
+        int assignmentsAdded = 0;
+
+        foreach (var product in products)
+        {
+            var collectionName = MapProductTypeToCollection(product.ProductType!);
+            var slug = SlugifyStatic(collectionName);
+
+            var collection = await _db.Collections.FirstOrDefaultAsync(c => c.Slug == slug);
+            if (collection == null)
+            {
+                collection = new BDP.API.Models.Collection
+                {
+                    Name = collectionName,
+                    Slug = slug,
+                    Description = GenerateCollectionDescription(collectionName),
+                    ImageUrl = null,
+                };
+                _db.Collections.Add(collection);
+                await _db.SaveChangesAsync();
+                collectionsCreated++;
+            }
+
+            var alreadyIn = await _db.ProductCollections
+                .AnyAsync(pc => pc.CollectionId == collection.Id && pc.ProductId == product.Id);
+            if (!alreadyIn)
+            {
+                _db.ProductCollections.Add(new BDP.API.Models.ProductCollection
+                {
+                    CollectionId = collection.Id,
+                    ProductId = product.Id,
+                });
+                assignmentsAdded++;
+            }
+        }
+
+        await _db.SaveChangesAsync();
+        return Ok(new { collectionsCreated, assignmentsAdded });
+    }
+
+    private static string MapProductTypeToCollection(string productType)
+    {
+        var lower = productType.ToLowerInvariant();
+        if (lower.Contains("dropper") || lower.Contains("essential oil")) return "Dropper Bottles";
+        if (lower.Contains("cream jar") || lower.Contains("jar")) return "Cream Jars";
+        if (lower.Contains("pump")) return "Pump Bottles";
+        if (lower.Contains("serum")) return "Serum Bottles";
+        if (lower.Contains("spray") || lower.Contains("mist")) return "Spray Bottles";
+        if (lower.Contains("lotion")) return "Lotion Bottles";
+        if (lower.Contains("shampoo") || lower.Contains("conditioner")) return "Shampoo & Conditioner Bottles";
+        if (lower.Contains("airless")) return "Airless Bottles";
+        if (lower.Contains("tube")) return "Tubes";
+        return productType.TrimEnd('s') + "s";
+    }
+
+    private static string GenerateCollectionDescription(string collectionName) => collectionName switch
+    {
+        "Dropper Bottles" => "Premium glass dropper bottles for essential oils, serums, and facial oils. Available in multiple sizes and finishes for aromatherapy brands, skincare manufacturers, and hotel amenity collections.",
+        "Cream Jars" => "Wholesale glass cream jars for face creams, body butters, and cosmetic formulations. Ideal for skincare brands, spa collections, and private label manufacturing.",
+        "Pump Bottles" => "Cosmetic pump bottles for lotions, serums, shampoos, and liquid dispensing. Suitable for haircare brands, skincare manufacturers, and hotel amenity suppliers.",
+        "Serum Bottles" => "Glass serum bottles designed for facial oils, vitamin C serums, and high-value cosmetic formulations. Frosted, clear, and coloured finishes available.",
+        "Spray Bottles" => "Fine mist spray bottles for toners, facial mists, room sprays, and perfume packaging. Suitable for skincare, fragrance, and hospitality brands.",
+        "Lotion Bottles" => "Wholesale lotion and body cream bottles. Ideal for skincare brands, body care manufacturers, and hotel amenity packaging.",
+        "Shampoo & Conditioner Bottles" => "Wholesale shampoo and conditioner bottles for haircare brands, professional salons, and hotel amenity collections.",
+        "Airless Bottles" => "Airless pump bottles that protect sensitive formulations from oxidation. Premium packaging for luxury skincare and anti-ageing products.",
+        "Tubes" => "Cosmetic squeeze tubes for creams, gels, sunscreens, and serums. Suitable for skincare, haircare, and professional cosmetic manufacturers.",
+        _ => $"Wholesale {collectionName.ToLowerInvariant()} for cosmetic brands, skincare manufacturers, and private label suppliers."
+    };
+
     private static string SlugifyStatic(string? input)
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
