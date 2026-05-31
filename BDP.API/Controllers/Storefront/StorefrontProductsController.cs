@@ -82,18 +82,29 @@ public class StorefrontProductsController : ControllerBase
             .Where(co => co.SupplierId == product.SupplierId && co.IsEnabled)
             .ToListAsync();
 
-        // Build response: for each active global setting, check if this supplier has it enabled
+        // Build response: for each active global setting, check if this supplier has it enabled.
+        // If the supplier has no options configured at all, treat all as available (default open).
+        bool supplierHasAnyOptions = supplierOptions.Any();
         var customisationOptions = globalSettings
             .Select(setting =>
             {
-                var supplierOpt = supplierOptions.FirstOrDefault(co => co.Type == setting.Type);
-                if (supplierOpt == null) return null; // not available for this supplier
-
+                if (supplierHasAnyOptions)
+                {
+                    var supplierOpt = supplierOptions.FirstOrDefault(co => co.Type == setting.Type);
+                    if (supplierOpt == null) return null; // explicitly not available for this supplier
+                    return new
+                    {
+                        type = setting.Type,
+                        pricePerUnitZAR = setting.PricePerUnitZAR,
+                        minimumQuantity = supplierOpt.MinimumQuantity ?? setting.DefaultMinimumQuantity,
+                    };
+                }
+                // No supplier-specific config — fall back to global defaults, all enabled
                 return new
                 {
                     type = setting.Type,
                     pricePerUnitZAR = setting.PricePerUnitZAR,
-                    minimumQuantity = supplierOpt.MinimumQuantity ?? setting.DefaultMinimumQuantity,
+                    minimumQuantity = setting.DefaultMinimumQuantity,
                 };
             })
             .Where(opt => opt != null)
