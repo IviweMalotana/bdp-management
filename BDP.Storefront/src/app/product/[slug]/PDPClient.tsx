@@ -610,11 +610,11 @@ export default function PDPClient({ product }: { product: Product }) {
 // Plain-English descriptions shown under each customisation toggle
 const CUSTOMISATION_DESCRIPTIONS: Record<string, string> = {
   ColourChange:
-    "We tint the bottle, lid, or both to your chosen colour — great for matching your brand palette.",
+    "We tint the bottle, lid, or both to your chosen colour. Great for matching your brand palette.",
   SilkScreen:
-    "Your logo or design is printed directly onto the bottle in ink. Flat, clean finish — best for bold logos and solid shapes.",
+    "Your logo or design is printed directly onto the bottle in ink. Flat, clean finish. Best for bold logos and solid shapes.",
   HotStamping:
-    "Your logo is pressed onto the bottle using metallic foil. Creates a shiny, premium look — available in gold, silver, or rose gold.",
+    "Your logo is pressed onto the bottle using metallic foil. Creates a shiny, premium look. Available in gold, silver, or rose gold.",
 };
 
 function CustomisationToggle({
