@@ -376,8 +376,8 @@ export default function PDPClient({ product }: { product: Product }) {
   const useCatalogueSel = isCatalogueBased(product.variants);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+    <div className="max-w-7xl mx-auto px-4 py-10 md:py-16">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
         {/* Image gallery */}
         <div>
           <div
@@ -457,7 +457,7 @@ export default function PDPClient({ product }: { product: Product }) {
             <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>
               Quantity <span style={{ color: "#C9B8A8" }}>(min {moq})</span>
             </p>
-            <div className="inline-block">
+            <div className="w-full sm:inline-block">
               <QuantityInput value={quantity} min={moq} onChange={handleQuantityChange} />
             </div>
             {moqError && <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{moqError}</p>}

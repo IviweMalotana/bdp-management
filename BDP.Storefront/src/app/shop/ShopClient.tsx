@@ -27,6 +27,7 @@ export default function ShopClient() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   const page = parseInt(searchParams.get("page") ?? "1");
   const category = searchParams.get("category") ?? "";
@@ -68,17 +69,93 @@ export default function ShopClient() {
   const totalPages = Math.ceil(total / pageSize);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
+    <div className="max-w-7xl mx-auto px-4 py-10 md:py-16">
       <h1
-        className="text-5xl mb-10"
+        className="text-4xl md:text-5xl mb-6 md:mb-10"
         style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
       >
         all packaging
       </h1>
 
+      {/* Mobile: search + filter toggle row */}
+      <div className="flex gap-3 mb-4 md:hidden">
+        <input
+          type="text"
+          placeholder="Search…"
+          value={search}
+          onChange={(e) => setParam("search", e.target.value)}
+          className="flex-1 text-sm px-3 py-2 border outline-none"
+          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+        />
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((v) => !v)}
+          className="flex items-center gap-1.5 px-3 py-2 text-sm border"
+          style={{
+            borderColor: filtersOpen ? "#1C1A17" : "#C9B8A8",
+            backgroundColor: filtersOpen ? "#1C1A17" : "transparent",
+            color: filtersOpen ? "#F5EFE6" : "#1C1A17",
+            borderRadius: "2px",
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <line x1="4" y1="6" x2="20" y2="6" /><line x1="8" y1="12" x2="16" y2="12" /><line x1="11" y1="18" x2="13" y2="18" />
+          </svg>
+          Filter
+        </button>
+      </div>
+
+      {/* Mobile: category pills (shown when filter open) */}
+      {filtersOpen && (
+        <div className="md:hidden mb-4 space-y-3">
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setParam("category", "")}
+              className="px-3 py-1.5 text-xs border"
+              style={{
+                borderColor: !category ? "#1C1A17" : "#C9B8A8",
+                backgroundColor: !category ? "#1C1A17" : "transparent",
+                color: !category ? "#F5EFE6" : "#1C1A17",
+                borderRadius: "2px",
+              }}
+            >
+              All
+            </button>
+            {categories.map((c) => (
+              <button
+                key={c.category}
+                onClick={() => setParam("category", c.category)}
+                className="px-3 py-1.5 text-xs border"
+                style={{
+                  borderColor: category === c.category ? "#1C1A17" : "#C9B8A8",
+                  backgroundColor: category === c.category ? "#1C1A17" : "transparent",
+                  color: category === c.category ? "#F5EFE6" : "#1C1A17",
+                  borderRadius: "2px",
+                }}
+              >
+                {c.category}
+                <span className="ml-1" style={{ color: category === c.category ? "#C9B8A8" : "#C9B8A8" }}>
+                  ({c.productCount})
+                </span>
+              </button>
+            ))}
+          </div>
+          <select
+            value={sort}
+            onChange={(e) => setParam("sort", e.target.value)}
+            className="w-full text-sm px-3 py-2 border outline-none"
+            style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+          >
+            <option value="">Featured</option>
+            <option value="price_asc">Price: Low to High</option>
+            <option value="newest">Newest</option>
+          </select>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-10">
-        {/* Sidebar */}
-        <aside className="md:w-52 shrink-0">
+        {/* Sidebar — desktop only */}
+        <aside className="hidden md:block md:w-52 shrink-0">
           <div className="mb-6">
             <input
               type="text"
@@ -135,7 +212,7 @@ export default function ShopClient() {
         {/* Grid */}
         <div className="flex-1">
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               {Array.from({ length: 9 }).map((_, i) => (
                 <div key={i} className="aspect-square animate-pulse" style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }} />
               ))}
@@ -149,7 +226,7 @@ export default function ShopClient() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 {products.map((p) => (
                   <ProductCard key={p.slug} {...p} />
                 ))}

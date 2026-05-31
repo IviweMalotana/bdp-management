@@ -15,6 +15,8 @@ export default function Header() {
     { href: "/collections", label: "Collections" },
     { href: "/customise", label: "Customise" },
     { href: "/for-business", label: "For Business" },
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
   ];
 
   const accountHref = jwt ? "/account" : "/auth/login";

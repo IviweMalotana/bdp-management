@@ -58,14 +58,14 @@ export default function CartPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-16">
+    <div className="max-w-7xl mx-auto px-4 py-10 md:py-16">
       <h1
-        className="text-4xl mb-10"
+        className="text-4xl mb-6 md:mb-10"
         style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
       >
         your cart
       </h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
         {/* Line items */}
         <div className="md:col-span-2 space-y-6">
           {items.map((item) => (
