@@ -133,7 +133,6 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BDP.API.Services.PricingService>();
-builder.Services.AddScoped<BDP.API.Services.AIContentService>();
 builder.Services.AddScoped<BDP.API.Services.ShopifyExportService>();
 builder.Services.AddScoped<BDP.API.Services.PaystackService>();
 builder.Services.AddScoped<BDP.API.Services.ShippingCalculatorService>();
@@ -141,7 +140,6 @@ builder.Services.AddScoped<BDP.API.Services.EmailService>();
 builder.Services.AddScoped<BDP.API.Services.YunExpressService>();
 builder.Services.AddScoped<BDP.API.Services.InvoiceService>();
 builder.Services.AddScoped<BDP.API.Services.CatalogueImportService>();
-builder.Services.AddScoped<BDP.API.Services.GoogleDriveService>();   // Used for uploading AI-generated product images
 builder.Services.AddScoped<BDP.API.Services.CurrencyService>();
 builder.Services.AddSingleton<BDP.API.Services.RecurringOrderService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BDP.API.Services.RecurringOrderService>());

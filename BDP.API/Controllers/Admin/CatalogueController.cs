@@ -15,7 +15,9 @@ public class CatalogueController : ControllerBase
     private readonly AppDbContext _db;
     private readonly CatalogueImportService _importService;
 
-    public CatalogueController(AppDbContext db, CatalogueImportService importService)
+    public CatalogueController(
+        AppDbContext db,
+        CatalogueImportService importService)
     {
         _db = db;
         _importService = importService;
@@ -239,6 +241,12 @@ public class CatalogueController : ControllerBase
 
         await _db.SaveChangesAsync();
         return Ok(new { collectionsCreated, assignmentsAdded });
+    }
+
+    public class GenerateImagesRequest
+    {
+        public List<int>? ProductIds { get; set; }
+        public bool OnlyMissing { get; set; } = true;
     }
 
     private static string MapProductTypeToCollection(string productType)

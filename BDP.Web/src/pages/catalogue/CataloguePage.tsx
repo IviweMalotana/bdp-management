@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Upload, Loader2, Check, AlertCircle, Search, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
-import { shipping as shippingApi } from '../../services/api'
+import { Upload, Loader2, Check, AlertCircle, Search, ChevronLeft, ChevronRight, BookOpen, Image as ImageIcon } from 'lucide-react'
+import { shipping as shippingApi, catalogue, type GenerateImagesResult } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import type { ShippingSettings } from '../../types'
 
@@ -83,6 +83,11 @@ export default function CataloguePage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 50
+
+  // ── AI Image Generation (NEW) ──────────────────────────────────────────────
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [generationResult, setGenerationResult] = useState<GenerateImagesResult | null>(null)
+  const [generationError, setGenerationError] = useState<string | null>(null)
 
   // ── Load settings ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -191,6 +196,28 @@ export default function CataloguePage() {
     e.preventDefault()
     setPage(1)
     fetchProducts(1, search)
+  }
+
+  // ── AI Image Generation Handler ────────────────────────────────────────────
+  const handleGenerateAiImages = async () => {
+    if (!isAdmin) return
+
+    setIsGenerating(true)
+    setGenerationResult(null)
+    setGenerationError(null)
+
+    try {
+      // For Phase 1: Generate for all products (onlyMissing = true is smarter long-term)
+      const result = await catalogue.generateAiImages({ onlyMissing: true })
+      setGenerationResult(result)
+
+      // Refresh the products list in case new image links were saved
+      fetchProducts(page, search)
+    } catch (err: any) {
+      setGenerationError(err?.response?.data?.message || 'Failed to start image generation.')
+    } finally {
+      setIsGenerating(false)
+    }
   }
 
   const totalPages = products ? Math.ceil(products.total / PAGE_SIZE) : 1
@@ -335,9 +362,29 @@ export default function CataloguePage() {
       {/* ── Section 3: Products Table ─────────────────────────────────────── */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          <p className="text-sm font-semibold text-white">
-            Products {products ? <span className="text-gray-400 font-normal">({products.total})</span> : null}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-sm font-semibold text-white">
+              Products {products ? <span className="text-gray-400 font-normal">({products.total})</span> : null}
+            </p>
+
+            {/* NEW: AI Image Generation Button */}
+            {isAdmin && (
+              <button
+                onClick={handleGenerateAiImages}
+                disabled={isGenerating}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-purple-600 hover:bg-purple-500 disabled:opacity-60 text-white rounded-lg transition-colors"
+                title="Generate consistent bottle/jar images using AI based on reference photos + color data. Results are uploaded to Google Drive."
+              >
+                {isGenerating ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <ImageIcon size={14} />
+                )}
+                {isGenerating ? 'Generating…' : 'Generate AI Images'}
+              </button>
+            )}
+          </div>
+
           <form onSubmit={handleSearch} className="flex gap-2">
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
@@ -352,6 +399,49 @@ export default function CataloguePage() {
             <button type="submit" className={btn('secondary')}>Search</button>
           </form>
         </div>
+
+        {/* AI Image Generation Status (NEW) */}
+        {(isGenerating || generationResult || generationError) && (
+          <div className="bg-purple-900/20 border border-purple-700 rounded-lg p-4 text-sm space-y-2">
+            <div className="flex items-center gap-2 font-medium text-purple-300">
+              <ImageIcon size={16} />
+              AI Image Generation
+            </div>
+
+            {isGenerating && (
+              <div className="flex items-center gap-2 text-purple-200">
+                <Loader2 size={16} className="animate-spin" />
+                Generating product images from reference photos + color variants. This can take a while...
+              </div>
+            )}
+
+            {generationError && (
+              <div className="text-red-300 flex items-start gap-2">
+                <AlertCircle size={16} className="mt-0.5" />
+                {generationError}
+              </div>
+            )}
+
+            {generationResult && (
+              <div className="text-purple-100 space-y-1">
+                <p>
+                  <strong>{generationResult.generated}</strong> images generated · 
+                  <strong> {generationResult.skipped}</strong> skipped · 
+                  <strong> {generationResult.totalProcessed}</strong> processed
+                </p>
+                {generationResult.message && (
+                  <p className="text-purple-300 text-xs">{generationResult.message}</p>
+                )}
+                {generationResult.errors.length > 0 && (
+                  <div className="text-xs text-red-300 mt-1">
+                    Errors: {generationResult.errors.slice(0, 3).join(' • ')}
+                    {generationResult.errors.length > 3 && ` (+${generationResult.errors.length - 3} more)`}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {productsLoading ? (
           <div className="flex items-center justify-center h-32">

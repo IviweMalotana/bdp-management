@@ -77,6 +77,49 @@ export const products = {
 
   updateVariant: (productId: number, variantId: number, data: object) =>
     http.put<ProductVariant>(`/products/${productId}/variants/${variantId}`, data).then((r) => r.data),
+}
+
+// ── Catalogue (Admin) ────────────────────────────────────────────────────────
+export const catalogue = {
+  importCsv: (file: File) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return http.post<ImportResult>('/admin/catalogue/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }).then((r) => r.data)
+  },
+
+  getProducts: (params?: { page?: number; pageSize?: number; search?: string }) =>
+    http.get<ProductsPage>('/admin/catalogue/products', { params }).then((r) => r.data),
+
+  // NEW: Bulk AI image generation for products/variants
+  // This will eventually call OpenAI + upload to Google Drive
+  generateAiImages: (payload?: { productIds?: number[]; onlyMissing?: boolean }) =>
+    http.post<GenerateImagesResult>('/admin/catalogue/generate-images', payload ?? {}).then((r) => r.data),
+}
+
+export interface ImportResult {
+  added: number
+  updated: number
+  unchanged: number
+  errors: string[]
+  success: boolean
+}
+
+export interface ProductsPage {
+  total: number
+  page: number
+  pageSize: number
+  items: any[] // We can tighten this later
+}
+
+export interface GenerateImagesResult {
+  totalProcessed: number
+  generated: number
+  skipped: number
+  errors: string[]
+  message: string
+}
 
   deleteVariant: (productId: number, variantId: number) =>
     http.delete(`/products/${productId}/variants/${variantId}`),
