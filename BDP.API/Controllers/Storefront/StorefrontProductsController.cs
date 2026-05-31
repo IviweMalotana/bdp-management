@@ -72,32 +72,32 @@ public class StorefrontProductsController : ControllerBase
 
         if (product == null) return NotFound();
 
-        // Customisation options (Silk Screen, Hot Stamping) come from Charlie Branding
-        // regardless of which supplier made the bottle — Charlie prints on any bottle.
-        var charlie = await _db.Suppliers
-            .Include(s => s.CustomisationOptions).ThenInclude(co => co.PricingTiers)
-            .FirstOrDefaultAsync(s => EF.Functions.ILike(s.Name, "%Charlie%"));
+        // Load active global pricing settings
+        var globalSettings = await _db.CustomisationSettings
+            .Where(cs => cs.IsActive)
+            .ToListAsync();
 
-        var supplierOptions = (charlie?.CustomisationOptions ?? new List<CustomisationOption>())
-            .Select(co => new StorefrontCustomisationOption
+        // Load the bottle supplier's customisation options
+        var supplierOptions = await _db.CustomisationOptions
+            .Where(co => co.SupplierId == product.SupplierId && co.IsEnabled)
+            .ToListAsync();
+
+        // Build response: for each active global setting, check if this supplier has it enabled
+        var customisationOptions = globalSettings
+            .Select(setting =>
             {
-                Id = co.Id,
-                Type = co.Type,
-                MinimumQuantity = co.MinimumQuantity,
-                PricePerUnitZAR = null,
-                PricingTiers = co.PricingTiers.OrderBy(t => t.Quantity)
-                    .Select(t => new StorefrontTier { Id = t.Id, Quantity = t.Quantity, SalePriceZAR = t.SalePriceZAR })
-                    .ToList(),
-            }).ToList();
+                var supplierOpt = supplierOptions.FirstOrDefault(co => co.Type == setting.Type);
+                if (supplierOpt == null) return null; // not available for this supplier
 
-        supplierOptions.Add(new StorefrontCustomisationOption
-        {
-            Id = 0,
-            Type = "ColourChange",
-            MinimumQuantity = 100,
-            PricePerUnitZAR = 2.00m,
-            PricingTiers = new List<StorefrontTier>(),
-        });
+                return new
+                {
+                    type = setting.Type,
+                    pricePerUnitZAR = setting.PricePerUnitZAR,
+                    minimumQuantity = supplierOpt.MinimumQuantity ?? setting.DefaultMinimumQuantity,
+                };
+            })
+            .Where(opt => opt != null)
+            .ToList();
 
         return Ok(new
         {
@@ -143,7 +143,7 @@ public class StorefrontProductsController : ControllerBase
                     t.CostPerUnitZAR,
                 })
             }),
-            customisationOptions = supplierOptions,
+            customisationOptions,
         });
     }
 
@@ -220,20 +220,3 @@ public class StorefrontProductsController : ControllerBase
     }
 }
 
-// ── Helper DTOs for type-safe customisation option serialisation ──────────────
-
-internal class StorefrontTier
-{
-    public int Id { get; set; }
-    public int Quantity { get; set; }
-    public decimal SalePriceZAR { get; set; }
-}
-
-internal class StorefrontCustomisationOption
-{
-    public int Id { get; set; }
-    public string Type { get; set; } = string.Empty;
-    public int MinimumQuantity { get; set; }
-    public decimal? PricePerUnitZAR { get; set; }
-    public List<StorefrontTier> PricingTiers { get; set; } = new();
-}

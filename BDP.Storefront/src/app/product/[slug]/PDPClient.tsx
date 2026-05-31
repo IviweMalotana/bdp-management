@@ -40,11 +40,9 @@ interface Variant {
   pricingTiers: Tier[];
 }
 interface CustomisationOption {
-  id: number;
   type: string;
+  pricePerUnitZAR: number;
   minimumQuantity: number;
-  pricePerUnitZAR?: number | null;
-  pricingTiers: Tier[];
 }
 interface ProductImage { url: string; altText: string; isPrimary: boolean }
 
@@ -322,36 +320,32 @@ export default function PDPClient({ product }: { product: Product }) {
   const lineTotal = unitPrice * quantity;
 
   // Customisation add-ons
-  const customisationEnabled = quantity >= 100;
-
   const silkOption = product.customisationOptions.find((co) => co.type === "SilkScreen");
   const hotOption = product.customisationOptions.find((co) => co.type === "HotStamping");
   const colourOption = product.customisationOptions.find((co) => co.type === "ColourChange");
 
+  const silkEnabled = silkOption != null && quantity >= silkOption.minimumQuantity;
+  const hotEnabled = hotOption != null && quantity >= hotOption.minimumQuantity;
+  const colourEnabled = colourOption != null && quantity >= colourOption.minimumQuantity;
+
   function customisationCost(option: CustomisationOption | undefined, enabled: boolean): number {
     if (!enabled || !option) return 0;
-    // If flat pricePerUnitZAR is set (ColourChange), use it
-    if (option.pricePerUnitZAR != null) return option.pricePerUnitZAR * quantity;
-    // Otherwise find tier
-    const tier = [...option.pricingTiers].reverse().find((t) => quantity >= t.quantity) ?? option.pricingTiers[0];
-    return tier ? tier.salePriceZAR : 0;
+    return option.pricePerUnitZAR * quantity;
   }
 
-  const silkCost = customisationCost(silkOption, silkScreen);
-  const hotCost = customisationCost(hotOption, hotStamping);
-  const colourCost = customisationCost(colourOption, colourChange);
+  const silkCost = customisationCost(silkOption, silkScreen && silkEnabled);
+  const hotCost = customisationCost(hotOption, hotStamping && hotEnabled);
+  const colourCost = customisationCost(colourOption, colourChange && colourEnabled);
   const grandTotal = lineTotal + silkCost + hotCost + colourCost;
 
   function handleQuantityChange(n: number) {
     setQuantity(n);
     if (n < moq) setMoqError(`Minimum order is ${moq} units`);
     else setMoqError("");
-    // Disable customisations if dropping below threshold
-    if (n < 100) {
-      setSilkScreen(false);
-      setHotStamping(false);
-      setColourChange(false);
-    }
+    // Disable toggles when quantity drops below per-option minimums
+    if (silkOption && n < silkOption.minimumQuantity) setSilkScreen(false);
+    if (hotOption && n < hotOption.minimumQuantity) setHotStamping(false);
+    if (colourOption && n < colourOption.minimumQuantity) setColourChange(false);
   }
 
   function handleVariantSelect(v: Variant) {
@@ -364,8 +358,8 @@ export default function PDPClient({ product }: { product: Product }) {
     setAdding(true);
     try {
       const token = getSessionToken();
-      // Pass first selected customisation ID (silk screen or hot stamping — not colour change which is handled separately)
-      const customisationId = silkScreen ? silkOption?.id : hotStamping ? hotOption?.id : undefined;
+      // Customisation option linkage is resolved server-side; pass undefined for now
+      const customisationId = undefined;
       const result = await addToCart(token, selectedVariant.id, quantity, customisationId, jwt ?? undefined);
       setCart(result as Parameters<typeof setCart>[0]);
       setAdded(true);
@@ -379,8 +373,6 @@ export default function PDPClient({ product }: { product: Product }) {
 
   const images = product.images.length > 0 ? product.images : [{ url: "", altText: product.name, isPrimary: true }];
   const useCatalogueSel = isCatalogueBased(product.variants);
-
-  const customisationTooltip = "Available from 100 units";
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-16">
@@ -486,45 +478,44 @@ export default function PDPClient({ product }: { product: Product }) {
           <div className="mb-6 border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
             <div className="px-4 py-3 border-b" style={{ borderColor: "#C9B8A8" }}>
               <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>Personalise your order</p>
-              {!customisationEnabled && (
-                <p className="text-xs mt-0.5" style={{ color: "#D4A89A" }}>
-                  Customisation options are available from 100 units
-                </p>
-              )}
             </div>
             <div className="px-4 py-4 space-y-3">
               {/* Silk Screen */}
               {silkOption && (
                 <CustomisationToggle
                   label="Silk Screen"
-                  enabled={customisationEnabled}
+                  subLabel={`+R${silkOption.pricePerUnitZAR.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/unit`}
+                  enabled={silkEnabled}
                   checked={silkScreen}
                   onChange={setSilkScreen}
-                  cost={customisationEnabled ? silkCost : null}
-                  tooltip={customisationEnabled ? undefined : customisationTooltip}
+                  cost={silkEnabled ? silkCost : null}
+                  lockedMessage={silkEnabled ? undefined : `Available from ${silkOption.minimumQuantity.toLocaleString()} units`}
                 />
               )}
               {/* Hot Stamping */}
               {hotOption && (
                 <CustomisationToggle
                   label="Hot Stamping"
-                  enabled={customisationEnabled}
+                  subLabel={`+R${hotOption.pricePerUnitZAR.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/unit`}
+                  enabled={hotEnabled}
                   checked={hotStamping}
                   onChange={setHotStamping}
-                  cost={customisationEnabled ? hotCost : null}
-                  tooltip={customisationEnabled ? undefined : customisationTooltip}
+                  cost={hotEnabled ? hotCost : null}
+                  lockedMessage={hotEnabled ? undefined : `Available from ${hotOption.minimumQuantity.toLocaleString()} units`}
                 />
               )}
               {/* Colour Change */}
-              <CustomisationToggle
-                label="Colour Change"
-                subLabel="+R2.00/unit"
-                enabled={customisationEnabled}
-                checked={colourChange}
-                onChange={setColourChange}
-                cost={customisationEnabled ? colourCost : null}
-                tooltip={customisationEnabled ? undefined : customisationTooltip}
-              />
+              {colourOption && (
+                <CustomisationToggle
+                  label="Colour Change"
+                  subLabel={`+R${colourOption.pricePerUnitZAR.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/unit`}
+                  enabled={colourEnabled}
+                  checked={colourChange}
+                  onChange={setColourChange}
+                  cost={colourEnabled ? colourCost : null}
+                  lockedMessage={colourEnabled ? undefined : `Available from ${colourOption.minimumQuantity.toLocaleString()} units`}
+                />
+              )}
             </div>
           </div>
 
@@ -620,7 +611,7 @@ function CustomisationToggle({
   checked,
   onChange,
   cost,
-  tooltip,
+  lockedMessage,
 }: {
   label: string;
   subLabel?: string;
@@ -628,29 +619,31 @@ function CustomisationToggle({
   checked: boolean;
   onChange: (v: boolean) => void;
   cost: number | null;
-  tooltip?: string;
+  lockedMessage?: string;
 }) {
   return (
-    <label
-      className={`flex items-center justify-between gap-3 ${enabled ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}
-      title={tooltip}
-    >
-      <div className="flex items-center gap-3">
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={!enabled}
-          onChange={(e) => onChange(e.target.checked)}
-          className="w-4 h-4 accent-ink"
-        />
-        <span className="text-sm" style={{ color: "#1C1A17" }}>
-          {label}
-          {subLabel && <span className="text-xs ml-1" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
-        </span>
-      </div>
-      {cost != null && cost > 0 && (
-        <span className="text-sm" style={{ color: "#4A4540" }}>{formatZAR(cost)}</span>
+    <div className={`${enabled ? "" : "opacity-50"}`}>
+      <label className={`flex items-center justify-between gap-3 ${enabled ? "cursor-pointer" : "cursor-not-allowed"}`}>
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            checked={checked}
+            disabled={!enabled}
+            onChange={(e) => onChange(e.target.checked)}
+            className="w-4 h-4 accent-ink"
+          />
+          <span className="text-sm" style={{ color: "#1C1A17" }}>
+            {label}
+            {subLabel && <span className="text-xs ml-1" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
+          </span>
+        </div>
+        {cost != null && cost > 0 && (
+          <span className="text-sm" style={{ color: "#4A4540" }}>{formatZAR(cost)}</span>
+        )}
+      </label>
+      {!enabled && lockedMessage && (
+        <p className="text-xs mt-0.5 ml-7" style={{ color: "#D4A89A" }}>{lockedMessage}</p>
       )}
-    </label>
+    </div>
   );
 }

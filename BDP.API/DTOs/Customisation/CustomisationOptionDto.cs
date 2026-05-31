@@ -18,6 +18,6 @@ public class CustomisationOptionDto
     public string SupplierName { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public string? Link1688 { get; set; }
-    public int MinimumQuantity { get; set; }
+    public int? MinimumQuantity { get; set; }
     public List<CustomisationPricingTierDto> PricingTiers { get; set; } = new();
 }

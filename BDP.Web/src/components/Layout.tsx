@@ -18,6 +18,7 @@ import {
   Globe,
   UserCheck,
   BookOpen,
+  Paintbrush,
 } from 'lucide-react'
 
 const NAV = [
@@ -37,8 +38,9 @@ const NAV = [
   { to: '/b2b/pending',       label: 'Applications',    icon: UserCheck },
   { to: '/catalogue',         label: 'Catalogue',       icon: BookOpen },
   { divider: true,            label: 'System' },
-  { to: '/shipping-rates',    label: 'Shipping Rates',  icon: Globe },
-  { to: '/settings/shipping', label: 'Settings',        icon: Settings },
+  { to: '/shipping-rates',          label: 'Shipping Rates',  icon: Globe },
+  { to: '/settings/shipping',       label: 'Shipping',        icon: Settings },
+  { to: '/settings/customisation',  label: 'Customisation',   icon: Paintbrush },
 ]
 
 const ROLE_COLOURS: Record<string, string> = {

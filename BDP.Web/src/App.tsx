@@ -35,6 +35,7 @@ import CollectionsList from './pages/collections/CollectionsList'
 import CollectionForm from './pages/collections/CollectionForm'
 import PendingApplications from './pages/b2b/PendingApplications'
 import CataloguePage from './pages/catalogue/CataloguePage'
+import CustomisationSettings from './pages/settings/CustomisationSettings'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
@@ -80,6 +81,7 @@ export default function App() {
             <Route path="/suppliers"         element={<SuppliersPage />} />
             <Route path="/shipments"         element={<ShipmentsPage />} />
             <Route path="/settings/shipping" element={<ShippingSettingsPage />} />
+            <Route path="/settings/customisation" element={<CustomisationSettings />} />
             <Route path="/shipping-rates"    element={<ShippingRatesPage />} />
 
             {/* B2B — Clients */}

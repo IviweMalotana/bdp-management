@@ -18,6 +18,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ProductCollection> ProductCollections => Set<ProductCollection>();
     public DbSet<CustomisationOption> CustomisationOptions => Set<CustomisationOption>();
     public DbSet<CustomisationPricingTier> CustomisationPricingTiers => Set<CustomisationPricingTier>();
+    public DbSet<CustomisationSetting> CustomisationSettings => Set<CustomisationSetting>();
     public DbSet<Shipment> Shipments => Set<Shipment>();
     public DbSet<ShipmentItem> ShipmentItems => Set<ShipmentItem>();
     public DbSet<Customer> Customers => Set<Customer>();
@@ -274,6 +275,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(cpt => cpt.CostPerUnitZAR).HasPrecision(18, 4);
         builder.Entity<CustomisationPricingTier>()
             .Property(cpt => cpt.SalePriceZAR).HasPrecision(18, 4);
+
+        // Decimal precision — CustomisationSetting
+        builder.Entity<CustomisationSetting>()
+            .Property(cs => cs.PricePerUnitZAR).HasPrecision(18, 4);
 
         // Decimal precision — Client
         builder.Entity<Client>()

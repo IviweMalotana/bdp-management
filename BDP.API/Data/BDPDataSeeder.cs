@@ -14,6 +14,7 @@ public static class BDPDataSeeder
     {
         await SeedRolesAndAdminAsync(userManager, roleManager);
         await SeedSuppliersAsync(context);
+        await SeedCustomisationSettingsAsync(context);
         await SeedCustomisationOptionsAsync(context);
         await SeedProductsAsync(context);
     }
@@ -90,78 +91,95 @@ public static class BDPDataSeeder
         await context.SaveChangesAsync();
     }
 
-    // ─── Customisation Options ───────────────────────────────────────────────
+    // ─── Customisation Settings (global pricing) ─────────────────────────────
+
+    private static async Task SeedCustomisationSettingsAsync(AppDbContext context)
+    {
+        var defs = new[]
+        {
+            new { Type = "ColourChange", Price = 5.00m,  MOQ = 1000 },
+            new { Type = "SilkScreen",  Price = 14.00m, MOQ = 1000 },
+            new { Type = "HotStamping", Price = 14.00m, MOQ = 1000 },
+        };
+        foreach (var d in defs)
+        {
+            var existing = await context.CustomisationSettings.FirstOrDefaultAsync(s => s.Type == d.Type);
+            if (existing == null)
+            {
+                context.CustomisationSettings.Add(new CustomisationSetting
+                {
+                    Type = d.Type,
+                    PricePerUnitZAR = d.Price,
+                    IsActive = true,
+                    DefaultMinimumQuantity = d.MOQ,
+                });
+            }
+        }
+        await context.SaveChangesAsync();
+    }
+
+    // ─── Customisation Options (per-supplier availability) ───────────────────
 
     private static async Task SeedCustomisationOptionsAsync(AppDbContext context)
     {
+        var allTypes = new[] { "SilkScreen", "HotStamping", "ColourChange" };
+
+        // Charlie Branding — all three types, global MOQ (null = use setting default)
         var charlie = await context.Suppliers.FirstOrDefaultAsync(s => s.Name == "Charlie Branding (SA)");
-        if (charlie == null) return;
-
-        var hasOptions = await context.CustomisationOptions.AnyAsync(co => co.SupplierId == charlie.Id);
-        if (hasOptions) return;
-
-        // Silk Screen tiers (ZAR total for quantity): qty → (totalZAR, salePriceZAR per unit)
-        var silkQtys = new[]
+        if (charlie != null)
         {
-            (100,   1500m),  (250,  3250m),  (500,  5750m), (1000, 11900m), (2500, 29500m),
-            (5000, 58000m), (10000, 110000m), (20000, 210000m), (50000, 500000m),
-        };
-        var hotQtys = new[]
-        {
-            (100,   1650m),  (250,  3500m),  (500,  6250m), (1000, 12500m), (2500, 32000m),
-            (5000, 62000m), (10000, 120000m), (20000, 228000m), (50000, 540000m),
-        };
-
-        var silkOption = new CustomisationOption
-        {
-            SupplierId = charlie.Id,
-            Type = "SilkScreen",
-            MinimumQuantity = 100,
-        };
-        context.CustomisationOptions.Add(silkOption);
-        await context.SaveChangesAsync();
-
-        int silkSeq = 1;
-        foreach (var (qty, total) in silkQtys)
-        {
-            var perUnit = Math.Round(total / qty, 4);
-            context.CustomisationPricingTiers.Add(new CustomisationPricingTier
+            foreach (var type in allTypes)
             {
-                CustomisationOptionId = silkOption.Id,
-                Quantity = qty,
-                CostCNY = 0m,
-                CostWithShippingCNY = 0m,
-                CostPerUnitZAR = perUnit,
-                SalePriceZAR = total,
-                SKU = $"SILK-{qty:D6}",
-            });
-            silkSeq++;
+                var existing = await context.CustomisationOptions
+                    .FirstOrDefaultAsync(co => co.SupplierId == charlie.Id && co.Type == type);
+                if (existing == null)
+                {
+                    context.CustomisationOptions.Add(new CustomisationOption
+                    {
+                        SupplierId = charlie.Id,
+                        Type = type,
+                        IsEnabled = true,
+                        MinimumQuantity = null,
+                    });
+                }
+                else
+                {
+                    // Migrate existing options to new schema — clear old MinimumQuantity
+                    existing.IsEnabled = true;
+                    existing.MinimumQuantity = null;
+                }
+            }
+            await context.SaveChangesAsync();
         }
 
-        var hotOption = new CustomisationOption
-        {
-            SupplierId = charlie.Id,
-            Type = "HotStamping",
-            MinimumQuantity = 100,
-        };
-        context.CustomisationOptions.Add(hotOption);
-        await context.SaveChangesAsync();
+        // Shijie suppliers — all three types, 10,000 unit MOQ override
+        var shijieSuppliers = await context.Suppliers
+            .Where(s => EF.Functions.ILike(s.Name, "%Shijie%"))
+            .ToListAsync();
 
-        foreach (var (qty, total) in hotQtys)
+        foreach (var supplier in shijieSuppliers)
         {
-            var perUnit = Math.Round(total / qty, 4);
-            context.CustomisationPricingTiers.Add(new CustomisationPricingTier
+            foreach (var type in allTypes)
             {
-                CustomisationOptionId = hotOption.Id,
-                Quantity = qty,
-                CostCNY = 0m,
-                CostWithShippingCNY = 0m,
-                CostPerUnitZAR = perUnit,
-                SalePriceZAR = total,
-                SKU = $"HOT-{qty:D6}",
-            });
+                var existing = await context.CustomisationOptions
+                    .FirstOrDefaultAsync(co => co.SupplierId == supplier.Id && co.Type == type);
+                if (existing == null)
+                {
+                    context.CustomisationOptions.Add(new CustomisationOption
+                    {
+                        SupplierId = supplier.Id,
+                        Type = type,
+                        IsEnabled = true,
+                        MinimumQuantity = 10000,
+                    });
+                }
+                else
+                {
+                    existing.IsEnabled = true;
+                    existing.MinimumQuantity = 10000;
+                }
+            }
         }
-
         await context.SaveChangesAsync();
     }
 
