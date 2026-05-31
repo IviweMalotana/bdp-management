@@ -14,6 +14,7 @@ public static class BDPDataSeeder
     {
         await SeedRolesAndAdminAsync(userManager, roleManager);
         await SeedSuppliersAsync(context);
+        await DeduplicateSuppliersAsync(context);
         await SeedCustomisationSettingsAsync(context);
         await SeedCustomisationOptionsAsync(context);
         await SeedProductsAsync(context);
@@ -85,6 +86,42 @@ public static class BDPDataSeeder
                     IsActive = true,
                     CreatedAt = DateTime.UtcNow,
                 });
+            }
+        }
+
+        await context.SaveChangesAsync();
+    }
+
+    // ─── Supplier Deduplication ──────────────────────────────────────────────
+    // Merges duplicates created by the CSV importer into the canonical seeded record.
+
+    private static async Task DeduplicateSuppliersAsync(AppDbContext context)
+    {
+        var all = await context.Suppliers.ToListAsync();
+
+        var groups = all
+            .GroupBy(s => string.Join(" ",
+                s.Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2)),
+                StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1);
+
+        foreach (var group in groups)
+        {
+            // Keep the shortest (canonical seeded) name
+            var canonical = group.OrderBy(s => s.Name.Length).ThenBy(s => s.Id).First();
+            var duplicates = group.Where(s => s.Id != canonical.Id).ToList();
+
+            foreach (var dup in duplicates)
+            {
+                // Re-point all products from the duplicate to the canonical supplier
+                var affected = await context.Products
+                    .Where(p => p.SupplierId == dup.Id)
+                    .ToListAsync();
+                foreach (var p in affected)
+                    p.SupplierId = canonical.Id;
+
+                await context.SaveChangesAsync();
+                context.Suppliers.Remove(dup);
             }
         }
 

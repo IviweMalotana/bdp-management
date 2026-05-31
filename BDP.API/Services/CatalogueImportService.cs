@@ -74,8 +74,18 @@ public class CatalogueImportService
                 Supplier? supplier = null;
                 if (!string.IsNullOrWhiteSpace(supplierName))
                 {
-                    supplier = await _db.Suppliers.FirstOrDefaultAsync(s =>
-                        EF.Functions.ILike(s.Name, $"%{supplierName}%"));
+                    // Extract the first two meaningful words (e.g. "Hongxin Pharmaceutical")
+                    // to match against existing suppliers regardless of how long the CSV name is.
+                    var keyWords = supplierName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                        .Take(2)
+                        .ToArray();
+                    var keyword = string.Join(" ", keyWords);
+
+                    // Try: CSV name contains DB name, OR DB name contains keyword from CSV
+                    var allSuppliers = await _db.Suppliers.ToListAsync();
+                    supplier = allSuppliers.FirstOrDefault(s =>
+                        supplierName.Contains(s.Name, StringComparison.OrdinalIgnoreCase) ||
+                        s.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase));
 
                     if (supplier == null)
                     {
