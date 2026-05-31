@@ -296,10 +296,11 @@ export default function PDPClient({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY));
   const [selectedImage, setSelectedImage] = useState(0);
 
-  // Customisation toggles
-  const [silkScreen, setSilkScreen] = useState(false);
-  const [hotStamping, setHotStamping] = useState(false);
+  // Customisation toggles — silk screen and hot stamping are mutually exclusive
+  const [printMethod, setPrintMethod] = useState<"SilkScreen" | "HotStamping" | null>(null);
   const [colourChange, setColourChange] = useState(false);
+  const silkScreen = printMethod === "SilkScreen";
+  const hotStamping = printMethod === "HotStamping";
 
   const [adding, setAdding] = useState(false);
   const [added, setAdded] = useState(false);
@@ -342,9 +343,9 @@ export default function PDPClient({ product }: { product: Product }) {
     setQuantity(n);
     if (n < moq) setMoqError(`Minimum order is ${moq} units`);
     else setMoqError("");
-    // Disable toggles when quantity drops below per-option minimums
-    if (silkOption && n < silkOption.minimumQuantity) setSilkScreen(false);
-    if (hotOption && n < hotOption.minimumQuantity) setHotStamping(false);
+    // Reset toggles when quantity drops below per-option minimums
+    if ((silkOption && n < silkOption.minimumQuantity) || (hotOption && n < hotOption.minimumQuantity))
+      setPrintMethod(null);
     if (colourOption && n < colourOption.minimumQuantity) setColourChange(false);
   }
 
@@ -456,9 +457,10 @@ export default function PDPClient({ product }: { product: Product }) {
             <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>
               Quantity <span style={{ color: "#C9B8A8" }}>(min {moq})</span>
             </p>
-            <QuantityInput value={quantity} min={moq} onChange={handleQuantityChange} />
+            <div className="inline-block">
+              <QuantityInput value={quantity} min={moq} onChange={handleQuantityChange} />
+            </div>
             {moqError && <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{moqError}</p>}
-            <p className="text-xs mt-1" style={{ color: "#C9B8A8" }}>Minimum order: {MIN_QTY} units</p>
           </div>
 
           {/* Unit price */}
@@ -479,45 +481,62 @@ export default function PDPClient({ product }: { product: Product }) {
             <div className="px-4 py-3 border-b" style={{ borderColor: "#C9B8A8" }}>
               <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>Personalise your order</p>
             </div>
-            <div className="px-4 py-4 space-y-3">
-              {/* Silk Screen */}
-              {silkOption && (
-                <CustomisationToggle
-                  type="SilkScreen"
-                  label="Silk Screen Printing"
-                  subLabel={`+${formatZAR(silkOption.pricePerUnitZAR)}/unit`}
-                  enabled={silkEnabled}
-                  checked={silkScreen}
-                  onChange={setSilkScreen}
-                  cost={silkEnabled ? silkCost : null}
-                  lockedMessage={silkEnabled ? undefined : `Available from ${silkOption.minimumQuantity.toLocaleString()} units`}
-                />
+            <div className="px-4 py-4 space-y-4">
+              {/* Printing method — silk screen OR hot stamping, mutually exclusive */}
+              {(silkOption || hotOption) && (
+                <div>
+                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>
+                    Printing method <span style={{ color: "#C9B8A8" }}>(choose one)</span>
+                  </p>
+                  <div className="space-y-3">
+                    {silkOption && (
+                      <CustomisationToggle
+                        type="SilkScreen"
+                        inputType="radio"
+                        label="Silk Screen Printing"
+                        subLabel={`+${formatZAR(silkOption.pricePerUnitZAR)}/unit`}
+                        processingNote="+7 days production"
+                        enabled={silkEnabled}
+                        checked={silkScreen}
+                        onChange={(v) => setPrintMethod(v ? "SilkScreen" : null)}
+                        cost={silkEnabled && silkScreen ? silkCost : null}
+                        lockedMessage={silkEnabled ? undefined : `Available from ${silkOption.minimumQuantity.toLocaleString()} units`}
+                      />
+                    )}
+                    {hotOption && (
+                      <CustomisationToggle
+                        type="HotStamping"
+                        inputType="radio"
+                        label="Hot Stamping"
+                        subLabel={`+${formatZAR(hotOption.pricePerUnitZAR)}/unit`}
+                        processingNote="+7 days production"
+                        enabled={hotEnabled}
+                        checked={hotStamping}
+                        onChange={(v) => setPrintMethod(v ? "HotStamping" : null)}
+                        cost={hotEnabled && hotStamping ? hotCost : null}
+                        lockedMessage={hotEnabled ? undefined : `Available from ${hotOption.minimumQuantity.toLocaleString()} units`}
+                      />
+                    )}
+                  </div>
+                </div>
               )}
-              {/* Hot Stamping */}
-              {hotOption && (
-                <CustomisationToggle
-                  type="HotStamping"
-                  label="Hot Stamping"
-                  subLabel={`+${formatZAR(hotOption.pricePerUnitZAR)}/unit`}
-                  enabled={hotEnabled}
-                  checked={hotStamping}
-                  onChange={setHotStamping}
-                  cost={hotEnabled ? hotCost : null}
-                  lockedMessage={hotEnabled ? undefined : `Available from ${hotOption.minimumQuantity.toLocaleString()} units`}
-                />
-              )}
-              {/* Colour Change */}
+              {/* Colour Change — independent checkbox */}
               {colourOption && (
-                <CustomisationToggle
-                  type="ColourChange"
-                  label="Colour Change"
-                  subLabel={`+${formatZAR(colourOption.pricePerUnitZAR)}/unit`}
-                  enabled={colourEnabled}
-                  checked={colourChange}
-                  onChange={setColourChange}
-                  cost={colourEnabled ? colourCost : null}
-                  lockedMessage={colourEnabled ? undefined : `Available from ${colourOption.minimumQuantity.toLocaleString()} units`}
-                />
+                <div>
+                  <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Colour</p>
+                  <CustomisationToggle
+                    type="ColourChange"
+                    inputType="checkbox"
+                    label="Colour Change"
+                    subLabel={`+${formatZAR(colourOption.pricePerUnitZAR)}/unit`}
+                    processingNote="+2 days production"
+                    enabled={colourEnabled}
+                    checked={colourChange}
+                    onChange={setColourChange}
+                    cost={colourEnabled ? colourCost : null}
+                    lockedMessage={colourEnabled ? undefined : `Available from ${colourOption.minimumQuantity.toLocaleString()} units`}
+                  />
+                </div>
               )}
             </div>
           </div>
@@ -573,32 +592,34 @@ export default function PDPClient({ product }: { product: Product }) {
             {added ? "Added to cart ✓" : adding ? "Adding…" : "Add to Cart"}
           </button>
 
-          <p className="text-xs mt-3 text-center" style={{ color: "#C9B8A8" }}>
-            Ships from China. Estimated 4–6 weeks.
-          </p>
-
           {/* Specs accordion */}
-          <details className="mt-6 border-t" style={{ borderColor: "#C9B8A8" }}>
-            <summary className="py-3 text-xs uppercase tracking-widest cursor-pointer hover:opacity-70" style={{ color: "#4A4540" }}>
-              Technical specifications
-            </summary>
-            <dl className="py-3 space-y-2 text-sm" style={{ color: "#4A4540" }}>
-              <div className="flex gap-4"><dt className="w-24 shrink-0">Weight</dt><dd>{product.weightKg} kg</dd></div>
-              <div className="flex gap-4"><dt className="w-24 shrink-0">Dimensions</dt><dd>{product.lengthCm} × {product.widthCm} × {product.heightCm} cm</dd></div>
-              {selectedVariant.bodyMaterial && (
-                <div className="flex gap-4"><dt className="w-24 shrink-0">Material</dt><dd>{selectedVariant.bodyMaterial}</dd></div>
-              )}
-              {selectedVariant.closureType && (
-                <div className="flex gap-4"><dt className="w-24 shrink-0">Closure</dt><dd>{selectedVariant.closureType}</dd></div>
-              )}
-              {selectedVariant.accessoriesIncluded && (
-                <div className="flex gap-4"><dt className="w-24 shrink-0">Includes</dt><dd>{selectedVariant.accessoriesIncluded}</dd></div>
-              )}
-              {product.usageSuitability && (
-                <div className="flex gap-4"><dt className="w-24 shrink-0">Suitable for</dt><dd>{product.usageSuitability}</dd></div>
-              )}
-            </dl>
-          </details>
+          {(product.weightKg > 0 || selectedVariant.bodyMaterial || selectedVariant.closureType || selectedVariant.accessoriesIncluded) && (
+            <details className="mt-6 border-t" style={{ borderColor: "#C9B8A8" }}>
+              <summary className="py-3 text-xs uppercase tracking-widest cursor-pointer hover:opacity-70" style={{ color: "#4A4540" }}>
+                Technical specifications
+              </summary>
+              <dl className="py-3 space-y-2 text-sm" style={{ color: "#4A4540" }}>
+                {product.weightKg > 0 && (
+                  <div className="flex gap-4"><dt className="w-24 shrink-0">Weight</dt><dd>{product.weightKg} kg</dd></div>
+                )}
+                {product.lengthCm > 0 && (
+                  <div className="flex gap-4"><dt className="w-24 shrink-0">Dimensions</dt><dd>{product.lengthCm} × {product.widthCm} × {product.heightCm} cm</dd></div>
+                )}
+                {selectedVariant.bodyMaterial && (
+                  <div className="flex gap-4"><dt className="w-24 shrink-0">Material</dt><dd>{selectedVariant.bodyMaterial}</dd></div>
+                )}
+                {selectedVariant.closureType && (
+                  <div className="flex gap-4"><dt className="w-24 shrink-0">Closure</dt><dd>{selectedVariant.closureType}</dd></div>
+                )}
+                {selectedVariant.accessoriesIncluded && (
+                  <div className="flex gap-4"><dt className="w-24 shrink-0">Includes</dt><dd>{selectedVariant.accessoriesIncluded}</dd></div>
+                )}
+                {product.usageSuitability && (
+                  <div className="flex gap-4"><dt className="w-24 shrink-0">Suitable for</dt><dd>{product.usageSuitability}</dd></div>
+                )}
+              </dl>
+            </details>
+          )}
         </div>
       </div>
     </div>
@@ -614,13 +635,15 @@ const CUSTOMISATION_DESCRIPTIONS: Record<string, string> = {
   SilkScreen:
     "Your logo or design is printed directly onto the bottle in ink. Flat, clean finish. Best for bold logos and solid shapes.",
   HotStamping:
-    "Your logo is pressed onto the bottle using metallic foil. Creates a shiny, premium look. Available in gold, silver, or rose gold.",
+    "Your logo is pressed onto the bottle using metallic foil. Creates a shiny, premium look. Available in gold or silver.",
 };
 
 function CustomisationToggle({
   type,
+  inputType = "checkbox",
   label,
   subLabel,
+  processingNote,
   enabled,
   checked,
   onChange,
@@ -628,8 +651,10 @@ function CustomisationToggle({
   lockedMessage,
 }: {
   type: string;
+  inputType?: "checkbox" | "radio";
   label: string;
   subLabel?: string;
+  processingNote?: string;
   enabled: boolean;
   checked: boolean;
   onChange: (v: boolean) => void;
@@ -643,17 +668,20 @@ function CustomisationToggle({
       <label className={`flex items-start justify-between gap-3 ${enabled ? "cursor-pointer" : "cursor-not-allowed"}`}>
         <div className="flex items-start gap-3">
           <input
-            type="checkbox"
+            type={inputType}
             checked={checked}
             disabled={!enabled}
             onChange={(e) => onChange(e.target.checked)}
             className="w-4 h-4 mt-0.5 accent-ink shrink-0"
           />
           <div>
-            <span className="text-sm font-medium" style={{ color: "#1C1A17" }}>
-              {label}
-              {subLabel && <span className="text-xs font-normal ml-1.5" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
-            </span>
+            <div className="flex items-center flex-wrap gap-x-2">
+              <span className="text-sm font-medium" style={{ color: "#1C1A17" }}>{label}</span>
+              {subLabel && <span className="text-xs" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
+              {processingNote && enabled && (
+                <span className="text-xs" style={{ color: "#C9B8A8" }}>{processingNote}</span>
+              )}
+            </div>
             {description && (
               <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4A4540" }}>{description}</p>
             )}
@@ -663,7 +691,7 @@ function CustomisationToggle({
           </div>
         </div>
         {cost != null && cost > 0 && (
-          <span className="text-sm shrink-0" style={{ color: "#4A4540" }}>{formatZAR(cost)}</span>
+          <span className="text-sm shrink-0 font-medium" style={{ color: "#1C1A17" }}>{formatZAR(cost)}</span>
         )}
       </label>
     </div>
