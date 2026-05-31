@@ -492,7 +492,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     {silkOption && (
                       <CustomisationToggle
                         type="SilkScreen"
-                        inputType="radio"
+                        inputType="checkbox"
                         label="Silk Screen Printing"
                         subLabel={`+${formatZAR(silkOption.pricePerUnitZAR)}/unit`}
                         processingNote="+7 days production"
@@ -506,7 +506,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     {hotOption && (
                       <CustomisationToggle
                         type="HotStamping"
-                        inputType="radio"
+                        inputType="checkbox"
                         label="Hot Stamping"
                         subLabel={`+${formatZAR(hotOption.pricePerUnitZAR)}/unit`}
                         processingNote="+7 days production"
