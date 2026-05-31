@@ -483,8 +483,9 @@ export default function PDPClient({ product }: { product: Product }) {
               {/* Silk Screen */}
               {silkOption && (
                 <CustomisationToggle
-                  label="Silk Screen"
-                  subLabel={`+R${silkOption.pricePerUnitZAR.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/unit`}
+                  type="SilkScreen"
+                  label="Silk Screen Printing"
+                  subLabel={`+${formatZAR(silkOption.pricePerUnitZAR)}/unit`}
                   enabled={silkEnabled}
                   checked={silkScreen}
                   onChange={setSilkScreen}
@@ -495,8 +496,9 @@ export default function PDPClient({ product }: { product: Product }) {
               {/* Hot Stamping */}
               {hotOption && (
                 <CustomisationToggle
+                  type="HotStamping"
                   label="Hot Stamping"
-                  subLabel={`+R${hotOption.pricePerUnitZAR.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/unit`}
+                  subLabel={`+${formatZAR(hotOption.pricePerUnitZAR)}/unit`}
                   enabled={hotEnabled}
                   checked={hotStamping}
                   onChange={setHotStamping}
@@ -507,8 +509,9 @@ export default function PDPClient({ product }: { product: Product }) {
               {/* Colour Change */}
               {colourOption && (
                 <CustomisationToggle
+                  type="ColourChange"
                   label="Colour Change"
-                  subLabel={`+R${colourOption.pricePerUnitZAR.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/unit`}
+                  subLabel={`+${formatZAR(colourOption.pricePerUnitZAR)}/unit`}
                   enabled={colourEnabled}
                   checked={colourChange}
                   onChange={setColourChange}
@@ -604,7 +607,18 @@ export default function PDPClient({ product }: { product: Product }) {
 
 // ── Customisation toggle row ─────────────────────────────────────────────────
 
+// Plain-English descriptions shown under each customisation toggle
+const CUSTOMISATION_DESCRIPTIONS: Record<string, string> = {
+  ColourChange:
+    "We tint the bottle, lid, or both to your chosen colour — great for matching your brand palette.",
+  SilkScreen:
+    "Your logo or design is printed directly onto the bottle in ink. Flat, clean finish — best for bold logos and solid shapes.",
+  HotStamping:
+    "Your logo is pressed onto the bottle using metallic foil. Creates a shiny, premium look — available in gold, silver, or rose gold.",
+};
+
 function CustomisationToggle({
+  type,
   label,
   subLabel,
   enabled,
@@ -613,6 +627,7 @@ function CustomisationToggle({
   cost,
   lockedMessage,
 }: {
+  type: string;
   label: string;
   subLabel?: string;
   enabled: boolean;
@@ -621,29 +636,36 @@ function CustomisationToggle({
   cost: number | null;
   lockedMessage?: string;
 }) {
+  const description = CUSTOMISATION_DESCRIPTIONS[type];
+
   return (
     <div className={`${enabled ? "" : "opacity-50"}`}>
-      <label className={`flex items-center justify-between gap-3 ${enabled ? "cursor-pointer" : "cursor-not-allowed"}`}>
-        <div className="flex items-center gap-3">
+      <label className={`flex items-start justify-between gap-3 ${enabled ? "cursor-pointer" : "cursor-not-allowed"}`}>
+        <div className="flex items-start gap-3">
           <input
             type="checkbox"
             checked={checked}
             disabled={!enabled}
             onChange={(e) => onChange(e.target.checked)}
-            className="w-4 h-4 accent-ink"
+            className="w-4 h-4 mt-0.5 accent-ink shrink-0"
           />
-          <span className="text-sm" style={{ color: "#1C1A17" }}>
-            {label}
-            {subLabel && <span className="text-xs ml-1" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
-          </span>
+          <div>
+            <span className="text-sm font-medium" style={{ color: "#1C1A17" }}>
+              {label}
+              {subLabel && <span className="text-xs font-normal ml-1.5" style={{ color: "#C9B8A8" }}>{subLabel}</span>}
+            </span>
+            {description && (
+              <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#4A4540" }}>{description}</p>
+            )}
+            {!enabled && lockedMessage && (
+              <p className="text-xs mt-0.5" style={{ color: "#D4A89A" }}>{lockedMessage}</p>
+            )}
+          </div>
         </div>
         {cost != null && cost > 0 && (
-          <span className="text-sm" style={{ color: "#4A4540" }}>{formatZAR(cost)}</span>
+          <span className="text-sm shrink-0" style={{ color: "#4A4540" }}>{formatZAR(cost)}</span>
         )}
       </label>
-      {!enabled && lockedMessage && (
-        <p className="text-xs mt-0.5 ml-7" style={{ color: "#D4A89A" }}>{lockedMessage}</p>
-      )}
     </div>
   );
 }
