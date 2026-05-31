@@ -23,6 +23,6 @@ services:
       - key: Paystack__SecretKey
         sync: false
       - key: Paystack__PublicKey
-        value: pk_live_b344621ece16998735e8c6b58645c13b99dd2f06
+        sync: false          # set your pk_test_... or pk_live_... in the dashboard
       - key: Paystack__StorefrontCallbackUrl
         sync: false          # set to https://<vercel-url>/checkout/success

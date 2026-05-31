@@ -6,9 +6,21 @@ obj/
 node_modules/
 dist/
 BDP.Web/dist/
-.env.local
-.env.production
-appsettings.Production.json
+
+# Secrets & environment (never commit real values)
+.env
+.env.*
+!.env.example
+!.env.*.example
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json
+*.pem
+*.key
+secrets.json
+secrets/
+
+# OS / logs
 .DS_Store
 *.log
 tools/
