@@ -131,11 +131,11 @@ public class StorefrontCheckoutController : ControllerBase
         var order = new Order
         {
             OrderNumber = orderNumber,
-            Status = "Pending",
+            Status = OrderStatus.Placed,
             UserId = userId,
             GuestEmail = string.IsNullOrEmpty(userId) ? email : null,
             Channel = "Storefront_B2C",
-            FulfilmentStatus = "Pending",
+            FulfilmentStatus = "Placed",
             SubtotalZAR = subtotal,
             ShippingCostZAR = shippingZAR,
             TotalZAR = totalZAR,

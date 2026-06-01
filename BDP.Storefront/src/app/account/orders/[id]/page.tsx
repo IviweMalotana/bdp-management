@@ -60,16 +60,24 @@ function formatZAR(amount: number) {
 function StatusBadge({ label }: { label: string }) {
   const lower = label.toLowerCase();
   const bg =
-    lower === "delivered" || lower === "paid" || lower === "approved"
+    lower === "delivered" || lower === "approved" || lower === "paid"
       ? "#E8F5E9"
-      : lower === "shipped" || lower === "processing"
+      : lower === "shipped" || lower === "ready to ship"
       ? "#FFF3E0"
+      : lower === "customisation accepted"
+      ? "#F3E8FF"
+      : lower === "processing" || lower === "placed"
+      ? "#EDE4D8"
       : "#F5EFE6";
   const color =
-    lower === "delivered" || lower === "paid" || lower === "approved"
+    lower === "delivered" || lower === "approved" || lower === "paid"
       ? "#2E7D32"
-      : lower === "shipped" || lower === "processing"
+      : lower === "shipped" || lower === "ready to ship"
       ? "#E65100"
+      : lower === "customisation accepted"
+      ? "#6B21A8"
+      : lower === "processing" || lower === "placed"
+      ? "#4A4540"
       : "#4A4540";
 
   return (

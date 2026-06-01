@@ -6,16 +6,20 @@ import { ShoppingCart, ChevronLeft, ChevronRight, Plus } from 'lucide-react'
 import OrderForm from '../components/OrderForm'
 
 const STATUS_COLOURS: Record<string, string> = {
-  Pending:          'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-  Confirmed:        'bg-blue-500/20 text-blue-400 border-blue-500/30',
-  'In Production':  'bg-purple-500/20 text-purple-400 border-purple-500/30',
-  'Quality Check':  'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  Dispatched:       'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
-  Delivered:        'bg-green-500/20 text-green-400 border-green-500/30',
-  Cancelled:        'bg-red-500/20 text-red-400 border-red-500/30',
+  Placed:                   'bg-gray-500/20 text-gray-300 border-gray-500/30',
+  Processing:               'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  'Customisation Accepted': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+  'Ready to Ship':          'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  Shipped:                  'bg-indigo-500/20 text-indigo-400 border-indigo-500/30',
+  Delivered:                'bg-green-500/20 text-green-400 border-green-500/30',
+  Cancelled:                'bg-red-500/20 text-red-400 border-red-500/30',
+  // legacy
+  Pending:                  'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+  Confirmed:                'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  'In Production':          'bg-purple-500/20 text-purple-400 border-purple-500/30',
 }
 
-const ALL_STATUSES = ['', 'Pending', 'Confirmed', 'In Production', 'Quality Check', 'Dispatched', 'Delivered', 'Cancelled']
+const ALL_STATUSES = ['', 'Placed', 'Processing', 'Customisation Accepted', 'Ready to Ship', 'Shipped', 'Delivered', 'Cancelled']
 
 const formatZAR = (n: number) =>
   new Intl.NumberFormat('en-ZA', { style: 'currency', currency: 'ZAR', maximumFractionDigits: 0 }).format(n)

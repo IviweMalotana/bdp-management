@@ -22,11 +22,16 @@ function formatZAR(amount: number) {
 }
 
 const statusColour: Record<string, string> = {
-  Pending: "#C9B8A8",
-  Processing: "#EDE4D8",
-  Shipped: "#D4A89A",
-  Delivered: "#1C1A17",
-  Cancelled: "#4A4540",
+  Placed:                   "#EDE4D8",
+  Processing:               "#EDE4D8",
+  "Customisation Accepted": "#D8D0E8",
+  "Ready to Ship":          "#D8E4EE",
+  Shipped:                  "#D4A89A",
+  Delivered:                "#1C1A17",
+  Cancelled:                "#4A4540",
+  // legacy
+  Pending:                  "#C9B8A8",
+  Confirmed:                "#D8E4EE",
 };
 
 export default function OrdersPage() {

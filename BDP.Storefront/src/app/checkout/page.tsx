@@ -407,6 +407,9 @@ export default function CheckoutPage() {
               ))}
             </div>
           )}
+          <p className="text-xs mt-2" style={{ color: "#9E8F83" }}>
+            Orders are processed and dispatched within 2–3 business days of payment confirmation.
+          </p>
 
           <div className="flex gap-3 pt-2">
             <button
