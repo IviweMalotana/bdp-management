@@ -59,7 +59,7 @@ function InputField({ label, error, ...props }: React.InputHTMLAttributes<HTMLIn
       <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>{label}</label>
       <input
         className="w-full text-sm px-3 py-2.5 border outline-none"
-        style={{ borderColor: error ? "#D4A89A" : "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+        style={{ borderColor: error ? "#D4A89A" : "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
         {...props}
       />
       {error && <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{error}</p>}
@@ -96,7 +96,7 @@ function ShippingOptionCard({ option, selected, onSelect }: { option: ShippingOp
       style={{
         borderColor: selected ? "#1C1A17" : "#C9B8A8",
         borderRadius: "2px",
-        backgroundColor: selected ? "#F5EFE6" : "#FEFCFA",
+        backgroundColor: selected ? "#FAF8F5" : "#FAF8F5",
         borderWidth: selected ? "2px" : "1px",
       }}
     >
@@ -129,17 +129,17 @@ function ShippingOptionCard({ option, selected, onSelect }: { option: ShippingOp
 
 function ShippingOptionSkeleton() {
   return (
-    <div className="p-4 border animate-pulse" style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}>
+    <div className="p-4 border animate-pulse" style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 flex-1">
-          <div className="w-5 h-5 rounded" style={{ backgroundColor: "#EDE4D8" }} />
+          <div className="w-5 h-5 rounded" style={{ backgroundColor: "#E8DDD0" }} />
           <div className="flex-1 space-y-2">
-            <div className="h-3 rounded w-28" style={{ backgroundColor: "#EDE4D8" }} />
-            <div className="h-3 rounded w-48" style={{ backgroundColor: "#EDE4D8" }} />
-            <div className="h-3 rounded w-20" style={{ backgroundColor: "#EDE4D8" }} />
+            <div className="h-3 rounded w-28" style={{ backgroundColor: "#E8DDD0" }} />
+            <div className="h-3 rounded w-48" style={{ backgroundColor: "#E8DDD0" }} />
+            <div className="h-3 rounded w-20" style={{ backgroundColor: "#E8DDD0" }} />
           </div>
         </div>
-        <div className="h-4 w-16 rounded" style={{ backgroundColor: "#EDE4D8" }} />
+        <div className="h-4 w-16 rounded" style={{ backgroundColor: "#E8DDD0" }} />
       </div>
     </div>
   );
@@ -260,8 +260,8 @@ export default function CheckoutPage() {
               <div
                 className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium"
                 style={{
-                  backgroundColor: i + 1 <= step ? "#1C1A17" : "#EDE4D8",
-                  color: i + 1 <= step ? "#F5EFE6" : "#4A4540",
+                  backgroundColor: i + 1 <= step ? "#1C1A17" : "#E8DDD0",
+                  color: i + 1 <= step ? "#FAF8F5" : "#4A4540",
                 }}
               >
                 {i + 1}
@@ -291,7 +291,7 @@ export default function CheckoutPage() {
               <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>Country</label>
               <select
                 className="w-full text-sm px-3 py-2.5 border outline-none"
-                style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+                style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                 {...register("shipping.country")}
               >
                 {COUNTRY_OPTIONS.map((c) => (
@@ -309,7 +309,7 @@ export default function CheckoutPage() {
                 {shippingCountry === "ZA" ? (
                   <select
                     className="w-full text-sm px-3 py-2.5 border outline-none"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                     {...register("shipping.province")}
                   >
                     <option value="">Select…</option>
@@ -318,7 +318,7 @@ export default function CheckoutPage() {
                 ) : (
                   <input
                     className="w-full text-sm px-3 py-2.5 border outline-none"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                     placeholder="State / Region"
                     {...register("shipping.province")}
                   />
@@ -345,7 +345,7 @@ export default function CheckoutPage() {
                 <InputField label="City" {...register("billing.city")} />
                 <div>
                   <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>Province</label>
-                  <select className="w-full text-sm px-3 py-2.5 border outline-none" style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }} {...register("billing.province")}>
+                  <select className="w-full text-sm px-3 py-2.5 border outline-none" style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }} {...register("billing.province")}>
                     <option value="">Select…</option>
                     {SA_PROVINCES.map((p) => <option key={p} value={p}>{p}</option>)}
                   </select>
@@ -358,7 +358,7 @@ export default function CheckoutPage() {
           <button
             type="submit"
             className="w-full py-4 text-sm font-medium"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Continue →
           </button>
@@ -425,7 +425,7 @@ export default function CheckoutPage() {
               onClick={onStep2Continue}
               disabled={!selectedOption || shippingLoading}
               className="flex-1 py-3.5 text-sm font-medium disabled:opacity-40"
-              style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+              style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
             >
               Continue →
             </button>
@@ -488,7 +488,7 @@ export default function CheckoutPage() {
               onClick={onStep3Confirm}
               disabled={loading}
               className="flex-1 py-3.5 text-sm font-medium disabled:opacity-50"
-              style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+              style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
             >
               {loading ? "Processing…" : "Confirm & pay →"}
             </button>

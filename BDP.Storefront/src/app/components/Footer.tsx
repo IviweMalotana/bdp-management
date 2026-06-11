@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="border-t mt-20" style={{ backgroundColor: "#F5EFE6", borderColor: "#C9B8A8" }}>
+    <footer className="border-t mt-20" style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8" }}>
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-12">
           <div>
@@ -73,7 +73,7 @@ export default function Footer() {
           </div>
         </div>
         <div className="border-t pt-6 text-xs" style={{ borderColor: "#C9B8A8", color: "#4A4540" }}>
-          © 2025 BDP Management. South Africa.
+          © 2025 be different packaging. South Africa.
         </div>
       </div>
     </footer>

@@ -49,7 +49,7 @@ export default function CartPage() {
         <Link
           href="/shop"
           className="inline-flex items-center px-8 py-3.5 text-sm font-medium"
-          style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+          style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
         >
           Browse packaging →
         </Link>
@@ -76,7 +76,7 @@ export default function CartPage() {
             >
               <div
                 className="relative w-24 h-24 shrink-0 overflow-hidden"
-                style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }}
+                style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }}
               >
                 {item.variant?.imageUrl ? (
                   <Image
@@ -131,7 +131,7 @@ export default function CartPage() {
         {/* Summary */}
         <div
           className="p-6 h-fit border"
-          style={{ backgroundColor: "#EDE4D8", borderColor: "#C9B8A8", borderRadius: "2px" }}
+          style={{ backgroundColor: "#E8DDD0", borderColor: "#C9B8A8", borderRadius: "2px" }}
         >
           <h2 className="text-sm uppercase tracking-widest mb-4" style={{ color: "#4A4540" }}>Order summary</h2>
           <div className="space-y-2 mb-4 text-sm" style={{ color: "#1C1A17" }}>
@@ -151,7 +151,7 @@ export default function CartPage() {
           <Link
             href="/checkout"
             className="block text-center w-full py-3.5 text-sm font-medium"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Proceed to checkout →
           </Link>

@@ -1,23 +1,32 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=Inter:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap");
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #F5EFE6;
-  --color-cream-dark: #EDE4D8;
-  --color-ink: #1C1A17;
-  --color-ink-soft: #4A4540;
-  --color-blush: #D4A89A;
-  --color-blush-light: #EDD8D2;
-  --color-sand: #C9B8A8;
-  --color-white-warm: #FEFCFA;
+  --color-paper:        #FAF8F5;
+  --color-cream:        #F2EAE0;
+  --color-linen:        #E8DDD0;
+  --color-blush-pale:   #EDD8D2;
+  --color-rose:         #D4A89A;
+  --color-rose-light:   #EDD8D2;
+  --color-sand:         #C9B8A8;
+  --color-taupe:        #9E8F83;
+  --color-umber:        #4A4540;
+  --color-ink:          #1C1A17;
+  --color-white-warm:   #FEFCFA;
 
-  --font-display: "Cormorant Garamond", "Georgia", serif;
-  --font-body: "Inter", system-ui, sans-serif;
+  /* keep legacy aliases so existing className refs still work */
+  --color-cream-dark:   #E8DDD0;
+  --color-ink-soft:     #4A4540;
+  --color-blush:        #D4A89A;
+  --color-blush-light:  #EDD8D2;
+
+  --font-display: "Cormorant", "Georgia", serif;
+  --font-body:    "DM Sans", system-ui, sans-serif;
 
   --radius-card: 2px;
-  --radius-btn: 2px;
+  --radius-btn:  2px;
 
-  --shadow-card: 0 1px 4px rgba(28, 26, 23, 0.06);
+  --shadow-card: 0 1px 3px rgba(28, 26, 23, 0.05);
 }
 
 * {
@@ -25,11 +34,22 @@
 }
 
 body {
-  background-color: #F5EFE6;
+  background-color: #FAF8F5;
   color: #1C1A17;
   font-family: var(--font-body);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
 }
 
 .font-display {
   font-family: var(--font-display);
+}
+
+/* Rhode-style: all uppercase tracking labels */
+.label-caps {
+  font-size: 0.65rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-weight: 400;
 }

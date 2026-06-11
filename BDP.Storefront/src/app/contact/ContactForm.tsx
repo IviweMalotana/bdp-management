@@ -47,7 +47,7 @@ export default function ContactForm() {
   const inputStyle = {
     borderColor: "#C9B8A8",
     borderRadius: "2px",
-    backgroundColor: "#FEFCFA",
+    backgroundColor: "#FAF8F5",
     color: "#1C1A17",
   } as React.CSSProperties;
 
@@ -143,7 +143,7 @@ export default function ContactForm() {
         type="submit"
         disabled={submitting}
         className="w-full py-3.5 text-sm font-medium tracking-wide transition-opacity disabled:opacity-50"
-        style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+        style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
       >
         {submitting ? "Sending…" : "Send enquiry"}
       </button>

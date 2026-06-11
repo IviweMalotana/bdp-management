@@ -49,7 +49,7 @@ export default function ForBusinessPage() {
           <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "#C9B8A8" }}>For Business</p>
           <h1
             className="text-6xl md:text-7xl leading-none mb-8"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#F5EFE6" }}
+            style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#FAF8F5" }}
           >
             packaging that
             <br />
@@ -71,7 +71,7 @@ export default function ForBusinessPage() {
       </section>
 
       {/* Who it's for */}
-      <section className="py-20 px-4" style={{ backgroundColor: "#EDE4D8" }}>
+      <section className="py-20 px-4" style={{ backgroundColor: "#E8DDD0" }}>
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-3xl mb-10"
@@ -84,7 +84,7 @@ export default function ForBusinessPage() {
               <div
                 key={u.segment}
                 className="p-6 border"
-                style={{ backgroundColor: "#F5EFE6", borderColor: "#C9B8A8", borderRadius: "2px" }}
+                style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
               >
                 <h3 className="text-lg font-medium mb-1" style={{ color: "#1C1A17" }}>{u.segment}</h3>
                 <p className="text-sm" style={{ color: "#4A4540" }}>{u.detail}</p>
@@ -95,7 +95,7 @@ export default function ForBusinessPage() {
       </section>
 
       {/* Features grid */}
-      <section className="py-20 px-4" style={{ backgroundColor: "#F5EFE6" }}>
+      <section className="py-20 px-4" style={{ backgroundColor: "#FAF8F5" }}>
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-3xl mb-12"
@@ -120,7 +120,7 @@ export default function ForBusinessPage() {
       </section>
 
       {/* Pricing note */}
-      <section className="py-20 px-4" style={{ backgroundColor: "#EDE4D8" }}>
+      <section className="py-20 px-4" style={{ backgroundColor: "#E8DDD0" }}>
         <div className="max-w-3xl mx-auto text-center">
           <h2
             className="text-4xl mb-6"
@@ -134,7 +134,7 @@ export default function ForBusinessPage() {
               { qty: "500 units", note: "28% margin" },
               { qty: "5,000 units", note: "20% margin" },
             ].map((row) => (
-              <div key={row.qty} className="p-4 border" style={{ backgroundColor: "#F5EFE6", borderColor: "#C9B8A8", borderRadius: "2px" }}>
+              <div key={row.qty} className="p-4 border" style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}>
                 <p className="text-xl mb-1" style={{ fontFamily: "var(--font-display)", color: "#1C1A17", fontWeight: 300 }}>{row.qty}</p>
                 <p className="text-xs" style={{ color: "#C9B8A8" }}>{row.note}</p>
               </div>
@@ -153,7 +153,7 @@ export default function ForBusinessPage() {
           <Link
             href="/auth/register"
             className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Open an account →
           </Link>

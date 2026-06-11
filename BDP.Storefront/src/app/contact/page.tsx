@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main style={{ backgroundColor: "#F5EFE6", color: "#1C1A17" }}>
+    <main style={{ backgroundColor: "#FAF8F5", color: "#1C1A17" }}>
       <div className="max-w-5xl mx-auto px-4 py-16 md:py-24">
         {/* Heading */}
         <div className="max-w-xl mb-14">

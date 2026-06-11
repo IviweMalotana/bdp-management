@@ -67,8 +67,8 @@ function StatusBadge({ label }: { label: string }) {
       : lower === "customisation accepted"
       ? "#F3E8FF"
       : lower === "processing" || lower === "placed"
-      ? "#EDE4D8"
-      : "#F5EFE6";
+      ? "#E8DDD0"
+      : "#FAF8F5";
   const color =
     lower === "delivered" || lower === "approved" || lower === "paid"
       ? "#2E7D32"
@@ -208,7 +208,7 @@ export default function OrderDetailPage() {
       {/* Status row */}
       <div
         className="p-4 mb-6 border"
-        style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+        style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
       >
         <div className="flex flex-wrap gap-4 text-sm">
           <div>
@@ -242,7 +242,7 @@ export default function OrderDetailPage() {
       {(order.shippingServiceName || isShipped || hasTracking) && (
         <div
           className="p-4 mb-6 border"
-          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
         >
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
@@ -319,7 +319,7 @@ export default function OrderDetailPage() {
       {shippingAddress && (
         <div
           className="p-4 mb-6 border"
-          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
         >
           <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Delivery address</p>
           <p className="text-sm" style={{ color: "#1C1A17" }}>{shippingAddress.recipientName}</p>
@@ -335,7 +335,7 @@ export default function OrderDetailPage() {
       {/* Line items */}
       <div className="mb-6">
         <h2 className="text-lg mb-3" style={{ fontFamily: "var(--font-display)", color: "#1C1A17" }}>Items</h2>
-        <div className="border" style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}>
+        <div className="border" style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}>
           {order.items.map((item, idx) => (
             <div
               key={item.id}
@@ -362,7 +362,7 @@ export default function OrderDetailPage() {
       {/* Totals */}
       <div
         className="p-4 space-y-2 border"
-        style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+        style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
       >
         <div className="flex justify-between text-sm" style={{ color: "#4A4540" }}>
           <span>Subtotal</span>

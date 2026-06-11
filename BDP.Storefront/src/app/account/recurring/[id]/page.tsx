@@ -109,14 +109,14 @@ export default function RecurringOrderDetailPage() {
 
   if (!jwt) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#F5EFE6", minHeight: "80vh" }}>
+      <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#FAF8F5", minHeight: "80vh" }}>
         <p className="text-sm" style={{ color: "#4A4540" }}>Please log in to view this order.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#F5EFE6", minHeight: "80vh" }}>
+    <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#FAF8F5", minHeight: "80vh" }}>
       <div className="flex items-center gap-3 mb-8">
         <Link href="/account/recurring" className="text-xs underline" style={{ color: "#4A4540" }}>
           ← Recurring orders
@@ -143,7 +143,7 @@ export default function RecurringOrderDetailPage() {
           {/* Details */}
           <div
             className="p-5 mb-6 border"
-            style={{ backgroundColor: "#FEFCFA", borderColor: "#C9B8A8", borderRadius: "2px" }}
+            style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
           >
             <dl className="space-y-3 text-sm">
               <div className="flex justify-between">
@@ -192,7 +192,7 @@ export default function RecurringOrderDetailPage() {
               </thead>
               <tbody>
                 {order.items.map((item) => (
-                  <tr key={item.id} style={{ borderBottom: "1px solid #EDE4D8" }}>
+                  <tr key={item.id} style={{ borderBottom: "1px solid #E8DDD0" }}>
                     <td className="py-2.5" style={{ color: "#1C1A17" }}>{item.variantName}</td>
                     <td className="py-2.5 text-right" style={{ color: "#1C1A17" }}>{item.quantity}</td>
                   </tr>
@@ -209,7 +209,7 @@ export default function RecurringOrderDetailPage() {
                   onClick={handlePause}
                   disabled={actionLoading}
                   className="px-5 py-2.5 text-sm border"
-                  style={{ borderColor: "#C9B8A8", borderRadius: "2px", color: "#1C1A17", backgroundColor: "#F5EFE6" }}
+                  style={{ borderColor: "#C9B8A8", borderRadius: "2px", color: "#1C1A17", backgroundColor: "#FAF8F5" }}
                 >
                   {actionLoading ? "Pausing…" : "Pause"}
                 </button>
@@ -219,7 +219,7 @@ export default function RecurringOrderDetailPage() {
                   onClick={handleResume}
                   disabled={actionLoading}
                   className="px-5 py-2.5 text-sm border"
-                  style={{ borderColor: "#C9B8A8", borderRadius: "2px", color: "#1C1A17", backgroundColor: "#F5EFE6" }}
+                  style={{ borderColor: "#C9B8A8", borderRadius: "2px", color: "#1C1A17", backgroundColor: "#FAF8F5" }}
                 >
                   {actionLoading ? "Resuming…" : "Resume"}
                 </button>
@@ -228,7 +228,7 @@ export default function RecurringOrderDetailPage() {
                 <button
                   onClick={() => setConfirmCancel(true)}
                   className="px-5 py-2.5 text-sm border"
-                  style={{ borderColor: "#C9B8A8", borderRadius: "2px", color: "#8A7F76", backgroundColor: "#F5EFE6" }}
+                  style={{ borderColor: "#C9B8A8", borderRadius: "2px", color: "#8A7F76", backgroundColor: "#FAF8F5" }}
                 >
                   Cancel order
                 </button>
@@ -241,7 +241,7 @@ export default function RecurringOrderDetailPage() {
                     onClick={handleCancel}
                     disabled={actionLoading}
                     className="px-4 py-2 text-sm"
-                    style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+                    style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
                   >
                     {actionLoading ? "Cancelling…" : "Confirm cancel"}
                   </button>

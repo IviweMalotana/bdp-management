@@ -85,7 +85,7 @@ export default function ShopClient() {
           value={search}
           onChange={(e) => setParam("search", e.target.value)}
           className="flex-1 text-sm px-3 py-2 border outline-none"
-          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
         />
         <button
           type="button"
@@ -94,7 +94,7 @@ export default function ShopClient() {
           style={{
             borderColor: filtersOpen ? "#1C1A17" : "#C9B8A8",
             backgroundColor: filtersOpen ? "#1C1A17" : "transparent",
-            color: filtersOpen ? "#F5EFE6" : "#1C1A17",
+            color: filtersOpen ? "#FAF8F5" : "#1C1A17",
             borderRadius: "2px",
           }}
         >
@@ -115,7 +115,7 @@ export default function ShopClient() {
               style={{
                 borderColor: !category ? "#1C1A17" : "#C9B8A8",
                 backgroundColor: !category ? "#1C1A17" : "transparent",
-                color: !category ? "#F5EFE6" : "#1C1A17",
+                color: !category ? "#FAF8F5" : "#1C1A17",
                 borderRadius: "2px",
               }}
             >
@@ -129,7 +129,7 @@ export default function ShopClient() {
                 style={{
                   borderColor: category === c.category ? "#1C1A17" : "#C9B8A8",
                   backgroundColor: category === c.category ? "#1C1A17" : "transparent",
-                  color: category === c.category ? "#F5EFE6" : "#1C1A17",
+                  color: category === c.category ? "#FAF8F5" : "#1C1A17",
                   borderRadius: "2px",
                 }}
               >
@@ -144,7 +144,7 @@ export default function ShopClient() {
             value={sort}
             onChange={(e) => setParam("sort", e.target.value)}
             className="w-full text-sm px-3 py-2 border outline-none"
-            style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+            style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
           >
             <option value="">Featured</option>
             <option value="price_asc">Price: Low to High</option>
@@ -163,7 +163,7 @@ export default function ShopClient() {
               value={search}
               onChange={(e) => setParam("search", e.target.value)}
               className="w-full text-sm px-3 py-2 border outline-none"
-              style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+              style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
             />
           </div>
 
@@ -200,7 +200,7 @@ export default function ShopClient() {
               value={sort}
               onChange={(e) => setParam("sort", e.target.value)}
               className="w-full text-sm px-3 py-2 border outline-none"
-              style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+              style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
             >
               <option value="">Featured</option>
               <option value="price_asc">Price: Low to High</option>
@@ -214,7 +214,7 @@ export default function ShopClient() {
           {loading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               {Array.from({ length: 9 }).map((_, i) => (
-                <div key={i} className="aspect-square animate-pulse" style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }} />
+                <div key={i} className="aspect-square animate-pulse" style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }} />
               ))}
             </div>
           ) : products.length === 0 ? (
@@ -246,7 +246,7 @@ export default function ShopClient() {
                       style={{
                         borderColor: n === page ? "#1C1A17" : "#C9B8A8",
                         backgroundColor: n === page ? "#1C1A17" : "transparent",
-                        color: n === page ? "#F5EFE6" : "#1C1A17",
+                        color: n === page ? "#FAF8F5" : "#1C1A17",
                         borderRadius: "2px",
                       }}
                     >

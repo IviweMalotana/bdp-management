@@ -16,7 +16,7 @@ export default function ProductCard({ slug, name, category, primaryUrl, basePric
     <Link href={`/product/${slug}`} className="group block">
       <div
         className="overflow-hidden mb-3 aspect-square relative"
-        style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }}
+        style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }}
       >
         {primaryUrl ? (
           <Image
@@ -35,7 +35,7 @@ export default function ProductCard({ slug, name, category, primaryUrl, basePric
         className="px-0.5 py-1 group-hover:bg-cream-dark transition-colors rounded-sm"
         style={{ borderRadius: "2px" }}
       >
-        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>
+        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#9E8F83" }}>
           {category}
         </p>
         <h3
@@ -48,7 +48,7 @@ export default function ProductCard({ slug, name, category, primaryUrl, basePric
           from <Price zarAmount={basePrice} />/unit
         </p>
         {lowestMoq > 0 && (
-          <p className="text-xs mt-0.5" style={{ color: "#C9B8A8" }}>
+          <p className="text-xs mt-0.5" style={{ color: "#9E8F83" }}>
             from {lowestMoq} bottles
           </p>
         )}

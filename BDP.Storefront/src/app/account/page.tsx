@@ -49,7 +49,7 @@ function B2BStatusBadge({ accountType, b2bStatus }: { accountType: string; b2bSt
   return (
     <span
       className="text-xs px-2 py-0.5 uppercase tracking-widest"
-      style={{ backgroundColor: "#EDE4D8", color: "#4A4540", borderRadius: "2px" }}
+      style={{ backgroundColor: "#E8DDD0", color: "#4A4540", borderRadius: "2px" }}
     >
       Personal
     </span>
@@ -88,7 +88,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#F5EFE6", minHeight: "80vh" }}>
+    <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#FAF8F5", minHeight: "80vh" }}>
       <div className="flex items-start justify-between mb-8">
         <div>
           <h1
@@ -117,7 +117,7 @@ export default function AccountPage() {
       {me?.accountType === "B2B" && me.b2bStatus === "Pending" && (
         <div
           className="p-4 mb-8 text-sm"
-          style={{ backgroundColor: "#EDE4D8", borderLeft: "3px solid #C9B8A8", color: "#4A4540", borderRadius: "2px" }}
+          style={{ backgroundColor: "#E8DDD0", borderLeft: "3px solid #C9B8A8", color: "#4A4540", borderRadius: "2px" }}
         >
           Your business account application is under review. We&apos;ll be in touch within 2 business days.
         </div>
@@ -127,7 +127,7 @@ export default function AccountPage() {
       {me?.accountType === "B2C" && (
         <div
           className="p-4 mb-8 flex items-center justify-between"
-          style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }}
+          style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }}
         >
           <div>
             <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>Trade with BDP</p>
@@ -136,7 +136,7 @@ export default function AccountPage() {
           <Link
             href="/account/apply-business"
             className="ml-4 text-sm px-4 py-2 whitespace-nowrap"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Apply
           </Link>
@@ -182,7 +182,7 @@ export default function AccountPage() {
               <li
                 key={o.id}
                 className="flex items-center justify-between p-4 border"
-                style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+                style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
               >
                 <div>
                   <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>#{o.orderNumber}</p>

@@ -391,7 +391,7 @@ export default function PDPClient({ product }: { product: Product }) {
         <div>
           <div
             className="relative aspect-square mb-4 overflow-hidden"
-            style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }}
+            style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }}
           >
             {images[selectedImage]?.url ? (
               <Image
@@ -415,7 +415,7 @@ export default function PDPClient({ product }: { product: Product }) {
                   style={{
                     borderColor: selectedImage === i ? "#1C1A17" : "#C9B8A8",
                     borderRadius: "2px",
-                    backgroundColor: "#EDE4D8",
+                    backgroundColor: "#E8DDD0",
                   }}
                 >
                   {img.url && <Image src={img.url} alt={img.altText} fill className="object-cover" />}
@@ -602,7 +602,7 @@ export default function PDPClient({ product }: { product: Product }) {
             onClick={handleAddToCart}
             disabled={adding || quantity < moq}
             className="w-full py-4 text-sm font-medium tracking-wide transition-opacity disabled:opacity-50"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             {added ? "Added to cart ✓" : adding ? "Adding…" : "Add to Cart"}
           </button>

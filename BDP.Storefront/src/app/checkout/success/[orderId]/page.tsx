@@ -28,7 +28,7 @@ export default async function OrderSuccessPage({ params }: { params: Promise<{ o
         <Link
           href="/auth/login"
           className="inline-flex items-center justify-center px-8 py-3.5 text-sm font-medium"
-          style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+          style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
         >
           Track your order
         </Link>

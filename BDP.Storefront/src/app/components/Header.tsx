@@ -54,9 +54,10 @@ export default function Header() {
     <header
       className="sticky top-0 z-50 border-b"
       style={{
-        backgroundColor: "rgba(245,239,230,0.95)",
+        backgroundColor: "rgba(250,248,245,0.96)",
         borderColor: "#C9B8A8",
-        backdropFilter: "blur(4px)",
+        backdropFilter: "blur(8px)",
+        WebkitBackdropFilter: "blur(8px)",
       }}
     >
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
@@ -95,12 +96,12 @@ export default function Header() {
             {shopOpen && (
               <div
                 className="absolute top-full left-0 mt-2 w-52 py-2 z-50 shadow-lg"
-                style={{ backgroundColor: "#F5EFE6", border: "1px solid #C9B8A8", borderRadius: "2px" }}
+                style={{ backgroundColor: "#FAF8F5", border: "1px solid #C9B8A8", borderRadius: "2px" }}
               >
                 <Link
                   href="/shop"
                   onClick={() => setShopOpen(false)}
-                  className="block px-4 py-2 text-sm hover:bg-[#EDE4D8] transition-colors"
+                  className="block px-4 py-2 text-sm hover:bg-[#E8DDD0] transition-colors"
                   style={{ color: "#1C1A17" }}
                 >
                   All Packaging
@@ -113,7 +114,7 @@ export default function Header() {
                         key={c.id}
                         href={`/collections/${c.slug}`}
                         onClick={() => setShopOpen(false)}
-                        className="block px-4 py-2 text-sm hover:bg-[#EDE4D8] transition-colors"
+                        className="block px-4 py-2 text-sm hover:bg-[#E8DDD0] transition-colors"
                         style={{ color: "#1C1A17" }}
                       >
                         {c.name}
@@ -125,7 +126,7 @@ export default function Header() {
                 <Link
                   href="/collections"
                   onClick={() => setShopOpen(false)}
-                  className="block px-4 py-2 text-sm hover:bg-[#EDE4D8] transition-colors"
+                  className="block px-4 py-2 text-sm hover:bg-[#E8DDD0] transition-colors"
                   style={{ color: "#4A4540" }}
                 >
                   All Collections →
@@ -163,7 +164,7 @@ export default function Header() {
             {itemCount > 0 && (
               <span
                 className="absolute -top-1.5 -right-1.5 text-xs w-4 h-4 flex items-center justify-center rounded-full"
-                style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", fontSize: "10px" }}
+                style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", fontSize: "10px" }}
               >
                 {itemCount}
               </span>
@@ -190,7 +191,7 @@ export default function Header() {
           <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
           <div
             className="relative ml-auto h-full w-72 flex flex-col p-8 gap-6 z-10"
-            style={{ backgroundColor: "#F5EFE6" }}
+            style={{ backgroundColor: "#FAF8F5" }}
           >
             <button
               className="self-end mb-4"
@@ -295,7 +296,7 @@ function CurrencySelector() {
       {open && (
         <div
           className="absolute right-0 top-full mt-1 z-50 min-w-40 border shadow-sm"
-          style={{ backgroundColor: "#FEFCFA", borderColor: "#C9B8A8", borderRadius: "2px" }}
+          style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
         >
           {currencies.map((c) => (
             <button
@@ -303,7 +304,7 @@ function CurrencySelector() {
               onClick={() => { setSelected(c); setOpen(false); }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:opacity-70 transition-opacity"
               style={{
-                backgroundColor: selected?.code === c.code ? "#EDE4D8" : "transparent",
+                backgroundColor: selected?.code === c.code ? "#E8DDD0" : "transparent",
                 color: "#1C1A17",
               }}
             >
@@ -335,7 +336,7 @@ function MobileCurrencyPills({ onClose }: { onClose: () => void }) {
             className="flex items-center gap-1 px-3 py-1.5 text-sm border transition-colors"
             style={{
               borderColor: selected?.code === c.code ? "#1C1A17" : "#C9B8A8",
-              backgroundColor: selected?.code === c.code ? "#EDE4D8" : "transparent",
+              backgroundColor: selected?.code === c.code ? "#E8DDD0" : "transparent",
               color: "#1C1A17",
               borderRadius: "2px",
             }}

@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main style={{ backgroundColor: "#F5EFE6", color: "#1C1A17" }}>
+    <main style={{ backgroundColor: "#FAF8F5", color: "#1C1A17" }}>
       {/* Hero */}
       <section className="max-w-5xl mx-auto px-4 py-20 md:py-32 text-center">
         <p
@@ -181,7 +181,7 @@ export default function AboutPage() {
         </p>
         <h2
           className="text-3xl md:text-4xl mb-8"
-          style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#F5EFE6" }}
+          style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#FAF8F5" }}
         >
           Browse our full catalogue.
         </h2>
@@ -189,14 +189,14 @@ export default function AboutPage() {
           <a
             href="/shop"
             className="inline-block px-8 py-3.5 text-sm font-medium"
-            style={{ backgroundColor: "#F5EFE6", color: "#1C1A17", borderRadius: "2px" }}
+            style={{ backgroundColor: "#FAF8F5", color: "#1C1A17", borderRadius: "2px" }}
           >
             Shop packaging
           </a>
           <a
             href="/contact"
             className="inline-block px-8 py-3.5 text-sm font-medium border"
-            style={{ borderColor: "#C9B8A8", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ borderColor: "#C9B8A8", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Get in touch
           </a>

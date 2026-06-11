@@ -22,8 +22,8 @@ function formatZAR(amount: number) {
 }
 
 const statusColour: Record<string, string> = {
-  Placed:                   "#EDE4D8",
-  Processing:               "#EDE4D8",
+  Placed:                   "#E8DDD0",
+  Processing:               "#E8DDD0",
   "Customisation Accepted": "#D8D0E8",
   "Ready to Ship":          "#D8E4EE",
   Shipped:                  "#D4A89A",
@@ -69,7 +69,7 @@ export default function OrdersPage() {
               <Link
                 href={`/account/orders/${o.id}`}
                 className="flex items-center justify-between p-4 border hover:opacity-80 transition-opacity"
-                style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+                style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
               >
                 <div>
                   <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>#{o.orderNumber}</p>
@@ -82,8 +82,8 @@ export default function OrdersPage() {
                   <span
                     className="text-xs px-2 py-0.5 uppercase tracking-wide"
                     style={{
-                      backgroundColor: statusColour[o.status] ?? "#EDE4D8",
-                      color: o.status === "Delivered" ? "#F5EFE6" : "#1C1A17",
+                      backgroundColor: statusColour[o.status] ?? "#E8DDD0",
+                      color: o.status === "Delivered" ? "#FAF8F5" : "#1C1A17",
                       borderRadius: "2px",
                     }}
                   >

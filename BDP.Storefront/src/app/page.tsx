@@ -23,7 +23,7 @@ export default async function HomePage() {
       {/* Hero */}
       <section
         className="min-h-[90vh] flex items-center py-20 md:py-28 px-4"
-        style={{ backgroundColor: "#F5EFE6" }}
+        style={{ backgroundColor: "#FAF8F5" }}
       >
         <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
           <div>
@@ -44,7 +44,7 @@ export default async function HomePage() {
                 className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-colors"
                 style={{
                   backgroundColor: "#1C1A17",
-                  color: "#F5EFE6",
+                  color: "#FAF8F5",
                   borderRadius: "2px",
                 }}
               >
@@ -65,7 +65,7 @@ export default async function HomePage() {
           </div>
           <div
             className="hidden md:flex items-center justify-center h-96 rounded-sm"
-            style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }}
+            style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }}
           >
             <span className="text-sm" style={{ color: "#C9B8A8" }}>product imagery</span>
           </div>
@@ -73,7 +73,7 @@ export default async function HomePage() {
       </section>
 
       {/* Three entry points */}
-      <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#F5EFE6" }}>
+      <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#FAF8F5" }}>
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
           {[
             {
@@ -99,10 +99,10 @@ export default async function HomePage() {
               key={i}
               className="p-8 border"
               style={{
-                backgroundColor: "#EDE4D8",
+                backgroundColor: "#E8DDD0",
                 borderColor: "#C9B8A8",
                 borderRadius: "2px",
-                boxShadow: "0 1px 4px rgba(28,26,23,0.06)",
+                boxShadow: "0 1px 4px rgba(28,26,23,0.04)",
               }}
             >
               <h2
@@ -127,7 +127,7 @@ export default async function HomePage() {
       </section>
 
       {/* Featured products */}
-      <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#F5EFE6" }}>
+      <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#FAF8F5" }}>
         <div className="max-w-7xl mx-auto">
           <div className="flex items-end justify-between mb-10">
             <h2
@@ -160,7 +160,7 @@ export default async function HomePage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="aspect-square animate-pulse" style={{ backgroundColor: "#EDE4D8", borderRadius: "2px" }} />
+                <div key={i} className="aspect-square animate-pulse" style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }} />
               ))}
             </div>
           )}
@@ -168,7 +168,7 @@ export default async function HomePage() {
       </section>
 
       {/* Live pricing teaser */}
-      <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#EDE4D8" }}>
+      <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#E8DDD0" }}>
         <div className="max-w-3xl mx-auto text-center">
           <h2
             className="text-4xl md:text-5xl mb-6"
@@ -182,7 +182,7 @@ export default async function HomePage() {
           <Link
             href="/shop"
             className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             See pricing tiers →
           </Link>
@@ -222,7 +222,7 @@ export default async function HomePage() {
       {/* B2B strip */}
       <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#1C1A17" }}>
         <div className="max-w-3xl mx-auto text-center">
-          <p className="text-lg md:text-xl mb-8" style={{ color: "#F5EFE6", lineHeight: 1.8 }}>
+          <p className="text-lg md:text-xl mb-8" style={{ color: "#FAF8F5", lineHeight: 1.8 }}>
             Running a hotel, spa, or salon? Set up recurring orders, get invoiced on net terms, and never think about reordering again.
           </p>
           <Link

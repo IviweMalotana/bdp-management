@@ -5,9 +5,9 @@ import Footer from "./components/Footer";
 import CurrencyInitialiser from "./components/CurrencyInitialiser";
 
 export const metadata: Metadata = {
-  title: "BDP Management — Cosmetic Packaging Wholesale",
+  title: "be different packaging — cosmetic packaging wholesale",
   description:
-    "Premium cosmetic packaging wholesale from 10 units. South Africa's home for skincare brands and hospitality.",
+    "Premium cosmetic packaging from 10 units. South Africa's home for skincare and hospitality brands.",
 };
 
 export default function RootLayout({
@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: "#F5EFE6", color: "#1C1A17" }}>
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: "#FAF8F5", color: "#1C1A17" }}>
         <CurrencyInitialiser />
         <Header />
         <main className="flex-1">{children}</main>

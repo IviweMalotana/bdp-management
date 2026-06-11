@@ -39,7 +39,7 @@ export default async function CollectionsPage() {
           <Link
             href="/shop"
             className="inline-flex items-center px-8 py-3.5 text-sm font-medium"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Shop all packaging →
           </Link>
@@ -55,7 +55,7 @@ export default async function CollectionsPage() {
             >
               <div
                 className="h-48 flex items-center justify-center overflow-hidden"
-                style={{ backgroundColor: "#EDE4D8" }}
+                style={{ backgroundColor: "#E8DDD0" }}
               >
                 {c.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element

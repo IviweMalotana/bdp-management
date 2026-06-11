@@ -172,14 +172,14 @@ export default function RecurringOrdersPage() {
 
   if (!jwt) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#F5EFE6", minHeight: "80vh" }}>
+      <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#FAF8F5", minHeight: "80vh" }}>
         <p className="text-sm" style={{ color: "#4A4540" }}>Please log in to view recurring orders.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#F5EFE6", minHeight: "80vh" }}>
+    <div className="max-w-2xl mx-auto px-4 py-12" style={{ backgroundColor: "#FAF8F5", minHeight: "80vh" }}>
       <div className="flex items-center justify-between mb-8">
         <h1 style={{ fontFamily: "var(--font-display)", color: "#1C1A17", fontSize: "2rem" }}>
           Recurring Orders
@@ -193,7 +193,7 @@ export default function RecurringOrdersPage() {
       {me && !(me.accountType === "B2B" && me.b2bStatus === "Approved") && (
         <div
           className="p-5 mb-8"
-          style={{ backgroundColor: "#EDE4D8", borderLeft: "3px solid #D4A89A", borderRadius: "2px" }}
+          style={{ backgroundColor: "#E8DDD0", borderLeft: "3px solid #D4A89A", borderRadius: "2px" }}
         >
           <p className="text-sm font-medium mb-1" style={{ color: "#1C1A17" }}>
             Recurring orders are available to approved B2B accounts.
@@ -219,7 +219,7 @@ export default function RecurringOrdersPage() {
             <button
               onClick={() => setShowForm(!showForm)}
               className="px-5 py-2.5 text-sm font-medium"
-              style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+              style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
             >
               {showForm ? "Cancel" : "New recurring order"}
             </button>
@@ -230,7 +230,7 @@ export default function RecurringOrdersPage() {
             <form
               onSubmit={handleSubmit}
               className="mb-8 p-6 border"
-              style={{ backgroundColor: "#FEFCFA", borderColor: "#C9B8A8", borderRadius: "2px" }}
+              style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
             >
               <h2
                 className="text-lg mb-5"
@@ -248,7 +248,7 @@ export default function RecurringOrdersPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. Monthly cosmetic refill"
                     className="w-full px-3 py-2 text-sm border"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                   />
                 </div>
 
@@ -259,7 +259,7 @@ export default function RecurringOrdersPage() {
                       value={frequency}
                       onChange={(e) => handleFrequencyChange(e.target.value)}
                       className="w-full px-3 py-2 text-sm border"
-                      style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                      style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                     >
                       {frequencyOptions.map((o) => (
                         <option key={o.value} value={o.value}>{o.label}</option>
@@ -275,7 +275,7 @@ export default function RecurringOrdersPage() {
                         value={frequencyDays}
                         onChange={(e) => setFrequencyDays(Number(e.target.value))}
                         className="w-full px-3 py-2 text-sm border"
-                        style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                        style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                       />
                     </div>
                   )}
@@ -290,7 +290,7 @@ export default function RecurringOrdersPage() {
                       value={contractStart}
                       onChange={(e) => setContractStart(e.target.value)}
                       className="w-full px-3 py-2 text-sm border"
-                      style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                      style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                     />
                   </div>
                   <div>
@@ -301,7 +301,7 @@ export default function RecurringOrdersPage() {
                       value={contractEnd}
                       onChange={(e) => setContractEnd(e.target.value)}
                       className="w-full px-3 py-2 text-sm border"
-                      style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                      style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                     />
                   </div>
                 </div>
@@ -313,7 +313,7 @@ export default function RecurringOrdersPage() {
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
                     className="w-full px-3 py-2 text-sm border"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                   />
                 </div>
 
@@ -327,7 +327,7 @@ export default function RecurringOrdersPage() {
                           value={item.productVariantId}
                           onChange={(e) => updateItem(idx, "productVariantId", Number(e.target.value))}
                           className="flex-1 px-3 py-2 text-sm border"
-                          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                         >
                           <option value={0}>Select product variant…</option>
                           {variantOptions.map((v) => (
@@ -340,7 +340,7 @@ export default function RecurringOrdersPage() {
                           value={item.quantity}
                           onChange={(e) => updateItem(idx, "quantity", Number(e.target.value))}
                           className="w-20 px-3 py-2 text-sm border text-center"
-                          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#F5EFE6", color: "#1C1A17" }}
+                          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                         />
                         {items.length > 1 && (
                           <button
@@ -375,7 +375,7 @@ export default function RecurringOrdersPage() {
                   className="w-full py-3 text-sm font-medium"
                   style={{
                     backgroundColor: submitting ? "#C9B8A8" : "#1C1A17",
-                    color: "#F5EFE6",
+                    color: "#FAF8F5",
                     borderRadius: "2px",
                     opacity: submitting ? 0.7 : 1,
                   }}
@@ -392,7 +392,7 @@ export default function RecurringOrdersPage() {
           ) : orders.length === 0 ? (
             <div
               className="p-8 text-center border"
-              style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+              style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
             >
               <p className="text-sm mb-1" style={{ color: "#1C1A17" }}>No recurring orders yet.</p>
               <p className="text-xs" style={{ color: "#4A4540" }}>
@@ -406,7 +406,7 @@ export default function RecurringOrdersPage() {
                   <Link
                     href={`/account/recurring/${order.id}`}
                     className="block p-4 border hover:opacity-90 transition-opacity"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA" }}
+                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">

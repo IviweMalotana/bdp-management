@@ -23,7 +23,7 @@ export default function CustomisePage() {
   return (
     <>
       {/* Hero */}
-      <section className="py-24 md:py-32 px-4" style={{ backgroundColor: "#F5EFE6" }}>
+      <section className="py-24 md:py-32 px-4" style={{ backgroundColor: "#FAF8F5" }}>
         <div className="max-w-4xl mx-auto">
           <p className="text-xs uppercase tracking-widest mb-4" style={{ color: "#C9B8A8" }}>Customisation</p>
           <h1
@@ -43,7 +43,7 @@ export default function CustomisePage() {
       </section>
 
       {/* Techniques */}
-      <section className="py-20 px-4" style={{ backgroundColor: "#EDE4D8" }}>
+      <section className="py-20 px-4" style={{ backgroundColor: "#E8DDD0" }}>
         <div className="max-w-7xl mx-auto">
           <h2
             className="text-3xl mb-12"
@@ -56,7 +56,7 @@ export default function CustomisePage() {
               <div
                 key={t.name}
                 className="p-8 border"
-                style={{ backgroundColor: "#F5EFE6", borderColor: "#C9B8A8", borderRadius: "2px" }}
+                style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
               >
                 <h3
                   className="text-2xl mb-3"
@@ -88,7 +88,7 @@ export default function CustomisePage() {
       </section>
 
       {/* How it works */}
-      <section className="py-20 px-4" style={{ backgroundColor: "#F5EFE6" }}>
+      <section className="py-20 px-4" style={{ backgroundColor: "#FAF8F5" }}>
         <div className="max-w-3xl mx-auto">
           <h2
             className="text-3xl mb-12"
@@ -139,7 +139,7 @@ export default function CustomisePage() {
         <Link
           href="/shop"
           className="inline-flex items-center px-10 py-4 text-sm font-medium tracking-wide"
-          style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+          style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
         >
           Shop packaging →
         </Link>

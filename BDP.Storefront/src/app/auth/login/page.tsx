@@ -51,7 +51,7 @@ function LoginForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
           className="w-full text-sm px-3 py-2.5 border outline-none focus:border-ink"
-          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
         />
       </div>
       <div>
@@ -62,7 +62,7 @@ function LoginForm() {
           onChange={(e) => setPassword(e.target.value)}
           required
           className="w-full text-sm px-3 py-2.5 border outline-none"
-          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FEFCFA", color: "#1C1A17" }}
+          style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
         />
       </div>
 
@@ -72,7 +72,7 @@ function LoginForm() {
         type="submit"
         disabled={loading}
         className="w-full py-3.5 text-sm font-medium mt-2 disabled:opacity-50"
-        style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+        style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
       >
         {loading ? "Signing in…" : "Sign in"}
       </button>
@@ -85,7 +85,7 @@ export default function LoginPage() {
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-16">
       <div
         className="w-full max-w-sm p-8 border"
-        style={{ backgroundColor: "#FEFCFA", borderColor: "#C9B8A8", borderRadius: "2px" }}
+        style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
       >
         <div className="text-center mb-8">
           <Link

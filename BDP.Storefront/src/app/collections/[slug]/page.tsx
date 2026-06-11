@@ -82,7 +82,7 @@ export default async function CollectionDetailPage({ params }: { params: { slug:
           <Link
             href="/shop"
             className="inline-flex items-center px-8 py-3.5 text-sm font-medium"
-            style={{ backgroundColor: "#1C1A17", color: "#F5EFE6", borderRadius: "2px" }}
+            style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
           >
             Shop all packaging →
           </Link>
