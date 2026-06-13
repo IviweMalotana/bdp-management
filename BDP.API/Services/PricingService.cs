@@ -7,18 +7,41 @@ namespace BDP.API.Services;
 public class PricingService
 {
     private static readonly int[] StandardQuantities = { 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000 };
-    private static readonly Dictionary<int, decimal> MarkupTable = new()
+
+    // Anchor points for the sliding-scale markup — applies to both bottles and customisation
+    private static readonly (int Qty, decimal Markup)[] MarkupAnchors =
+    [
+        (10,    50m),
+        (50,    40m),
+        (100,   35m),
+        (250,   30m),
+        (500,   28m),
+        (1000,  25m),
+        (2500,  22m),
+        (5000,  20m),
+        (10000, 15m),
+    ];
+
+    // Returns interpolated markup % for any quantity
+    public static decimal InterpolateMarkup(int qty)
     {
-        { 10,    50m },
-        { 50,    40m },
-        { 100,   35m },
-        { 250,   30m },
-        { 500,   28m },
-        { 1000,  25m },
-        { 2500,  22m },
-        { 5000,  20m },
-        { 10000, 15m },
-    };
+        if (qty <= MarkupAnchors[0].Qty) return MarkupAnchors[0].Markup;
+        if (qty >= MarkupAnchors[^1].Qty) return MarkupAnchors[^1].Markup;
+        for (int i = 0; i < MarkupAnchors.Length - 1; i++)
+        {
+            var (q1, m1) = MarkupAnchors[i];
+            var (q2, m2) = MarkupAnchors[i + 1];
+            if (qty >= q1 && qty <= q2)
+            {
+                var t = (decimal)(qty - q1) / (q2 - q1);
+                return m1 + (m2 - m1) * t;
+            }
+        }
+        return MarkupAnchors[^1].Markup;
+    }
+
+    private static readonly Dictionary<int, decimal> MarkupTable = MarkupAnchors
+        .ToDictionary(a => a.Qty, a => a.Markup);
 
     private readonly IMemoryCache _cache;
     private readonly IHttpClientFactory _httpClientFactory;

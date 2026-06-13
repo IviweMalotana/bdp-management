@@ -151,11 +151,14 @@ public static class BDPDataSeeder
 
     private static async Task SeedCustomisationSettingsAsync(AppDbContext context)
     {
+        const decimal cnyRate = 2.60m; // fallback rate; live rate used at runtime
+        // CostCNY = your supplier cost; PricePerUnitZAR = sale price at MOQ anchor (22% markup)
+        // ColourChange costs nothing — charged as a flat service fee of R3.00
         var defs = new[]
         {
-            new { Type = "ColourChange", Price = 2.00m,  MOQ = 1000 },
-            new { Type = "SilkScreen",  Price = 11.00m, MOQ = 1000 },
-            new { Type = "HotStamping", Price = 11.00m, MOQ = 1000 },
+            new { Type = "ColourChange", CostCNY = 0m,      Price = 1.25m,                                   MOQ = 2500 },
+            new { Type = "SilkScreen",   CostCNY = 3.4814m, Price = Math.Round(3.4814m * cnyRate * 1.22m, 4), MOQ = 2500 },
+            new { Type = "HotStamping",  CostCNY = 3.5844m, Price = Math.Round(3.5844m * cnyRate * 1.22m, 4), MOQ = 2500 },
         };
         foreach (var d in defs)
         {
@@ -165,6 +168,7 @@ public static class BDPDataSeeder
                 context.CustomisationSettings.Add(new CustomisationSetting
                 {
                     Type = d.Type,
+                    CostPerUnitCNY = d.CostCNY,
                     PricePerUnitZAR = d.Price,
                     IsActive = true,
                     DefaultMinimumQuantity = d.MOQ,
@@ -172,7 +176,7 @@ public static class BDPDataSeeder
             }
             else
             {
-                // Always keep prices in sync with approved values
+                existing.CostPerUnitCNY = d.CostCNY;
                 existing.PricePerUnitZAR = d.Price;
                 existing.DefaultMinimumQuantity = d.MOQ;
                 existing.IsActive = true;
@@ -268,14 +272,14 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Black", "Black", "Matte", "DEV-30BK-BK-MAT",
                         new[] {
-                            (10,   3.18m, 4.18m,  11.19m,   119.00m),
-                            (50,   3.18m, 4.18m,  11.19m,   558.50m),
-                            (100,  3.18m, 4.18m,  11.19m,  1110.00m),
-                            (250,  3.18m, 4.18m,  11.19m,  2737.50m),
-                            (500,  3.18m, 4.18m,  11.19m,  5450.00m),
-                            (1000, 3.18m, 4.18m,  11.19m, 10800.00m),
-                            (2500, 3.18m, 4.18m,  11.19m, 26500.00m),
-                            (5000, 3.18m, 4.18m,  11.19m, 51750.00m),
+                            (10,   3.18m, 4.18m,  11.19m,    167.85m),
+                            (50,   3.18m, 4.18m,  11.19m,    783.30m),
+                            (100,  3.18m, 4.18m,  11.19m,  1510.65m),
+                            (250,  3.18m, 4.18m,  11.19m,  3636.75m),
+                            (500,  3.18m, 4.18m,  11.19m,  7161.60m),
+                            (1000, 3.18m, 4.18m,  11.19m, 13987.50m),
+                            (2500, 3.18m, 4.18m,  11.19m, 34129.50m),
+                            (5000, 3.18m, 4.18m,  11.19m, 67140.00m),
                         })
                 }),
             new ProductDef(
@@ -286,14 +290,14 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "White", "Clear", "DAR-30CL-WH-CLR",
                         new[] {
-                            (10,   3.50m, 4.50m, 12.05m,  128.50m),
-                            (50,   3.50m, 4.50m, 12.05m,  600.00m),
-                            (100,  3.50m, 4.50m, 12.05m, 1175.00m),
-                            (250,  3.50m, 4.50m, 12.05m, 2875.00m),
-                            (500,  3.50m, 4.50m, 12.05m, 5650.00m),
-                            (1000, 3.50m, 4.50m, 12.05m, 11000.00m),
-                            (2500, 3.50m, 4.50m, 12.05m, 26875.00m),
-                            (5000, 3.50m, 4.50m, 12.05m, 52500.00m),
+                            (10,   3.50m, 4.50m, 12.05m,   180.75m),
+                            (50,   3.50m, 4.50m, 12.05m,   843.50m),
+                            (100,  3.50m, 4.50m, 12.05m,  1626.75m),
+                            (250,  3.50m, 4.50m, 12.05m,  3916.25m),
+                            (500,  3.50m, 4.50m, 12.05m,  7712.00m),
+                            (1000, 3.50m, 4.50m, 12.05m, 15062.50m),
+                            (2500, 3.50m, 4.50m, 12.05m, 36752.50m),
+                            (5000, 3.50m, 4.50m, 12.05m, 72300.00m),
                         })
                 }),
             new ProductDef(
@@ -304,14 +308,14 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "White", "Clear", "DEL-30CL-WH-CLR",
                         new[] {
-                            (10,   2.58m, 3.58m, 9.59m,  102.50m),
-                            (50,   2.58m, 3.58m, 9.59m,  479.50m),
-                            (100,  2.58m, 3.58m, 9.59m,  950.00m),
-                            (250,  2.58m, 3.58m, 9.59m, 2325.00m),
-                            (500,  2.58m, 3.58m, 9.59m, 4575.00m),
-                            (1000, 2.58m, 3.58m, 9.59m, 8900.00m),
-                            (2500, 2.58m, 3.58m, 9.59m, 21750.00m),
-                            (5000, 2.58m, 3.58m, 9.59m, 42000.00m),
+                            (10,   2.58m, 3.58m, 9.59m,   143.85m),
+                            (50,   2.58m, 3.58m, 9.59m,   671.30m),
+                            (100,  2.58m, 3.58m, 9.59m,  1294.65m),
+                            (250,  2.58m, 3.58m, 9.59m,  3116.75m),
+                            (500,  2.58m, 3.58m, 9.59m,  6137.60m),
+                            (1000, 2.58m, 3.58m, 9.59m, 11987.50m),
+                            (2500, 2.58m, 3.58m, 9.59m, 29249.50m),
+                            (5000, 2.58m, 3.58m, 9.59m, 57540.00m),
                         })
                 }),
             new ProductDef(
@@ -322,13 +326,13 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Orange", "White", "Frosted", "DAN-30OR-WH-FRO",
                         new[] {
-                            (50,   2.88m, 3.88m, 10.39m,  519.50m),
-                            (100,  2.88m, 3.88m, 10.39m, 1025.00m),
-                            (250,  2.88m, 3.88m, 10.39m, 2500.00m),
-                            (500,  2.88m, 3.88m, 10.39m, 4925.00m),
-                            (1000, 2.88m, 3.88m, 10.39m, 9600.00m),
-                            (2500, 2.88m, 3.88m, 10.39m, 23500.00m),
-                            (5000, 2.88m, 3.88m, 10.39m, 45500.00m),
+                            (50,   2.88m, 3.88m, 10.39m,   727.30m),
+                            (100,  2.88m, 3.88m, 10.39m,  1402.65m),
+                            (250,  2.88m, 3.88m, 10.39m,  3376.75m),
+                            (500,  2.88m, 3.88m, 10.39m,  6649.60m),
+                            (1000, 2.88m, 3.88m, 10.39m, 12987.50m),
+                            (2500, 2.88m, 3.88m, 10.39m, 31689.50m),
+                            (5000, 2.88m, 3.88m, 10.39m, 62340.00m),
                         })
                 }),
             new ProductDef(
@@ -339,13 +343,13 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "White", "Frosted", "AUR-30CL-WH-FRO",
                         new[] {
-                            (50,   3.50m, 4.50m, 12.05m,  600.00m),
-                            (100,  3.50m, 4.50m, 12.05m, 1175.00m),
-                            (250,  3.50m, 4.50m, 12.05m, 2875.00m),
-                            (500,  3.50m, 4.50m, 12.05m, 5650.00m),
-                            (1000, 3.50m, 4.50m, 12.05m, 11000.00m),
-                            (2500, 3.50m, 4.50m, 12.05m, 26875.00m),
-                            (5000, 3.50m, 4.50m, 12.05m, 52500.00m),
+                            (50,   3.50m, 4.50m, 12.05m,   843.50m),
+                            (100,  3.50m, 4.50m, 12.05m,  1626.75m),
+                            (250,  3.50m, 4.50m, 12.05m,  3916.25m),
+                            (500,  3.50m, 4.50m, 12.05m,  7712.00m),
+                            (1000, 3.50m, 4.50m, 12.05m, 15062.50m),
+                            (2500, 3.50m, 4.50m, 12.05m, 36752.50m),
+                            (5000, 3.50m, 4.50m, 12.05m, 72300.00m),
                         })
                 }),
             new ProductDef(
@@ -356,23 +360,23 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30g", "Clear", "White", "Clear", "DAP-30CL-WH-CLR",
                         new[] {
-                            (50,   3.88m, 4.88m, 13.07m,  653.50m),
-                            (100,  3.88m, 4.88m, 13.07m, 1287.50m),
-                            (250,  3.88m, 4.88m, 13.07m, 3150.00m),
-                            (500,  3.88m, 4.88m, 13.07m, 6200.00m),
-                            (1000, 3.88m, 4.88m, 13.07m, 12100.00m),
-                            (2500, 3.88m, 4.88m, 13.07m, 29500.00m),
-                            (5000, 3.88m, 4.88m, 13.07m, 57500.00m),
+                            (50,   3.88m, 4.88m, 13.07m,   914.90m),
+                            (100,  3.88m, 4.88m, 13.07m,  1764.45m),
+                            (250,  3.88m, 4.88m, 13.07m,  4247.75m),
+                            (500,  3.88m, 4.88m, 13.07m,  8364.80m),
+                            (1000, 3.88m, 4.88m, 13.07m, 16337.50m),
+                            (2500, 3.88m, 4.88m, 13.07m, 39863.50m),
+                            (5000, 3.88m, 4.88m, 13.07m, 78420.00m),
                         }),
                     new VariantDef("50g", "Clear", "White", "Clear", "DAP-50CL-WH-CLR",
                         new[] {
-                            (50,   4.50m, 5.50m, 14.73m,  736.50m),
-                            (100,  4.50m, 5.50m, 14.73m, 1452.50m),
-                            (250,  4.50m, 5.50m, 14.73m, 3550.00m),
-                            (500,  4.50m, 5.50m, 14.73m, 6990.00m),
-                            (1000, 4.50m, 5.50m, 14.73m, 13650.00m),
-                            (2500, 4.50m, 5.50m, 14.73m, 33250.00m),
-                            (5000, 4.50m, 5.50m, 14.73m, 64750.00m),
+                            (50,   4.50m, 5.50m, 14.73m,  1031.10m),
+                            (100,  4.50m, 5.50m, 14.73m,  1988.55m),
+                            (250,  4.50m, 5.50m, 14.73m,  4787.25m),
+                            (500,  4.50m, 5.50m, 14.73m,  9427.20m),
+                            (1000, 4.50m, 5.50m, 14.73m, 18412.50m),
+                            (2500, 4.50m, 5.50m, 14.73m, 44926.50m),
+                            (5000, 4.50m, 5.50m, 14.73m, 88380.00m),
                         })
                 }),
             new ProductDef(
@@ -383,14 +387,14 @@ public static class BDPDataSeeder
                 {
                     new VariantDef("30ml", "Clear", "Silver", "Clear", "DAW-30CL-SI-CLR",
                         new[] {
-                            (10,   2.15m, 3.15m, 8.44m,   90.00m),
-                            (50,   2.15m, 3.15m, 8.44m,  421.50m),
-                            (100,  2.15m, 3.15m, 8.44m,  831.50m),
-                            (250,  2.15m, 3.15m, 8.44m, 2025.00m),
-                            (500,  2.15m, 3.15m, 8.44m, 3987.50m),
-                            (1000, 2.15m, 3.15m, 8.44m, 7762.50m),
-                            (2500, 2.15m, 3.15m, 8.44m, 18975.00m),
-                            (5000, 2.15m, 3.15m, 8.44m, 36875.00m),
+                            (10,   2.15m, 3.15m, 8.44m,   126.60m),
+                            (50,   2.15m, 3.15m, 8.44m,   590.80m),
+                            (100,  2.15m, 3.15m, 8.44m,  1139.40m),
+                            (250,  2.15m, 3.15m, 8.44m,  2743.00m),
+                            (500,  2.15m, 3.15m, 8.44m,  5401.60m),
+                            (1000, 2.15m, 3.15m, 8.44m, 10550.00m),
+                            (2500, 2.15m, 3.15m, 8.44m, 25742.00m),
+                            (5000, 2.15m, 3.15m, 8.44m, 50640.00m),
                         })
                 }),
         };

@@ -566,6 +566,10 @@ namespace BDP.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("CostPerUnitCNY")
+                        .HasPrecision(18, 6)
+                        .HasColumnType("numeric(18,6)");
+
                     b.Property<int>("DefaultMinimumQuantity")
                         .HasColumnType("integer");
 

@@ -178,6 +178,31 @@ if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("SEED_
     await BDP.API.Data.BDPDataSeeder.SeedAsync(db, users, roles);
 }
 
+// Always update customisation pricing — runs on every deploy regardless of SEED_DATA
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    const decimal cnyRate = 2.60m;
+    var customSettings = new[]
+    {
+        new { Type = "SilkScreen",   CostCNY = 3.4814m, FlatPrice = (decimal?)null,  MOQ = 2500 },
+        new { Type = "HotStamping",  CostCNY = 3.5844m, FlatPrice = (decimal?)null,  MOQ = 2500 },
+        new { Type = "ColourChange", CostCNY = 0m,      FlatPrice = (decimal?)1.25m, MOQ = 2500 },
+    };
+    foreach (var s in customSettings)
+    {
+        var existing = await db.CustomisationSettings.FirstOrDefaultAsync(x => x.Type == s.Type);
+        if (existing != null)
+        {
+            existing.CostPerUnitCNY = s.CostCNY;
+            existing.DefaultMinimumQuantity = s.MOQ;
+            existing.PricePerUnitZAR = s.FlatPrice
+                ?? Math.Round(s.CostCNY * cnyRate * 1.22m, 4);
+        }
+    }
+    await db.SaveChangesAsync();
+}
+
 // Fire-and-forget currency rate refresh on startup (non-blocking)
 _ = Task.Run(async () =>
 {
