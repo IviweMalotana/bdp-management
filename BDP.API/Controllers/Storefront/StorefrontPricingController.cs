@@ -80,7 +80,7 @@ public class StorefrontPricingController : ControllerBase
                             decimal customUnitPrice;
                             if (setting.Type == "ColourChange")
                             {
-                                customUnitPrice = setting.PricePerUnitZAR; // flat R3.00
+                                customUnitPrice = setting.PricePerUnitZAR; // flat fee (R1.25)
                             }
                             else
                             {

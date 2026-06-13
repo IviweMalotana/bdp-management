@@ -182,13 +182,13 @@ if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("SEED_
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    const decimal cnyRate = 2.60m;
     var customSettings = new[]
     {
-        new { Type = "SilkScreen",  CostCNY = 3.4814m, MOQ = 2500 },
-        new { Type = "HotStamping", CostCNY = 3.5844m, MOQ = 2500 },
-        new { Type = "ColourChange", CostCNY = 0m,     MOQ = 2500 },
+        new { Type = "SilkScreen",   CostCNY = 3.4814m, FlatPrice = (decimal?)null,  MOQ = 2500 },
+        new { Type = "HotStamping",  CostCNY = 3.5844m, FlatPrice = (decimal?)null,  MOQ = 2500 },
+        new { Type = "ColourChange", CostCNY = 0m,      FlatPrice = (decimal?)1.25m, MOQ = 2500 },
     };
-    const decimal cnyRate = 2.60m;
     foreach (var s in customSettings)
     {
         var existing = await db.CustomisationSettings.FirstOrDefaultAsync(x => x.Type == s.Type);
@@ -196,10 +196,8 @@ using (var scope = app.Services.CreateScope())
         {
             existing.CostPerUnitCNY = s.CostCNY;
             existing.DefaultMinimumQuantity = s.MOQ;
-            // Recompute sale price at MOQ anchor (22% markup), ColourChange is flat R3.00
-            existing.PricePerUnitZAR = s.Type == "ColourChange"
-                ? 3.00m
-                : Math.Round(s.CostCNY * cnyRate * 1.22m, 4);
+            existing.PricePerUnitZAR = s.FlatPrice
+                ?? Math.Round(s.CostCNY * cnyRate * 1.22m, 4);
         }
     }
     await db.SaveChangesAsync();

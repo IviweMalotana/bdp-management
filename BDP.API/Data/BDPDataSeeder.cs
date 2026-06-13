@@ -156,7 +156,7 @@ public static class BDPDataSeeder
         // ColourChange costs nothing — charged as a flat service fee of R3.00
         var defs = new[]
         {
-            new { Type = "ColourChange", CostCNY = 0m,      Price = 3.00m,                                   MOQ = 2500 },
+            new { Type = "ColourChange", CostCNY = 0m,      Price = 1.25m,                                   MOQ = 2500 },
             new { Type = "SilkScreen",   CostCNY = 3.4814m, Price = Math.Round(3.4814m * cnyRate * 1.22m, 4), MOQ = 2500 },
             new { Type = "HotStamping",  CostCNY = 3.5844m, Price = Math.Round(3.5844m * cnyRate * 1.22m, 4), MOQ = 2500 },
         };
