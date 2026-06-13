@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { products as productApi } from '../services/api'
 import type { Product, PagedResult } from '../types'
-import { Package, Search, ChevronLeft, ChevronRight, Plus, Pencil, Download, Loader2 } from 'lucide-react'
+import { Package, Search, ChevronLeft, ChevronRight, Plus, Pencil, Download, Loader2, ImageIcon } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import ProductForm from '../components/ProductForm'
 
@@ -22,7 +22,9 @@ export default function Products() {
   const [showForm, setShowForm]   = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
   const [selected, setSelected]   = useState<Set<number>>(new Set())
-  const [exporting, setExporting] = useState(false)
+  const [exporting, setExporting]     = useState(false)
+  const [syncing, setSyncing]         = useState(false)
+  const [syncResult, setSyncResult]   = useState<string | null>(null)
 
   const fetchProducts = (p = 1, q = '', cat = category, tex = texture) => {
     setLoading(true)
@@ -54,6 +56,28 @@ export default function Products() {
     finally { setExporting(false) }
   }
 
+  const handleSyncImages = async () => {
+    setSyncing(true)
+    setSyncResult(null)
+    try {
+      const apiUrl = import.meta.env.VITE_API_URL ?? ''
+      const token  = useAuthStore.getState().jwt
+      const res    = await fetch(`${apiUrl}/api/admin/products/sync-images`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      setSyncResult(res.ok
+        ? `✓ ${data.synced} images synced. ${data.notMatched} SKUs not found.`
+        : `Error: ${data.message ?? 'Sync failed'}`)
+      if (res.ok) fetchProducts(page, search)
+    } catch {
+      setSyncResult('Error: Could not reach API')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   const openAdd  = () => { setEditProduct(null); setShowForm(true) }
   const openEdit = (p: Product) => { setEditProduct(p); setShowForm(true) }
   const handleSaved = () => { setShowForm(false); fetchProducts(page, search) }
@@ -79,12 +103,29 @@ export default function Products() {
             </button>
           )}
           {isAdmin && (
+            <button
+              onClick={handleSyncImages}
+              disabled={syncing}
+              title="Pull product images from Google Sheet"
+              className="flex items-center gap-2 px-4 py-2 bg-teal-700 hover:bg-teal-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {syncing ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
+              Sync Images
+            </button>
+          )}
+          {isAdmin && (
             <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
               <Plus size={16} /> Add Product
             </button>
           )}
         </div>
       </div>
+
+      {syncResult && (
+        <div className={`px-4 py-2 rounded-lg text-sm ${syncResult.startsWith('✓') ? 'bg-teal-900 text-teal-200' : 'bg-red-900 text-red-200'}`}>
+          {syncResult}
+        </div>
+      )}
 
       {/* Search + filters */}
       <div className="flex flex-wrap gap-2">
