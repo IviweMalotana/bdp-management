@@ -85,26 +85,34 @@ public class StorefrontProductsController : ControllerBase
         // Build response: for each active global setting, check if this supplier has it enabled.
         // If the supplier has no options configured at all, treat all as available (default open).
         bool supplierHasAnyOptions = supplierOptions.Any();
+        const decimal cnyToZar = 2.60m; // fallback; live rate used server-side for quotes
         var customisationOptions = globalSettings
             .Select(setting =>
             {
+                // costPerUnitZAR = raw cost used by client to compute interpolated sale price
+                // ColourChange costs nothing — client uses flat pricePerUnitZAR (R3)
+                var costPerUnitZAR = setting.Type == "ColourChange"
+                    ? 0m
+                    : Math.Round(setting.CostPerUnitCNY * cnyToZar, 4);
+
+                int moq;
                 if (supplierHasAnyOptions)
                 {
                     var supplierOpt = supplierOptions.FirstOrDefault(co => co.Type == setting.Type);
-                    if (supplierOpt == null) return null; // explicitly not available for this supplier
-                    return new
-                    {
-                        type = setting.Type,
-                        pricePerUnitZAR = setting.PricePerUnitZAR,
-                        minimumQuantity = supplierOpt.MinimumQuantity ?? setting.DefaultMinimumQuantity,
-                    };
+                    if (supplierOpt == null) return null;
+                    moq = supplierOpt.MinimumQuantity ?? setting.DefaultMinimumQuantity;
                 }
-                // No supplier-specific config — fall back to global defaults, all enabled
+                else
+                {
+                    moq = setting.DefaultMinimumQuantity;
+                }
+
                 return new
                 {
                     type = setting.Type,
-                    pricePerUnitZAR = setting.PricePerUnitZAR,
-                    minimumQuantity = setting.DefaultMinimumQuantity,
+                    pricePerUnitZAR = setting.PricePerUnitZAR,   // sale price at MOQ anchor
+                    costPerUnitZAR,                               // your cost (for client-side interpolation)
+                    minimumQuantity = moq,
                 };
             })
             .Where(opt => opt != null)

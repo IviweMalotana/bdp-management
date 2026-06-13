@@ -43,8 +43,59 @@ interface Variant {
 }
 interface CustomisationOption {
   type: string;
-  pricePerUnitZAR: number;
+  pricePerUnitZAR: number;   // sale price at MOQ anchor (used as flat price for ColourChange)
+  costPerUnitZAR: number;    // your cost — used to compute interpolated sale price for SS/HT
   minimumQuantity: number;
+}
+
+// Markup anchors — must match PricingService.MarkupAnchors on the server
+const MARKUP_ANCHORS = [
+  { qty: 10,    markup: 50 },
+  { qty: 50,    markup: 40 },
+  { qty: 100,   markup: 35 },
+  { qty: 250,   markup: 30 },
+  { qty: 500,   markup: 28 },
+  { qty: 1000,  markup: 25 },
+  { qty: 2500,  markup: 22 },
+  { qty: 5000,  markup: 20 },
+  { qty: 10000, markup: 15 },
+];
+
+function interpolateMarkup(qty: number): number {
+  if (qty <= MARKUP_ANCHORS[0].qty) return MARKUP_ANCHORS[0].markup;
+  if (qty >= MARKUP_ANCHORS[MARKUP_ANCHORS.length - 1].qty) return MARKUP_ANCHORS[MARKUP_ANCHORS.length - 1].markup;
+  for (let i = 0; i < MARKUP_ANCHORS.length - 1; i++) {
+    const a = MARKUP_ANCHORS[i], b = MARKUP_ANCHORS[i + 1];
+    if (qty >= a.qty && qty <= b.qty) {
+      const t = (qty - a.qty) / (b.qty - a.qty);
+      return a.markup + (b.markup - a.markup) * t;
+    }
+  }
+  return MARKUP_ANCHORS[MARKUP_ANCHORS.length - 1].markup;
+}
+
+// Interpolate sale price per unit between the two surrounding tier anchors
+function interpolateTierPrice(tiers: Tier[], qty: number): number {
+  if (tiers.length === 0) return 0;
+  const sorted = [...tiers].sort((a, b) => a.quantity - b.quantity);
+  const perUnit = (t: Tier) => t.salePriceZAR / t.quantity;
+  if (qty <= sorted[0].quantity) return perUnit(sorted[0]);
+  if (qty >= sorted[sorted.length - 1].quantity) return perUnit(sorted[sorted.length - 1]);
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const lo = sorted[i], hi = sorted[i + 1];
+    if (qty >= lo.quantity && qty <= hi.quantity) {
+      const t = (qty - lo.quantity) / (hi.quantity - lo.quantity);
+      return perUnit(lo) + (perUnit(hi) - perUnit(lo)) * t;
+    }
+  }
+  return perUnit(sorted[sorted.length - 1]);
+}
+
+// Compute interpolated sale price for a customisation option at a given quantity
+function interpolateCustomisationPrice(option: CustomisationOption, qty: number): number {
+  if (option.type === "ColourChange") return option.pricePerUnitZAR; // flat R3
+  const markup = interpolateMarkup(qty) / 100;
+  return option.costPerUnitZAR * (1 + markup);
 }
 interface ProductImage { url: string; altText: string; isPrimary: boolean }
 
@@ -321,12 +372,8 @@ export default function PDPClient({ product }: { product: Product }) {
   const tiers = selectedVariant.pricingTiers ?? [];
   const moq = Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY);
 
-  // Determine unit price from pricing tiers
-  const activeTier = [...tiers].reverse().find((t) => quantity >= t.quantity) ?? tiers[0];
-  const unitPrice = activeTier
-    ? (activeTier.costPerUnitZAR ?? activeTier.salePriceZAR / activeTier.quantity)
-    : 0;
-
+  // Sliding-scale unit price interpolated between surrounding anchor tiers
+  const unitPrice = interpolateTierPrice(tiers, quantity);
   const lineTotal = unitPrice * quantity;
 
   // Customisation add-ons
@@ -338,14 +385,14 @@ export default function PDPClient({ product }: { product: Product }) {
   const hotEnabled = hotOption != null && quantity >= hotOption.minimumQuantity;
   const colourEnabled = colourOption != null && quantity >= colourOption.minimumQuantity;
 
-  function customisationCost(option: CustomisationOption | undefined, enabled: boolean): number {
-    if (!enabled || !option) return 0;
-    return option.pricePerUnitZAR * quantity;
-  }
+  // Interpolated customisation price per unit at current quantity
+  const silkUnitPrice = silkOption ? interpolateCustomisationPrice(silkOption, quantity) : 0;
+  const hotUnitPrice = hotOption ? interpolateCustomisationPrice(hotOption, quantity) : 0;
+  const colourUnitPrice = colourOption ? interpolateCustomisationPrice(colourOption, quantity) : 0;
 
-  const silkCost = customisationCost(silkOption, silkScreen && silkEnabled);
-  const hotCost = customisationCost(hotOption, hotStamping && hotEnabled);
-  const colourCost = customisationCost(colourOption, colourChange && colourEnabled);
+  const silkCost = silkScreen && silkEnabled ? silkUnitPrice * quantity : 0;
+  const hotCost = hotStamping && hotEnabled ? hotUnitPrice * quantity : 0;
+  const colourCost = colourChange && colourEnabled ? colourUnitPrice * quantity : 0;
   const grandTotal = lineTotal + silkCost + hotCost + colourCost;
 
   function handleQuantityChange(n: number) {
@@ -506,7 +553,7 @@ export default function PDPClient({ product }: { product: Product }) {
                         type="SilkScreen"
                         inputType="checkbox"
                         label="Silk Screen Printing"
-                        subLabel={`+${formatPrice(silkOption.pricePerUnitZAR)}/unit`}
+                        subLabel={`+${formatPrice(silkUnitPrice)}/unit`}
                         processingNote="+7 days production"
                         enabled={silkEnabled}
                         checked={silkScreen}
@@ -521,7 +568,7 @@ export default function PDPClient({ product }: { product: Product }) {
                         type="HotStamping"
                         inputType="checkbox"
                         label="Hot Stamping"
-                        subLabel={`+${formatPrice(hotOption.pricePerUnitZAR)}/unit`}
+                        subLabel={`+${formatPrice(hotUnitPrice)}/unit`}
                         processingNote="+7 days production"
                         enabled={hotEnabled}
                         checked={hotStamping}
@@ -542,7 +589,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     type="ColourChange"
                     inputType="checkbox"
                     label="Colour Change"
-                    subLabel={`+${formatPrice(colourOption.pricePerUnitZAR)}/unit`}
+                    subLabel={`+${formatPrice(colourUnitPrice)}/unit`}
                     processingNote="+2 days production"
                     enabled={colourEnabled}
                     checked={colourChange}
