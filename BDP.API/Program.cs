@@ -142,6 +142,7 @@ builder.Services.AddScoped<BDP.API.Services.InvoiceService>();
 builder.Services.AddScoped<BDP.API.Services.CatalogueImportService>();
 builder.Services.AddScoped<BDP.API.Services.GoogleDriveService>();
 builder.Services.AddScoped<BDP.API.Services.CurrencyService>();
+builder.Services.AddScoped<BDP.API.Services.AIContentService>();
 builder.Services.AddSingleton<BDP.API.Services.RecurringOrderService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<BDP.API.Services.RecurringOrderService>());
 
