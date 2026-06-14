@@ -61,7 +61,7 @@ export default function Products() {
     setSyncResult(null)
     try {
       const apiUrl = import.meta.env.VITE_API_URL ?? ''
-      const token  = useAuthStore.getState().jwt
+      const token  = useAuthStore.getState().token
       const res    = await fetch(`${apiUrl}/api/admin/products/sync-images`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
