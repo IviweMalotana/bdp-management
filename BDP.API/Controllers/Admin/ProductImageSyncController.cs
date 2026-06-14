@@ -30,7 +30,7 @@ public class ProductImageSyncController : ControllerBase
         try
         {
             var response = await client.GetAsync(
-                $"https://docs.google.com/spreadsheets/d/{SheetId}/gviz/tq?tqx=out:csv&gid=0");
+                $"https://docs.google.com/spreadsheets/d/{SheetId}/pub?output=csv&gid=0");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
                 response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 return StatusCode(400, "Google Sheet is private. Please set sharing to 'Anyone with the link can view' in Google Sheets, then try again.");
@@ -110,6 +110,54 @@ public class ProductImageSyncController : ControllerBase
         await _db.SaveChangesAsync();
 
         return Ok(new { synced, skipped, notMatched, message = $"{synced} products updated, {notMatched} SKUs not found in DB." });
+    }
+
+    // ── Sync images from uploaded CSV (for domain-restricted Workspace sheets) ──
+    [HttpPost("sync-images-csv")]
+    [Consumes("multipart/form-data")]
+    public async Task<IActionResult> SyncImagesFromCsv(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+            return BadRequest("Please upload the catalogue CSV file.");
+        using var sr = new System.IO.StreamReader(file.OpenReadStream());
+        var csv = await sr.ReadToEndAsync();
+        if (string.IsNullOrWhiteSpace(csv))
+            return BadRequest("Uploaded file is empty.");
+
+        var rows = ParseCsv(csv);
+        if (rows.Count < 2) return BadRequest("CSV appears empty.");
+
+        var headers      = rows[0];
+        var skuCol       = IndexOf(headers, "SKU_ID");
+        var imageCol     = IndexOf(headers, "Cleaned White");
+        if (skuCol < 0 || imageCol < 0)
+            return BadRequest("CSV must have 'SKU_ID' and 'Cleaned White' columns.");
+
+        var existingImages = await _db.ProductImages.ToListAsync();
+        var skuToProductId = await _db.ProductVariants
+            .Where(v => v.SkuId != null)
+            .ToDictionaryAsync(v => v.SkuId!, v => v.ProductId);
+
+        int synced = 0, skipped = 0, notMatched = 0;
+        foreach (var row in rows.Skip(1))
+        {
+            if (row.Count <= Math.Max(skuCol, imageCol)) { skipped++; continue; }
+            var sku      = row[skuCol].Trim();
+            var imageUrl = row[imageCol].Trim();
+            if (string.IsNullOrEmpty(sku) || string.IsNullOrEmpty(imageUrl)) { skipped++; continue; }
+
+            if (!skuToProductId.TryGetValue(sku, out var productId)) { notMatched++; continue; }
+
+            var embeddable = ToEmbeddableUrl(imageUrl);
+            if (embeddable == null) { skipped++; continue; }
+
+            var existing = existingImages.Where(img => img.ProductId == productId).ToList();
+            _db.ProductImages.RemoveRange(existing);
+            _db.ProductImages.Add(new ProductImage { ProductId = productId, Url = embeddable, AltText = sku, IsPrimary = true });
+            synced++;
+        }
+        await _db.SaveChangesAsync();
+        return Ok(new { synced, skipped, notMatched, message = $"{synced} products updated from uploaded CSV." });
     }
 
     // Extract Drive file ID and return a directly embeddable URL
