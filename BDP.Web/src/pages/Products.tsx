@@ -115,6 +115,28 @@ export default function Products() {
               {syncing ? <Loader2 size={14} className="animate-spin" /> : <ImageIcon size={14} />}
               Sync Images
             </button>
+          {isAdmin && (
+            <label className="flex items-center gap-2 cursor-pointer rounded-lg px-3 py-2 text-sm font-medium bg-gray-700 text-white hover:bg-gray-600">
+              <ImageIcon size={16} />
+              Upload CSV → Sync Images
+              <input type="file" accept=".csv" className="hidden" onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                setSyncing(true); setSyncResult(null)
+                try {
+                  const apiUrl = import.meta.env.VITE_API_URL ?? ''
+                  const token = useAuthStore.getState().token
+                  const fd = new FormData(); fd.append('file', file)
+                  const res = await fetch(`${apiUrl}/admin/products/sync-images-csv`, { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+                  const bodyText = await res.text()
+                  let data: { synced?: number; notMatched?: number; message?: string } = {}
+                  try { data = JSON.parse(bodyText) } catch {}
+                  setSyncResult(res.ok ? `✓ ${data.synced} images synced from CSV.` : `Error: ${data.message ?? bodyText}`)
+                  if (res.ok) fetchProducts(page, search)
+                } catch { setSyncResult('Error: Could not reach API') } finally { setSyncing(false) }
+              }} />
+            </label>
+          )}
           )}
           {isAdmin && (
             <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
