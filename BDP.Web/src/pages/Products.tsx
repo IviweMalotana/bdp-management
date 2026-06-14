@@ -66,9 +66,10 @@ export default function Products() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
+      const bodyText = await res.text()
       let data: { synced?: number; skipped?: number; notMatched?: number; message?: string } = {}
-      try { data = await res.json() } catch { /* non-JSON body */ }
-      const errMsg = data.message ?? (await res.clone().text().catch(() => 'Sync failed'))
+      try { data = JSON.parse(bodyText) } catch { /* non-JSON body */ }
+      const errMsg = data.message ?? bodyText ?? 'Sync failed'
       setSyncResult(res.ok
         ? `✓ ${data.synced} images synced. ${data.notMatched} SKUs not found.`
         : `Error: ${errMsg}`)
