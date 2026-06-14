@@ -66,10 +66,12 @@ export default function Products() {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       })
-      const data = await res.json()
+      let data: { synced?: number; skipped?: number; notMatched?: number; message?: string } = {}
+      try { data = await res.json() } catch { /* non-JSON body */ }
+      const errMsg = data.message ?? (await res.clone().text().catch(() => 'Sync failed'))
       setSyncResult(res.ok
         ? `✓ ${data.synced} images synced. ${data.notMatched} SKUs not found.`
-        : `Error: ${data.message ?? 'Sync failed'}`)
+        : `Error: ${errMsg}`)
       if (res.ok) fetchProducts(page, search)
     } catch {
       setSyncResult('Error: Could not reach API')
