@@ -30,7 +30,7 @@ public class ProductImageSyncController : ControllerBase
         try
         {
             var response = await client.GetAsync(
-                $"https://docs.google.com/spreadsheets/d/{SheetId}/export?format=csv&gid=0");
+                $"https://docs.google.com/spreadsheets/d/{SheetId}/gviz/tq?tqx=out:csv&gid=0");
             if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized ||
                 response.StatusCode == System.Net.HttpStatusCode.Forbidden)
                 return StatusCode(400, "Google Sheet is private. Please set sharing to 'Anyone with the link can view' in Google Sheets, then try again.");
