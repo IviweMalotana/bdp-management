@@ -1,4 +1,5 @@
 using BDP.API.Data;
+using BDP.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -57,7 +58,7 @@ public class ProductImageSyncController : ControllerBase
         if (!fetched)
         {
             if (lastStatus == 401 || lastStatus == 403)
-                return StatusCode(400, "Google Sheet access denied (HTTP " + lastStatus + "). Please publish the sheet: File > Share > Publish to web > choose CSV > Publish.");
+                return StatusCode(400, "Google Sheet access denied (HTTP " + lastStatus + "). Please publish: File > Share > Publish to web > CSV > Publish.");
             return StatusCode(502, $"Failed to fetch sheet (HTTP {lastStatus}).");
         }
 
@@ -93,9 +94,15 @@ public class ProductImageSyncController : ControllerBase
             .GroupBy(v => v.SkuId!)
             .ToDictionary(g => g.Key, g => g.First().ProductId);
 
-        var products = await _db.Products.ToDictionaryAsync(p => p.Id);
+        var productIds = skuToProduct.Values.Distinct().ToList();
+        var existingImages = await _db.ProductImages
+            .Where(img => productIds.Contains(img.ProductId) && img.IsPrimary)
+            .ToListAsync();
+        var primaryImageByProduct = existingImages.ToDictionary(img => img.ProductId);
 
         int updated = 0;
+        var newImages = new List<ProductImage>();
+
         for (int i = 1; i < rows.Count; i++)
         {
             var row = rows[i];
@@ -106,14 +113,31 @@ public class ProductImageSyncController : ControllerBase
 
             if (string.IsNullOrEmpty(sku) || string.IsNullOrEmpty(rawImageUrl)) continue;
             if (!skuToProduct.TryGetValue(sku, out var productId)) continue;
-            if (!products.TryGetValue(productId, out var product)) continue;
 
             var embeddable = ToEmbeddableUrl(rawImageUrl);
             if (embeddable == null) continue;
 
-            product.ImageUrl = embeddable;
-            updated++;
+            if (primaryImageByProduct.TryGetValue(productId, out var existingImg))
+            {
+                existingImg.Url = embeddable;
+                updated++;
+            }
+            else if (!newImages.Any(n => n.ProductId == productId))
+            {
+                newImages.Add(new ProductImage
+                {
+                    ProductId = productId,
+                    Url = embeddable,
+                    AltText = "Product Image",
+                    IsPrimary = true,
+                    SortOrder = 0
+                });
+                updated++;
+            }
         }
+
+        if (newImages.Count > 0)
+            _db.ProductImages.AddRange(newImages);
 
         await _db.SaveChangesAsync();
         return Ok(new { updated, total = rows.Count - 1 });
@@ -121,7 +145,7 @@ public class ProductImageSyncController : ControllerBase
 
     private static string? ToEmbeddableUrl(string url)
     {
-        var match = Regex.Match(url, @"drive\.google\.com/file/d/([^/]+)");
+        var match = Regex.Match(url, @"drive.google.com/file/d/([^/]+)");
         if (match.Success)
             return $"https://drive.google.com/uc?export=view&id={match.Groups[1].Value}";
 
