@@ -1,7 +1,11 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import ProductCard from "../components/ProductCard";
+
+gsap.registerPlugin(ScrollTrigger);
 
 interface Product {
   slug: string;
@@ -22,6 +26,7 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5252";
 export default function ShopClient() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -56,6 +61,23 @@ export default function ShopClient() {
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
   }, [page, category, search]);
+
+  // GSAP animation for product grid
+  useEffect(() => {
+    if (loading || !gridRef.current) return;
+    const cards = gridRef.current.querySelectorAll(".product-card-wrapper");
+    gsap.fromTo(
+      cards,
+      { opacity: 0, y: 20 },
+      {
+        opacity: 1,
+        y: 0,
+        duration: 0.4,
+        stagger: 0.05,
+        ease: "power2.out",
+      }
+    );
+  }, [loading, page, category, search]);
 
   function setParam(key: string, value: string) {
     const p = new URLSearchParams(searchParams.toString());
@@ -173,7 +195,7 @@ export default function ShopClient() {
               <li>
                 <button
                   onClick={() => setParam("category", "")}
-                  className={`text-sm w-full text-left hover:opacity-70 ${!category ? "font-medium" : ""}`}
+                  className={`text-sm w-full text-left hover:opacity-70 transition-opacity ${!category ? "font-medium" : ""}`}
                   style={{ color: "#1C1A17" }}
                 >
                   All
@@ -183,7 +205,7 @@ export default function ShopClient() {
                 <li key={c.category}>
                   <button
                     onClick={() => setParam("category", c.category)}
-                    className={`text-sm w-full text-left hover:opacity-70 ${category === c.category ? "font-medium" : ""}`}
+                    className={`text-sm w-full text-left hover:opacity-70 transition-opacity ${category === c.category ? "font-medium" : ""}`}
                     style={{ color: "#1C1A17" }}
                   >
                     {c.category}
@@ -226,9 +248,11 @@ export default function ShopClient() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              <div ref={gridRef} className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
                 {products.map((p) => (
-                  <ProductCard key={p.slug} {...p} />
+                  <div key={p.slug} className="product-card-wrapper">
+                    <ProductCard {...p} />
+                  </div>
                 ))}
               </div>
 
@@ -242,7 +266,7 @@ export default function ShopClient() {
                         p.set("page", String(n));
                         router.push(`/shop?${p.toString()}`);
                       }}
-                      className="w-9 h-9 text-sm border"
+                      className="w-9 h-9 text-sm border transition-colors"
                       style={{
                         borderColor: n === page ? "#1C1A17" : "#C9B8A8",
                         backgroundColor: n === page ? "#1C1A17" : "transparent",

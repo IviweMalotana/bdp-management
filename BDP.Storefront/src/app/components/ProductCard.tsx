@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import Price from "./Price";
@@ -11,31 +13,45 @@ interface ProductCardProps {
   lowestMoq: number;
 }
 
-export default function ProductCard({ slug, name, category, primaryUrl, basePrice, lowestMoq }: ProductCardProps) {
+export default function ProductCard({
+  slug,
+  name,
+  category,
+  primaryUrl,
+  basePrice,
+  lowestMoq,
+}: ProductCardProps) {
   return (
     <Link href={`/product/${slug}`} className="group block">
       <div
         className="overflow-hidden mb-3 aspect-square relative"
-        style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }}
+        style={{
+          backgroundColor: "#E8DDD0",
+          borderRadius: "2px",
+          border: "1px solid #C9B8A8",
+        }}
       >
         {primaryUrl ? (
           <Image
             src={primaryUrl}
             alt={name}
             fill
-            className="object-cover group-hover:scale-[1.02] transition-transform duration-300"
+            className="object-cover group-hover:scale-105 transition-transform duration-500"
+            sizes="(max-width: 768px) 50vw, 25vw"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <span className="text-xs" style={{ color: "#C9B8A8" }}>no image</span>
+            <span className="text-xs" style={{ color: "#C9B8A8" }}>
+              no image
+            </span>
           </div>
         )}
       </div>
-      <div
-        className="px-0.5 py-1 group-hover:bg-cream-dark transition-colors rounded-sm"
-        style={{ borderRadius: "2px" }}
-      >
-        <p className="text-xs uppercase tracking-widest mb-1" style={{ color: "#9E8F83" }}>
+      <div className="px-0.5 py-1">
+        <p
+          className="text-xs uppercase tracking-widest mb-1"
+          style={{ color: "#9E8F83" }}
+        >
           {category}
         </p>
         <h3
@@ -45,15 +61,19 @@ export default function ProductCard({ slug, name, category, primaryUrl, basePric
           {name}
         </h3>
         <p className="text-sm" style={{ color: "#4A4540" }}>
-          from <Price zarAmount={basePrice} />/unit
+          from <Price zarAmount={basePrice} />
+          /unit
         </p>
         {lowestMoq > 0 && (
           <p className="text-xs mt-0.5" style={{ color: "#9E8F83" }}>
             from {lowestMoq} bottles
           </p>
         )}
-        <p className="text-xs mt-1 opacity-60" style={{ color: "#1C1A17" }}>
-          Shop →
+        <p
+          className="text-xs mt-1 opacity-0 group-hover:opacity-60 transition-opacity duration-300"
+          style={{ color: "#1C1A17" }}
+        >
+          Shop &rarr;
         </p>
       </div>
     </Link>
