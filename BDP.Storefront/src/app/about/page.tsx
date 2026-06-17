@@ -47,7 +47,7 @@ const services = [
 
 const reasons = [
   {
-    title: "Quality you can count on.
+    title: "Quality you can count on.",
     description: "Every supplier in our network is vetted for production quality and consistency. We request samples and run quality checks before any shipment leaves the factory.",
   },
   {
