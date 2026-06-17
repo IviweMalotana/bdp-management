@@ -80,9 +80,9 @@ public class ProductImageSyncController : ControllerBase
 
         var headers = rows[0];
         int skuCol = IndexOf(headers, "SKU_ID");
-        int imageCol = IndexOf(headers, "Images");
+        int imageCol = IndexOf(headers, "Images");        int driveCol = IndexOf(headers, "Image_Drive_Link");
 
-        if (skuCol < 0 || imageCol < 0)
+        if (skuCol < 0 || (imageCol < 0 && driveCol < 0))
             return BadRequest($"Missing columns (SKU_ID, Images). Found: {string.Join(", ", headers)}");
 
         var variants = await _db.ProductVariants
@@ -106,10 +106,10 @@ public class ProductImageSyncController : ControllerBase
         for (int i = 1; i < rows.Count; i++)
         {
             var row = rows[i];
-            if (row.Count <= Math.Max(skuCol, imageCol)) continue;
+            if (row.Count <= skuCol) continue;
 
             var sku = row[skuCol].Trim();
-            var rawImageUrl = row[imageCol].Trim();
+            var rawImageUrl = (imageCol >= 0 && row.Count > imageCol) ? row[imageCol].Trim() : "";            if (string.IsNullOrEmpty(rawImageUrl) && driveCol >= 0 && row.Count > driveCol)                rawImageUrl = row[driveCol].Trim();
 
             if (string.IsNullOrEmpty(sku) || string.IsNullOrEmpty(rawImageUrl)) continue;
             if (!skuToProduct.TryGetValue(sku, out var productId)) continue;
