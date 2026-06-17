@@ -80,10 +80,10 @@ public class ProductImageSyncController : ControllerBase
 
         var headers = rows[0];
         int skuCol = IndexOf(headers, "SKU_ID");
-        int imageCol = IndexOf(headers, "Cleaned White");
+        int imageCol = IndexOf(headers, "Images");
 
         if (skuCol < 0 || imageCol < 0)
-            return BadRequest($"Missing columns (SKU_ID, Cleaned White). Found: {string.Join(", ", headers)}");
+            return BadRequest($"Missing columns (SKU_ID, Images). Found: {string.Join(", ", headers)}");
 
         var variants = await _db.ProductVariants
             .Where(v => v.SkuId != null)
