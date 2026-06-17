@@ -400,6 +400,7 @@ public class ProductsController : ControllerBase
                 SKU = t.SKU,
             }).ToList() ?? new(),
         }).ToList() ?? new(),
+                IsActive = p.Variants.Any(v => v.IsActive),
     };
 
     private static ProductDetailDto MapToDetailDto(Product p) => new()
