@@ -54,5 +54,6 @@ public class ProductDto
     public decimal HeightCm { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
-    public List<ProductVariantDto> Variants { get; set; } = new();
+    public List<ProductVariantDto> Variants { get; set; } = new();    public bool IsActive { get; set; }
+        public bool IsActive { get; set; }
 }
