@@ -400,7 +400,6 @@ public class ProductsController : ControllerBase
                 SKU = t.SKU,
             }).ToList() ?? new(),
         }).ToList() ?? new(),
-                IsActive = p.Variants.Any(v => v.IsActive),
     };
 
     private static ProductDetailDto MapToDetailDto(Product p) => new()
@@ -455,3 +454,4 @@ public class ProductsController : ControllerBase
         Collections = p.ProductCollections?.Select(pc => pc.Collection?.Name ?? string.Empty).ToList() ?? new(),
     };
 }
+
