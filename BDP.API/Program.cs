@@ -170,6 +170,26 @@ using (var scope = app.Services.CreateScope())
     db.Database.Migrate();
 }
 
+// One-time image clear — set CLEAR_PRODUCT_IMAGES=true in Railway, redeploy, then remove it
+if (Environment.GetEnvironmentVariable("CLEAR_PRODUCT_IMAGES") == "true")
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.ExecuteSqlRawAsync(@"
+        DELETE FROM ""CartItems"" WHERE ""ProductVariantId"" IN (
+            SELECT ""Id"" FROM ""ProductVariants"" WHERE ""ProductId"" <= 10
+        );
+        DELETE FROM ""OrderItems"" WHERE ""ProductVariantId"" IN (
+            SELECT ""Id"" FROM ""ProductVariants"" WHERE ""ProductId"" <= 10
+        );
+        DELETE FROM ""ProductCollections"" WHERE ""ProductId"" <= 10;
+        DELETE FROM ""ProductImages"" WHERE ""ProductId"" <= 10;
+        DELETE FROM ""ProductVariants"" WHERE ""ProductId"" <= 10;
+        DELETE FROM ""Products"" WHERE ""Id"" <= 10;
+        DELETE FROM ""ProductImages"";
+    ");
+}
+
 if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("SEED_DATA") == "true")
 {
     using var scope = app.Services.CreateScope();
