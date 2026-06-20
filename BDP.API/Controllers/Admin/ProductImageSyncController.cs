@@ -43,10 +43,10 @@ public class ProductImageSyncController : ControllerBase
         var headers = rows[0];
         int skuCol        = IndexOf(headers, "SKU_ID");
         int productCol    = IndexOf(headers, "Product_Name");
-        int imageCol      = IndexOf(headers, "Cleaned White");
+        int imageCol      = IndexOf(headers, "Images");
 
         if (skuCol < 0 || imageCol < 0)
-            return BadRequest("Sheet is missing required columns (SKU_ID, Cleaned White).");
+            return BadRequest("Sheet is missing required columns (SKU_ID, Images).");
 
         // Load all variants with their product IDs
         var variants = await _db.ProductVariants
