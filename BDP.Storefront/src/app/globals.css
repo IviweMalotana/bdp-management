@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;1,300;1,400&family=DM+Sans:wght@300;400;500&family=Inter:wght@400;500&family=Source+Code+Pro:wght@400&family=Playfair+Display:wght@400;500&display=swap");
 @import "tailwindcss";
 
 @theme {
@@ -22,6 +22,19 @@
 
   --font-display: "Cormorant", "Georgia", serif;
   --font-body:    "DM Sans", system-ui, sans-serif;
+
+  --font-sans:  Inter, "Helvetica Neue", sans-serif;
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-mono:  "Source Code Pro", monospace;
+
+  --color-bg:           #F5F0E8;
+  --color-card-bg:      #EDE6DA;
+  --color-border:       rgba(184, 169, 154, 0.3);
+  --color-border-strong: rgb(184, 169, 154);
+  --color-accent:       #C4A882;
+  --color-text:         #1A1A18;
+  --color-text-muted:   #B8A99A;
+  --color-text-subtle:  #9E8F83;
 
   --radius-card: 2px;
   --radius-btn:  2px;
@@ -47,8 +60,8 @@ body::before {
 }
 
 body {
-  background-color: #FAF8F5;
-  color: #1C1A17;
+  background-color: #F5F0E8;
+  color: #1A1A18;
   font-family: var(--font-body);
   font-weight: 400;
   -webkit-font-smoothing: antialiased;

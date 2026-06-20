@@ -52,20 +52,19 @@ export default function Header() {
 
   return (
     <header
-      className="sticky top-0 z-50 border-b"
+      className="sticky top-0 z-50"
       style={{
-        backgroundColor: "rgba(250,248,245,0.96)",
-        borderColor: "#C9B8A8",
+        backgroundColor: "rgba(245, 240, 232, 0.85)",
+        borderBottom: "0.67px solid rgba(184, 169, 154, 0.2)",
         backdropFilter: "blur(8px)",
         WebkitBackdropFilter: "blur(8px)",
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4" style={{ height: "72px" }}>
         {/* Logo */}
         <Link
           href="/"
-          className="text-2xl tracking-widest uppercase"
-          style={{ fontFamily: "var(--font-display)", color: "#1C1A17", letterSpacing: "0.2em" }}
+          style={{ fontFamily: '"Playfair Display", Georgia, serif', color: "#1A1A18", fontSize: "24px", fontWeight: 500, letterSpacing: "2.4px", textDecoration: "none" }}
         >
           BDP
         </Link>
@@ -76,8 +75,8 @@ export default function Header() {
           <div ref={shopRef} className="relative">
             <button
               onClick={() => setShopOpen((v) => !v)}
-              className="flex items-center gap-1 text-sm font-medium tracking-wide hover:opacity-70 transition-opacity"
-              style={{ color: "#1C1A17", fontFamily: "var(--font-body)" }}
+              className="flex items-center gap-1 hover:opacity-70 transition-opacity"
+              style={{ color: "#1A1A18", fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 500, letterSpacing: "0.35px" }}
             >
               Shop
               <svg
@@ -139,8 +138,8 @@ export default function Header() {
             <Link
               key={l.href}
               href={l.href}
-              className="text-sm font-medium tracking-wide hover:opacity-70 transition-opacity"
-              style={{ color: "#1C1A17", fontFamily: "var(--font-body)" }}
+              className="hover:opacity-70 transition-opacity"
+              style={{ color: "#1A1A18", fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 500, letterSpacing: "0.35px", textDecoration: "none" }}
             >
               {l.label}
             </Link>
@@ -149,9 +148,7 @@ export default function Header() {
 
         {/* Right icons */}
         <div className="flex items-center gap-4">
-          <div className="hidden md:block">
-            <CurrencySelector />
-          </div>
+          {/* Currency selector hidden from nav per design spec */}
           <Link href={accountHref} className="hidden md:block text-sm" style={{ color: "#4A4540" }}>
             {accountLabel}
           </Link>

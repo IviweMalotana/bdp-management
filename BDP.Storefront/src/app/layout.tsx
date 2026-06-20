@@ -17,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className="h-full">
-      <body className="min-h-full flex flex-col" style={{ backgroundColor: "#FAF8F5", color: "#1C1A17" }}>
+      <body className="min-h-full flex flex-col" style={{ backgroundColor: "#F5F0E8", color: "#1A1A18" }}>
         <CurrencyInitialiser />
         <Header />
         <main className="flex-1">{children}</main>
