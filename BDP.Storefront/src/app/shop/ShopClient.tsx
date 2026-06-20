@@ -88,7 +88,7 @@ export default function ShopClient() {
   const allLoaded = items.length >= total && !loading;
 
   return (
-    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "0 48px" }}>
+    <div style={{ maxWidth: "1280px", margin: "0 auto", padding: "96px 24px 64px", boxSizing: "border-box" }}>
       {/* Title row */}
       <div
         style={{
@@ -97,7 +97,6 @@ export default function ShopClient() {
           alignItems: "baseline",
           justifyContent: "space-between",
           marginBottom: "32px",
-          paddingTop: "48px",
         }}
       >
         <h1
