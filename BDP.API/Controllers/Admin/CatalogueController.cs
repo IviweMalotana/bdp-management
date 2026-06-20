@@ -15,15 +15,53 @@ public class CatalogueController : ControllerBase
     private readonly AppDbContext _db;
     private readonly CatalogueImportService _importService;
     private readonly GoogleDriveService _driveService;
+    private readonly IHttpClientFactory _http;
 
     public CatalogueController(
         AppDbContext db,
         CatalogueImportService importService,
-        GoogleDriveService driveService)
+        GoogleDriveService driveService,
+        IHttpClientFactory http)
     {
         _db = db;
         _importService = importService;
         _driveService = driveService;
+        _http = http;
+    }
+
+    private const string SheetId = "1IBmXoxiFy2lWtTtLzmeXZghx_y3_pySq5Io3EquNbl8";
+
+    /// <summary>
+    /// POST /api/admin/catalogue/import-sheet
+    /// Fetches the master catalogue Google Sheet and imports it directly.
+    /// </summary>
+    [HttpPost("import-sheet")]
+    public async Task<IActionResult> ImportSheet()
+    {
+        var client = _http.CreateClient();
+        Stream stream;
+        try
+        {
+            var response = await client.GetAsync(
+                $"https://docs.google.com/spreadsheets/d/{SheetId}/export?format=csv&gid=0");
+            response.EnsureSuccessStatusCode();
+            stream = await response.Content.ReadAsStreamAsync();
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { message = $"Failed to fetch Google Sheet: {ex.Message}" });
+        }
+
+        var result = await _importService.ImportFromStreamAsync(stream);
+
+        return Ok(new
+        {
+            added = result.Added,
+            updated = result.Updated,
+            unchanged = result.Unchanged,
+            errors = result.Errors,
+            success = result.Errors.Count == 0,
+        });
     }
 
     /// <summary>

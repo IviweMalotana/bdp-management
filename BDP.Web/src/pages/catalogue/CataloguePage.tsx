@@ -119,6 +119,34 @@ export default function CataloguePage() {
 
   useEffect(() => { fetchProducts(page, search) }, [page])
 
+  // ── Import from Google Sheet ───────────────────────────────────────────────
+  const [sheetImporting, setSheetImporting] = useState(false)
+
+  const handleImportSheet = async () => {
+    setSheetImporting(true)
+    setImportResult(null)
+    setImportError(null)
+    try {
+      const res = await fetch(`${API_BASE}/admin/catalogue/import-sheet`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setImportError(data.message ?? 'Import failed.')
+      } else {
+        setImportResult(data as ImportResult)
+        fetchProducts(1, '')
+        setPage(1)
+        setSearch('')
+      }
+    } catch {
+      setImportError('Network error. Please try again.')
+    } finally {
+      setSheetImporting(false)
+    }
+  }
+
   // ── CSV Import ─────────────────────────────────────────────────────────────
   const uploadFile = async (file: File) => {
     if (!file.name.endsWith('.csv')) {
@@ -235,11 +263,24 @@ export default function CataloguePage() {
 
       {/* ── Section 1: Import CSV ─────────────────────────────────────────── */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-        <p className="text-sm font-semibold text-white">Import CSV</p>
-        <p className="text-xs text-gray-500">
-          Upload the master catalogue spreadsheet (CSV). Rows with the same Supplier Item Number are grouped as variants of a single product.
-          Existing products and variants are updated; new ones are created.
-        </p>
+        <div className="flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <p className="text-sm font-semibold text-white">Import Catalogue</p>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Pull directly from your Google Sheet, or upload a CSV manually below.
+            </p>
+          </div>
+          {isAdmin && (
+            <button
+              onClick={handleImportSheet}
+              disabled={sheetImporting || importing}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {sheetImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+              {sheetImporting ? 'Importing from Sheet…' : 'Import from Google Sheet'}
+            </button>
+          )}
+        </div>
 
         {/* Drop zone */}
         <div

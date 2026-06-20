@@ -1,5 +1,4 @@
 using BDP.API.Data;
-using BDP.API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -27,167 +26,136 @@ public class ProductImageSyncController : ControllerBase
     public async Task<IActionResult> SyncImages()
     {
         var client = _http.CreateClient();
-        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (compatible; BDP-Sync/1.0)");
-
-        string csv = string.Empty;
-        var urls = new[]
+        string csv;
+        try
         {
-            $"https://docs.google.com/spreadsheets/d/{SheetId}/export?format=csv&gid=0",
-            $"https://docs.google.com/spreadsheets/d/{SheetId}/pub?output=csv&gid=0",
-            $"https://docs.google.com/spreadsheets/d/{SheetId}/gviz/tq?tqx=out:csv&gid=0"
-        };
-
-        int lastStatus = 0;
-        bool fetched = false;
-        foreach (var url in urls)
+            csv = await client.GetStringAsync(
+                $"https://docs.google.com/spreadsheets/d/{SheetId}/export?format=csv&gid=0");
+        }
+        catch (Exception ex)
         {
-            try
-            {
-                var response = await client.GetAsync(url);
-                lastStatus = (int)response.StatusCode;
-                if (response.IsSuccessStatusCode)
-                {
-                    csv = await response.Content.ReadAsStringAsync();
-                    fetched = true;
-                    break;
-                }
-            }
-            catch { }
+            return StatusCode(502, $"Failed to fetch sheet: {ex.Message}");
         }
 
-        if (!fetched)
-        {
-            if (lastStatus == 401 || lastStatus == 403)
-                return StatusCode(400, "Google Sheet access denied (HTTP " + lastStatus + "). Please publish: File > Share > Publish to web > CSV > Publish.");
-            return StatusCode(502, $"Failed to fetch sheet (HTTP {lastStatus}).");
-        }
-
-        return await ProcessCsv(csv);
-    }
-
-    [HttpPost("sync-images-from-csv")]
-    public async Task<IActionResult> SyncImagesFromCsv([FromBody] SyncFromCsvRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request?.CsvContent))
-            return BadRequest("CSV content is required.");
-        return await ProcessCsv(request.CsvContent);
-    }
-
-    private async Task<IActionResult> ProcessCsv(string csv)
-    {
         var rows = ParseCsv(csv);
         if (rows.Count < 2) return BadRequest("Sheet appears empty.");
 
         var headers = rows[0];
-        int skuCol = IndexOf(headers, "SKU_ID");
-        int imageCol = IndexOf(headers, "Images");        int driveCol = IndexOf(headers, "Image_Drive_Link");
+        int skuCol        = IndexOf(headers, "SKU_ID");
+        int productCol    = IndexOf(headers, "Product_Name");
+        int imageCol      = IndexOf(headers, "Images");
 
-        if (skuCol < 0 || (imageCol < 0 && driveCol < 0))
-            return BadRequest($"Missing columns (SKU_ID, Images). Found: {string.Join(", ", headers)}");
+        if (skuCol < 0 || imageCol < 0)
+            return BadRequest("Sheet is missing required columns (SKU_ID, Images).");
 
+        // Load all variants with their product IDs
         var variants = await _db.ProductVariants
             .Where(v => v.SkuId != null)
             .Select(v => new { v.SkuId, v.ProductId })
             .ToListAsync();
 
-        var skuToProduct = variants
+        var skuToProductId = variants
             .GroupBy(v => v.SkuId!)
-            .ToDictionary(g => g.Key, g => g.First().ProductId);
+            .ToDictionary(g => g.Key, g => g.First().ProductId, StringComparer.OrdinalIgnoreCase);
 
-        var productIds = skuToProduct.Values.Distinct().ToList();
-        var existingImages = await _db.ProductImages
-            .Where(img => productIds.Contains(img.ProductId) && img.IsPrimary)
-            .ToListAsync();
-        var primaryImageByProduct = existingImages.ToDictionary(img => img.ProductId);
+        // Load existing primary images so we can skip products already synced
+        var existingImages = await _db.ProductImages.ToListAsync();
 
-        int updated = 0;
-        var newImages = new List<ProductImage>();
+        int synced = 0, skipped = 0, notMatched = 0;
 
         for (int i = 1; i < rows.Count; i++)
         {
             var row = rows[i];
-            if (row.Count <= skuCol) continue;
+            var sku      = Cell(row, skuCol);
+            var imageUrl = Cell(row, imageCol);
+            var name     = Cell(row, productCol);
 
-            var sku = row[skuCol].Trim();
-            var rawImageUrl = (imageCol >= 0 && row.Count > imageCol) ? row[imageCol].Trim() : "";            if (string.IsNullOrEmpty(rawImageUrl) && driveCol >= 0 && row.Count > driveCol)                rawImageUrl = row[driveCol].Trim();
-
-            if (string.IsNullOrEmpty(sku) || string.IsNullOrEmpty(rawImageUrl)) continue;
-            if (!skuToProduct.TryGetValue(sku, out var productId)) continue;
-
-            var embeddable = ToEmbeddableUrl(rawImageUrl);
-            if (embeddable == null) continue;
-
-            if (primaryImageByProduct.TryGetValue(productId, out var existingImg))
+            if (string.IsNullOrWhiteSpace(sku) || string.IsNullOrWhiteSpace(imageUrl))
             {
-                existingImg.Url = embeddable;
-                updated++;
+                skipped++;
+                continue;
             }
-            else if (!newImages.Any(n => n.ProductId == productId))
+
+            if (!skuToProductId.TryGetValue(sku, out var productId))
             {
-                newImages.Add(new ProductImage
-                {
-                    ProductId = productId,
-                    Url = embeddable,
-                    AltText = "Product Image",
-                    IsPrimary = true,
-                    SortOrder = 0
-                });
-                updated++;
+                notMatched++;
+                continue;
             }
+
+            var embeddable = ToEmbeddableUrl(imageUrl);
+            if (embeddable == null) { skipped++; continue; }
+
+            // Remove existing images for this product and replace with synced one
+            var existing = existingImages.Where(img => img.ProductId == productId).ToList();
+            _db.ProductImages.RemoveRange(existing);
+
+            _db.ProductImages.Add(new BDP.API.Models.ProductImage
+            {
+                ProductId = productId,
+                Url       = embeddable,
+                AltText   = name,
+                SortOrder = 0,
+                IsPrimary = true,
+            });
+
+            synced++;
         }
-
-        if (newImages.Count > 0)
-            _db.ProductImages.AddRange(newImages);
 
         await _db.SaveChangesAsync();
-        return Ok(new { updated, total = rows.Count - 1 });
+
+        return Ok(new { synced, skipped, notMatched, message = $"{synced} products updated, {notMatched} SKUs not found in DB." });
     }
 
-    private static string? ToEmbeddableUrl(string url)
+    // Extract Drive file ID and return a directly embeddable URL
+    private static string? ToEmbeddableUrl(string driveUrl)
     {
-        var match = Regex.Match(url, @"drive.google.com/file/d/([^/]+)");
-        if (match.Success)
-            return $"https://drive.google.com/uc?export=view&id={match.Groups[1].Value}";
-
-        match = Regex.Match(url, @"id=([^&]+)");
-        if (match.Success)
-            return $"https://drive.google.com/uc?export=view&id={match.Groups[1].Value}";
-
-        return null;
+        var match = Regex.Match(driveUrl, @"/file/d/([a-zA-Z0-9_-]+)");
+        if (!match.Success) return null;
+        var fileId = match.Groups[1].Value;
+        // lh3.googleusercontent.com/d/{id} renders directly in <img> and Next.js <Image>
+        return $"https://lh3.googleusercontent.com/d/{fileId}";
     }
 
-    private static int IndexOf(List<string> headers, string name)
-    {
-        for (int i = 0; i < headers.Count; i++)
-            if (string.Equals(headers[i].Trim(), name, StringComparison.OrdinalIgnoreCase))
-                return i;
-        return -1;
-    }
+    private static int IndexOf(List<string> headers, string name) =>
+        headers.FindIndex(h => h.Trim().Equals(name, StringComparison.OrdinalIgnoreCase));
 
+    private static string Cell(List<string> row, int col) =>
+        col >= 0 && col < row.Count ? row[col].Trim() : string.Empty;
+
+    // Minimal RFC 4180 CSV parser (handles quoted fields with commas/newlines)
     private static List<List<string>> ParseCsv(string csv)
     {
-        var rows = new List<List<string>>();
-        var lines = csv.Split('\n');
-        foreach (var line in lines)
-        {
-            var row = new List<string>();
-            bool inQuotes = false;
-            var cell = new System.Text.StringBuilder();
-            foreach (var ch in line)
-            {
-                if (ch == '"') { inQuotes = !inQuotes; }
-                else if (ch == ',' && !inQuotes) { row.Add(cell.ToString()); cell.Clear(); }
-                else { cell.Append(ch); }
-            }
-            row.Add(cell.ToString().TrimEnd('\r'));
-            if (row.Count > 1 || (row.Count == 1 && row[0].Length > 0))
-                rows.Add(row);
-        }
-        return rows;
-    }
-}
+        var result = new List<List<string>>();
+        var row    = new List<string>();
+        var field  = new System.Text.StringBuilder();
+        bool inQuotes = false;
 
-public class SyncFromCsvRequest
-{
-    public string? CsvContent { get; set; }
+        for (int i = 0; i < csv.Length; i++)
+        {
+            char c = csv[i];
+            if (inQuotes)
+            {
+                if (c == '"')
+                {
+                    if (i + 1 < csv.Length && csv[i + 1] == '"') { field.Append('"'); i++; }
+                    else inQuotes = false;
+                }
+                else field.Append(c);
+            }
+            else
+            {
+                if (c == '"') { inQuotes = true; }
+                else if (c == ',') { row.Add(field.ToString()); field.Clear(); }
+                else if (c == '\n' || (c == '\r' && i + 1 < csv.Length && csv[i + 1] == '\n'))
+                {
+                    if (c == '\r') i++;
+                    row.Add(field.ToString()); field.Clear();
+                    result.Add(row); row = new List<string>();
+                }
+                else field.Append(c);
+            }
+        }
+        if (field.Length > 0 || row.Count > 0) { row.Add(field.ToString()); result.Add(row); }
+        return result;
+    }
 }

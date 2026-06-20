@@ -1,5 +1,6 @@
 using BDP.API.Data;
 using BDP.API.Models;
+using BDP.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +11,7 @@ namespace BDP.API.Controllers.Storefront;
 public class StorefrontArtworkController : ControllerBase
 {
     private readonly AppDbContext _db;
-    private readonly IWebHostEnvironment _env;
+    private readonly GoogleDriveService _drive;
 
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -19,10 +20,10 @@ public class StorefrontArtworkController : ControllerBase
 
     private const long MaxFileSizeBytes = 20 * 1024 * 1024; // 20 MB
 
-    public StorefrontArtworkController(AppDbContext db, IWebHostEnvironment env)
+    public StorefrontArtworkController(AppDbContext db, GoogleDriveService drive)
     {
         _db = db;
-        _env = env;
+        _drive = drive;
     }
 
     private async Task<CartItem?> ResolveCartItem(int cartItemId)
@@ -30,7 +31,6 @@ public class StorefrontArtworkController : ControllerBase
         var sessionToken = Request.Headers["X-Cart-Token"].FirstOrDefault();
         var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
-        // Load cart item with its cart
         var item = await _db.CartItems
             .Include(ci => ci.Cart)
             .Include(ci => ci.Artworks)
@@ -38,26 +38,12 @@ public class StorefrontArtworkController : ControllerBase
 
         if (item == null) return null;
 
-        // Verify the cart belongs to the caller
         if (!string.IsNullOrEmpty(userId) && item.Cart.UserId == userId) return item;
         if (!string.IsNullOrEmpty(sessionToken) && item.Cart.SessionToken == sessionToken) return item;
 
-        return null; // Access denied
+        return null;
     }
 
-    private string UploadsDir()
-    {
-        var wwwroot = _env.WebRootPath ?? Path.Combine(AppContext.BaseDirectory, "wwwroot");
-        var dir = Path.Combine(wwwroot, "uploads", "artwork");
-        Directory.CreateDirectory(dir);
-        return dir;
-    }
-
-    /// <summary>
-    /// Upload artwork for a cart item.
-    /// Note: Railway filesystem is ephemeral — files are lost on redeploy.
-    /// Future: migrate to cloud storage (S3/R2).
-    /// </summary>
     [HttpPost("cart-items/{cartItemId:int}")]
     public async Task<IActionResult> Upload(int cartItemId, IFormFile? file, [FromForm] string? notes)
     {
@@ -69,40 +55,38 @@ public class StorefrontArtworkController : ControllerBase
 
         var ext = Path.GetExtension(file.FileName);
         if (!AllowedExtensions.Contains(ext))
-            return BadRequest(new { message = $"File type not allowed. Accepted types: {string.Join(", ", AllowedExtensions)}" });
+            return BadRequest(new { message = $"File type not allowed. Accepted: {string.Join(", ", AllowedExtensions)}" });
 
         var cartItem = await ResolveCartItem(cartItemId);
         if (cartItem == null)
             return NotFound(new { message = "Cart item not found or access denied." });
 
-        // Remove any existing artwork before saving new one
+        // Remove existing artwork records (Drive files are retained for safety)
         if (cartItem.Artworks.Any())
         {
-            foreach (var existing in cartItem.Artworks)
-            {
-                var existingPath = Path.Combine(UploadsDir(), Path.GetFileName(existing.FileUrl));
-                if (System.IO.File.Exists(existingPath))
-                    System.IO.File.Delete(existingPath);
-                _db.CartItemArtworks.Remove(existing);
-            }
+            _db.CartItemArtworks.RemoveRange(cartItem.Artworks);
         }
 
-        var fileName = $"{Guid.NewGuid()}{ext}";
-        var filePath = Path.Combine(UploadsDir(), fileName);
-
-        await using (var stream = System.IO.File.Create(filePath))
+        byte[] bytes;
+        using (var ms = new MemoryStream())
         {
-            await file.CopyToAsync(stream);
+            await file.CopyToAsync(ms);
+            bytes = ms.ToArray();
         }
 
-        var fileUrl = $"/uploads/artwork/{fileName}";
+        var uniqueName = $"{Guid.NewGuid()}{ext}";
+        var mimeType = file.ContentType.Contains('/') ? file.ContentType : "application/octet-stream";
+
+        var driveUrl = await _drive.UploadFileAsync(bytes, uniqueName, mimeType);
+        if (driveUrl == null)
+            return StatusCode(502, new { message = "Failed to upload artwork to cloud storage. Please try again." });
 
         var artwork = new CartItemArtwork
         {
             CartItemId = cartItemId,
             FileName = file.FileName,
-            FileUrl = fileUrl,
-            Notes = notes
+            FileUrl = driveUrl,
+            Notes = notes,
         };
 
         _db.CartItemArtworks.Add(artwork);
@@ -118,14 +102,7 @@ public class StorefrontArtworkController : ControllerBase
         if (cartItem == null)
             return NotFound(new { message = "Cart item not found or access denied." });
 
-        foreach (var artwork in cartItem.Artworks)
-        {
-            var existingPath = Path.Combine(UploadsDir(), Path.GetFileName(artwork.FileUrl));
-            if (System.IO.File.Exists(existingPath))
-                System.IO.File.Delete(existingPath);
-            _db.CartItemArtworks.Remove(artwork);
-        }
-
+        _db.CartItemArtworks.RemoveRange(cartItem.Artworks);
         await _db.SaveChangesAsync();
         return NoContent();
     }

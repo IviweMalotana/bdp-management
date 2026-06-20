@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -145,6 +145,89 @@ function ShippingOptionSkeleton() {
   );
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const ALLOWED_TYPES = ".pdf,.ai,.eps,.png,.jpg,.jpeg,.svg";
+
+function ArtworkUploader({
+  cartItemId,
+  sessionToken,
+  jwt,
+  label,
+}: {
+  cartItemId: number;
+  sessionToken: string;
+  jwt: string | null;
+  label: string;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [status, setStatus] = useState<"idle" | "uploading" | "done" | "error">("idle");
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  async function handleFile(file: File) {
+    setStatus("uploading");
+    setErrorMsg(null);
+    const body = new FormData();
+    body.append("file", file);
+    const headers: Record<string, string> = { "X-Cart-Token": sessionToken };
+    if (jwt) headers["Authorization"] = `Bearer ${jwt}`;
+    try {
+      const res = await fetch(`${API_URL}/api/storefront/artwork/cart-items/${cartItemId}`, {
+        method: "POST",
+        headers,
+        body,
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message ?? "Upload failed");
+      }
+      const d = await res.json();
+      setFileName(d.fileName);
+      setStatus("done");
+    } catch (e: unknown) {
+      setErrorMsg(e instanceof Error ? e.message : "Upload failed");
+      setStatus("error");
+    }
+  }
+
+  return (
+    <div className="mt-2">
+      <p className="text-xs mb-1.5" style={{ color: "#4A4540" }}>{label}</p>
+      <div
+        className="border border-dashed p-4 text-center cursor-pointer"
+        style={{ borderColor: status === "done" ? "#9E8F83" : "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5" }}
+        onClick={() => inputRef.current?.click()}
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
+      >
+        <input
+          ref={inputRef}
+          type="file"
+          accept={ALLOWED_TYPES}
+          className="hidden"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }}
+        />
+        {status === "idle" && (
+          <p className="text-xs" style={{ color: "#9E8F83" }}>
+            Click or drag to upload artwork<br />
+            <span style={{ color: "#C9B8A8" }}>PDF, AI, EPS, PNG, JPG, SVG — max 20 MB</span>
+          </p>
+        )}
+        {status === "uploading" && <p className="text-xs" style={{ color: "#9E8F83" }}>Uploading…</p>}
+        {status === "done" && (
+          <p className="text-xs" style={{ color: "#4A4540" }}>
+            ✓ {fileName} uploaded —{" "}
+            <span className="underline cursor-pointer" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}>replace</span>
+          </p>
+        )}
+        {status === "error" && (
+          <p className="text-xs" style={{ color: "#D4A89A" }}>{errorMsg} — click to retry</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, cartId, getSessionToken, clearCart } = useCartStore();
@@ -158,6 +241,8 @@ export default function CheckoutPage() {
   const [shippingError, setShippingError] = useState<string | null>(null);
   const [checkoutResult, setCheckoutResult] = useState<{ orderId: number; paystackReference: string; paystackPublicKey: string; amountZAR: number } | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const customisedItems = items.filter((i) => i.customisationOptionId != null);
 
   const subtotal = items.reduce((s, i) => s + i.lineTotalZAR, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
@@ -473,6 +558,26 @@ export default function CheckoutPage() {
             <p className="mb-1"><strong>Shipping to:</strong></p>
             <p>{step1Data.shipping.recipientName}, {step1Data.shipping.line1}, {step1Data.shipping.city}, {step1Data.shipping.province} {step1Data.shipping.postalCode}</p>
           </div>
+
+          {customisedItems.length > 0 && (
+            <div className="space-y-4 border-t pt-4" style={{ borderColor: "#C9B8A8" }}>
+              <div>
+                <h3 className="text-sm font-medium mb-0.5" style={{ color: "#1C1A17" }}>Artwork / logo files</h3>
+                <p className="text-xs" style={{ color: "#9E8F83" }}>
+                  Upload your artwork for each customised item. Our team will review it before production.
+                </p>
+              </div>
+              {customisedItems.map((item) => (
+                <ArtworkUploader
+                  key={item.id}
+                  cartItemId={item.id}
+                  sessionToken={getSessionToken()}
+                  jwt={jwt}
+                  label={`${item.variant?.sku} × ${item.quantity} — customisation artwork`}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="flex gap-3">
             <button
