@@ -78,7 +78,7 @@ function HeroSection() {
   return (
     <section
       className="min-h-[90vh] flex items-center py-20 md:py-28 px-4"
-      style={{ backgroundColor: "#FAF8F5" }}
+      style={{ backgroundColor: "#F5F0E8" }}
     >
       <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div>
@@ -89,7 +89,7 @@ function HeroSection() {
           </h1>
           <p
             className="text-lg mb-10 max-w-md"
-            style={{ color: "#4A4540", lineHeight: 1.7 }}
+            style={{ color: "#B8B0A4", lineHeight: 1.7 }}
           >
             Premium cosmetic packaging wholesale — from 10 units to 10,000.
             South Africa&apos;s home for skincare brands and hospitality.
@@ -99,8 +99,8 @@ function HeroSection() {
               href="/shop"
               className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-colors hover:opacity-90"
               style={{
-                backgroundColor: "#1C1A17",
-                color: "#FAF8F5",
+                backgroundColor: "#1A1A18",
+                color: "#F5F0E8",
                 borderRadius: "2px",
               }}
             >
@@ -108,10 +108,10 @@ function HeroSection() {
             </Link>
             <Link
               href="/for-business"
-              className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-colors border hover:bg-[#1C1A17] hover:text-[#FAF8F5]"
+              className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-colors border hover:bg-[#1A1A18] hover:text-[#F5F0E8]"
               style={{
-                borderColor: "#1C1A17",
-                color: "#1C1A17",
+                borderColor: "#1A1A18",
+                color: "#1A1A18",
                 borderRadius: "2px",
               }}
             >
@@ -181,14 +181,14 @@ function SegmentsSection() {
     <section
       ref={ref}
       className="py-20 md:py-28 px-4"
-      style={{ backgroundColor: "#FAF8F5" }}
+      style={{ backgroundColor: "#F5F0E8" }}
     >
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6">
         {segments.map((card, i) => (
           <div key={i} className="segment-card group">
             <div
               className="aspect-square overflow-hidden mb-5"
-              style={{ border: "1px solid #C9B8A8", borderRadius: "2px" }}
+              style={{ border: "1px solid #B8B0A4", borderRadius: "2px" }}
             >
               <Image
                 src={card.image}
@@ -198,7 +198,7 @@ function SegmentsSection() {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
               />
             </div>
-            <span className="label-caps block mb-3" style={{ color: "#C9B8A8" }}>
+            <span className="label-caps block mb-3" style={{ color: "#B8B0A4" }}>
               product imagery
             </span>
             <h2
@@ -206,18 +206,18 @@ function SegmentsSection() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontWeight: 300,
-                color: "#1C1A17",
+                color: "#1A1A18",
               }}
             >
               {card.title}
             </h2>
-            <p className="text-sm mb-5" style={{ color: "#4A4540", lineHeight: 1.7 }}>
+            <p className="text-sm mb-5" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
               {card.body}
             </p>
             <Link
               href={card.href}
               className="inline-flex items-center gap-1 text-sm font-medium transition-all duration-200 hover:gap-2"
-              style={{ color: "#9E8F83" }}
+              style={{ color: "#C4A882" }}
             >
               {card.cta}
             </Link>
@@ -247,16 +247,16 @@ function FeaturedSection({ products }: { products: any[] }) {
   }, []);
 
   return (
-    <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#FAF8F5" }}>
+    <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#F5F0E8" }}>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-end justify-between mb-10">
           <h2
             className="text-4xl md:text-5xl"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}
+            style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1A1A18" }}
           >
             featured packaging
           </h2>
-          <Link href="/shop" className="text-sm hidden md:block hover:opacity-70 transition-opacity" style={{ color: "#4A4540" }}>
+          <Link href="/shop" className="text-sm hidden md:block hover:opacity-70 transition-opacity" style={{ color: "#B8B0A4" }}>
             View all →
           </Link>
         </div>
@@ -386,7 +386,7 @@ function PortfolioSection() {
     <section className="portfolio-section">
       <div ref={wrapperRef} className="portfolio-wrapper">
         <div className="text-center mb-6 absolute top-6 left-0 right-0">
-          <span className="label-caps" style={{ color: "#C9B8A8" }}>
+          <span className="label-caps" style={{ color: "#B8B0A4" }}>
             In production
           </span>
         </div>
@@ -439,13 +439,13 @@ function PricingSection() {
   return (
     <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#E8DDD0" }}>
       <div className="max-w-3xl mx-auto text-center">
-        <h2 className="pricing-fade text-4xl md:text-5xl mb-6" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}>
+        <h2 className="pricing-fade text-4xl md:text-5xl mb-6" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1A1A18" }}>
           the more you order, the less you pay.
         </h2>
-        <p className="pricing-fade text-sm mb-8" style={{ color: "#4A4540", lineHeight: 1.7 }}>
+        <p className="pricing-fade text-sm mb-8" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
           Our tiered pricing rewards volume. See how it works on any product page — adjust your quantity and watch the price update live.
         </p>
-        <Link href="/shop" className="pricing-fade inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}>
+        <Link href="/shop" className="pricing-fade inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
           See pricing tiers →
         </Link>
       </div>
@@ -472,13 +472,13 @@ function CustomisationSection() {
     <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#EDD8D2" }}>
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div>
-          <h2 className="text-5xl md:text-6xl mb-6" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}>
+          <h2 className="text-5xl md:text-6xl mb-6" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1A1A18" }}>
             make it yours.
           </h2>
-          <p className="text-sm mb-8 max-w-md" style={{ color: "#4A4540", lineHeight: 1.7 }}>
+          <p className="text-sm mb-8 max-w-md" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
             Add your logo with silk-screen or hot-stamp printing. Minimum 100 units. Delivered to your door from China in 4–6 weeks.
           </p>
-          <Link href="/customise" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide border hover:bg-[#1C1A17] hover:text-[#FAF8F5] transition-colors" style={{ borderColor: "#1C1A17", color: "#1C1A17", borderRadius: "2px" }}>
+          <Link href="/customise" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide border hover:bg-[#1A1A18] hover:text-[#F5F0E8] transition-colors" style={{ borderColor: "#1A1A18", color: "#1A1A18", borderRadius: "2px" }}>
             Explore Customisation →
           </Link>
         </div>
@@ -501,12 +501,12 @@ function CustomisationSection() {
 
 function BusinessCTA() {
   return (
-    <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#1C1A17" }}>
+    <section className="py-20 md:py-28 px-4" style={{ backgroundColor: "#1A1A18" }}>
       <div className="max-w-3xl mx-auto text-center">
-        <p className="text-lg md:text-xl mb-8" style={{ color: "#FAF8F5", lineHeight: 1.8 }}>
+        <p className="text-lg md:text-xl mb-8" style={{ color: "#F5F0E8", lineHeight: 1.8 }}>
           Running a hotel, spa, or salon? Set up recurring orders, get invoiced on net terms, and never think about reordering again.
         </p>
-        <Link href="/for-business" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#D4A89A", color: "#1C1A17", borderRadius: "2px" }}>
+        <Link href="/for-business" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#D4A89A", color: "#1A1A18", borderRadius: "2px" }}>
           Open a Business Account →
         </Link>
       </div>
