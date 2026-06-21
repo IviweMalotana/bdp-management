@@ -211,11 +211,16 @@ public class CatalogueImportService
                     _db.ProductPricingTiers.RemoveRange(existingTiers);
                     await _db.SaveChangesAsync();
 
-                    var salePricePerUnit = (unitPrice + bufferCNY + profitCNY) * cnyToZar;
+                    var basePricePerUnit = (unitPrice + bufferCNY + profitCNY) * cnyToZar;
                     var quantities = new[] { 10, 50, 100, 250, 500, 1000, 2500, 5000 };
+                    // Volume discount: % off the base unit price at each quantity anchor.
+                    // Larger orders get a lower per-unit price.
+                    var discounts   = new[] { 0m, 0.03m, 0.06m, 0.10m, 0.14m, 0.18m, 0.22m, 0.25m };
 
-                    foreach (var qty in quantities)
+                    for (var i = 0; i < quantities.Length; i++)
                     {
+                        var qty = quantities[i];
+                        var pricePerUnit = basePricePerUnit * (1 - discounts[i]);
                         _db.ProductPricingTiers.Add(new ProductPricingTier
                         {
                             ProductVariantId = variant.Id,
@@ -223,8 +228,8 @@ public class CatalogueImportService
                             CostCNY = unitPrice * qty,
                             CostWithShippingCNY = (unitPrice + bufferCNY) * qty,
                             CostWithDutiesCNY = (unitPrice + bufferCNY) * qty,
-                            CostPerUnitZAR = Math.Round(salePricePerUnit, 4),
-                            SalePriceZAR = Math.Round(salePricePerUnit * qty, 4),
+                            CostPerUnitZAR = Math.Round(pricePerUnit, 4),
+                            SalePriceZAR = Math.Round(pricePerUnit * qty, 4),
                             SKU = $"{skuId}-{qty}",
                         });
                     }
