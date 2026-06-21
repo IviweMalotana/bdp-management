@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { products as productApi } from '../services/api'
+import { products as productApi, catalogue } from '../services/api'
 import type { Product, PagedResult } from '../types'
-import { Package, Search, ChevronLeft, ChevronRight, Plus, Pencil, Download, Loader2, ImageIcon } from 'lucide-react'
+import { Package, Search, ChevronLeft, ChevronRight, Plus, Pencil, Download, Loader2, ImageIcon, Trash2 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import ProductForm from '../components/ProductForm'
 
@@ -25,6 +25,8 @@ export default function Products() {
   const [exporting, setExporting]     = useState(false)
   const [syncing, setSyncing]         = useState(false)
   const [syncResult, setSyncResult]   = useState<string | null>(null)
+  const [wiping, setWiping]           = useState(false)
+  const [wipeResult, setWipeResult]   = useState<string | null>(null)
 
   const fetchProducts = (p = 1, q = '', cat = category, tex = texture) => {
     setLoading(true)
@@ -81,6 +83,24 @@ export default function Products() {
     }
   }
 
+  const handleWipeAll = async () => {
+    const confirmed = window.confirm(
+      'This will DELETE every product, variant, image, and pricing tier. Order history is kept. This cannot be undone. Continue?'
+    )
+    if (!confirmed) return
+    setWiping(true)
+    setWipeResult(null)
+    try {
+      const data = await catalogue.wipeAll()
+      setWipeResult(data.success ? `✓ ${data.message}` : `Error: ${data.message}`)
+      fetchProducts(1, '')
+    } catch (e: any) {
+      setWipeResult(`Error: ${e?.response?.data?.message ?? 'Wipe failed'}`)
+    } finally {
+      setWiping(false)
+    }
+  }
+
   const openAdd  = () => { setEditProduct(null); setShowForm(true) }
   const openEdit = (p: Product) => { setEditProduct(p); setShowForm(true) }
   const handleSaved = () => { setShowForm(false); fetchProducts(page, search) }
@@ -117,12 +137,29 @@ export default function Products() {
             </button>
           )}
           {isAdmin && (
+            <button
+              onClick={handleWipeAll}
+              disabled={wiping}
+              title="Delete every product, variant, image and pricing tier"
+              className="flex items-center gap-2 px-4 py-2 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+            >
+              {wiping ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+              {wiping ? 'Wiping…' : 'Wipe All'}
+            </button>
+          )}
+          {isAdmin && (
             <button onClick={openAdd} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium rounded-lg transition-colors">
               <Plus size={16} /> Add Product
             </button>
           )}
         </div>
       </div>
+
+      {wipeResult && (
+        <div className={`px-4 py-2 rounded-lg text-sm ${wipeResult.startsWith('✓') ? 'bg-green-900 text-green-200' : 'bg-red-900 text-red-200'}`}>
+          {wipeResult}
+        </div>
+      )}
 
       {syncResult && (
         <div className={`px-4 py-2 rounded-lg text-sm ${syncResult.startsWith('✓') ? 'bg-teal-900 text-teal-200' : 'bg-red-900 text-red-200'}`}>
