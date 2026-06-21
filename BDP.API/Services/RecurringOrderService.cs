@@ -23,10 +23,29 @@ public class RecurringOrderService : BackgroundService
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var delay = TimeUntilNextRun();
-            _logger.LogInformation("RecurringOrderService sleeping {Minutes} minutes until next run", delay.TotalMinutes);
-            await Task.Delay(delay, stoppingToken);
-            await ProcessDueOrdersAsync(stoppingToken);
+            try
+            {
+                var delay = TimeUntilNextRun();
+                _logger.LogInformation("RecurringOrderService sleeping {Minutes} minutes until next run", delay.TotalMinutes);
+                await Task.Delay(delay, stoppingToken);
+
+                if (stoppingToken.IsCancellationRequested) break;
+
+                await ProcessDueOrdersAsync(stoppingToken);
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+                // Normal shutdown — exit the loop quietly.
+                break;
+            }
+            catch (Exception ex)
+            {
+                // Never let an unhandled exception tear down the host. Log it,
+                // wait a bit, then carry on so the API stays up.
+                _logger.LogError(ex, "RecurringOrderService run failed; will retry at next scheduled time");
+                try { await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken); }
+                catch (OperationCanceledException) { break; }
+            }
         }
     }
 
@@ -46,7 +65,12 @@ public class RecurringOrderService : BackgroundService
         var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
         var shippingService = scope.ServiceProvider.GetRequiredService<ShippingCalculatorService>();
 
-        var today = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SaTimeZone).Date;
+        // Build the cutoff as a proper UTC instant: end of "today" in SA time,
+        // converted to UTC. Comparing the timestamptz column against a UTC value
+        // avoids the Npgsql "Kind=Unspecified" error and the SQL .Date translation.
+        var nowSa = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, SaTimeZone);
+        var endOfTodaySa = DateTime.SpecifyKind(nowSa.Date.AddDays(1).AddTicks(-1), DateTimeKind.Unspecified);
+        var cutoffUtc = TimeZoneInfo.ConvertTimeToUtc(endOfTodaySa, SaTimeZone);
 
         var dueOrders = await context.RecurringOrders
             .Include(r => r.Client)
@@ -55,7 +79,7 @@ public class RecurringOrderService : BackgroundService
                     .ThenInclude(v => v.Product)
             .Include(r => r.Items)
                 .ThenInclude(i => i.CustomisationOption)
-            .Where(r => r.Status == RecurringOrderStatus.Active && r.NextOrderDate.Date <= today)
+            .Where(r => r.Status == RecurringOrderStatus.Active && r.NextOrderDate <= cutoffUtc)
             .ToListAsync(ct);
 
         _logger.LogInformation("Processing {Count} due recurring orders", dueOrders.Count);
