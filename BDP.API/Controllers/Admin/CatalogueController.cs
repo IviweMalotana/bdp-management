@@ -333,6 +333,40 @@ public class CatalogueController : ControllerBase
         public bool OnlyMissing { get; set; } = true;
     }
 
+    /// <summary>
+    /// POST /api/admin/catalogue/wipe-all
+    /// Deletes EVERY product, variant, image, pricing tier, and collection
+    /// membership. Order history is preserved (variant/tier references nulled).
+    /// Use before a fresh re-import from the sheet.
+    /// </summary>
+    [HttpPost("wipe-all")]
+    public async Task<IActionResult> WipeAll()
+    {
+        try
+        {
+            // OrderItem.ProductVariantId / PricingTierId are non-nullable, so the
+            // line items (and anything referencing them) must be deleted rather
+            // than detached. Order/RecurringOrder headers are kept.
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""OrderItemArtworks"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""OrderItems"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""RecurringOrderItems"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""CartItems"";");
+
+            // Remove all product-related rows.
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""ProductImages"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""ProductPricingTiers"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""ProductCollections"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""ProductVariants"";");
+            await _db.Database.ExecuteSqlRawAsync(@"DELETE FROM ""Products"";");
+
+            return Ok(new { success = true, message = "All products, variants, images, pricing tiers, and line items deleted. Ready for a fresh import." });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { success = false, message = ex.Message });
+        }
+    }
+
     private static string MapProductTypeToCollection(string productType)
     {
         var lower = productType.ToLowerInvariant();
