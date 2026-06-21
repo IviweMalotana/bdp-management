@@ -59,6 +59,10 @@ public class CatalogueController : ControllerBase
             added = result.Added,
             updated = result.Updated,
             unchanged = result.Unchanged,
+            imagesSet = result.ImagesSet,
+            imagesCleared = result.ImagesCleared,
+            productsDeleted = result.ProductsDeleted,
+            variantsDeleted = result.VariantsDeleted,
             errors = result.Errors,
             success = result.Errors.Count == 0,
         });
@@ -86,6 +90,10 @@ public class CatalogueController : ControllerBase
             added = result.Added,
             updated = result.Updated,
             unchanged = result.Unchanged,
+            imagesSet = result.ImagesSet,
+            imagesCleared = result.ImagesCleared,
+            productsDeleted = result.ProductsDeleted,
+            variantsDeleted = result.VariantsDeleted,
             errors = result.Errors,
             success = result.Errors.Count == 0,
         });

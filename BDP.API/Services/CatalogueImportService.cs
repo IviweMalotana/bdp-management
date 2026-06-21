@@ -4,6 +4,7 @@ using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace BDP.API.Services;
 
@@ -12,6 +13,10 @@ public class ImportResult
     public int Added { get; set; }
     public int Updated { get; set; }
     public int Unchanged { get; set; }
+    public int ImagesSet { get; set; }
+    public int ImagesCleared { get; set; }
+    public int ProductsDeleted { get; set; }
+    public int VariantsDeleted { get; set; }
     public List<string> Errors { get; set; } = new();
 }
 
@@ -57,6 +62,18 @@ public class CatalogueImportService
         decimal profitCNY = settings?.ProfitCNY ?? 1.00m;
         decimal cnyToZar  = settings?.CnyToZarRate ?? 2.40m;
 
+        // ── Collect all SKUs/supplier item numbers present in the sheet ────────
+        // Used at the end to delete stale rows from the DB.
+        var sheetSupplierItemNumbers = rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.Supplier_Item_Number))
+            .Select(r => r.Supplier_Item_Number!.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var sheetSkuIds = rows
+            .Where(r => !string.IsNullOrWhiteSpace(r.SKU_ID))
+            .Select(r => r.SKU_ID!.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         // ── Group rows by SupplierItemNumber ──────────────────────────────────
         var groups = rows
             .Where(r => !string.IsNullOrWhiteSpace(r.Supplier_Item_Number))
@@ -74,14 +91,11 @@ public class CatalogueImportService
                 Supplier? supplier = null;
                 if (!string.IsNullOrWhiteSpace(supplierName))
                 {
-                    // Extract the first two meaningful words (e.g. "Hongxin Pharmaceutical")
-                    // to match against existing suppliers regardless of how long the CSV name is.
                     var keyWords = supplierName.Split(' ', StringSplitOptions.RemoveEmptyEntries)
                         .Take(2)
                         .ToArray();
                     var keyword = string.Join(" ", keyWords);
 
-                    // Try: CSV name contains DB name, OR DB name contains keyword from CSV
                     var allSuppliers = await _db.Suppliers.ToListAsync();
                     supplier = allSuppliers.FirstOrDefault(s =>
                         supplierName.Contains(s.Name, StringComparison.OrdinalIgnoreCase) ||
@@ -106,24 +120,19 @@ public class CatalogueImportService
                 // ── Find or create Product ─────────────────────────────────────
                 var product = await _db.Products
                     .Include(p => p.Variants).ThenInclude(v => v.PricingTiers)
+                    .Include(p => p.Images)
                     .FirstOrDefaultAsync(p => p.SupplierItemNumber == supplierItemNumber);
 
                 bool isNew = product == null;
                 if (product == null)
                 {
-                    product = new Product
-                    {
-                        CreatedAt = DateTime.UtcNow,
-                    };
+                    product = new Product { CreatedAt = DateTime.UtcNow };
                     _db.Products.Add(product);
                 }
 
                 // ── Assign a unique human name if needed ───────────────────────
-                // A human name is always a single word. If the current name is blank,
-                // a legacy multi-word slug-style name, or absent, assign a fresh one.
                 bool needsName = string.IsNullOrWhiteSpace(product.Name)
-                    || product.Name.Contains(' ');   // single-word = human name already assigned
-
+                    || product.Name.Contains(' ');
                 if (needsName)
                     product.Name = await ProductNameService.AssignUniqueNameAsync(_db);
 
@@ -137,7 +146,6 @@ public class CatalogueImportService
                 if (supplier != null)
                     product.SupplierId = supplier.Id;
 
-                // ── Regenerate SEO content from CSV data ────────────────────────
                 product.MetaTitle = ProductSeoGenerator.GenerateSeoTitle(firstRow);
                 product.Description = ProductSeoGenerator.GenerateDescription(firstRow, group);
                 product.MetaDescription = ProductSeoGenerator.GenerateMetaDescription(firstRow);
@@ -147,9 +155,7 @@ public class CatalogueImportService
 
                 // ── Auto-assign to collection based on product type ───────────
                 if (!string.IsNullOrWhiteSpace(product.ProductType))
-                {
                     await EnsureProductInCollectionAsync(_db, product, product.ProductType);
-                }
 
                 // ── Upsert each variant ────────────────────────────────────────
                 foreach (var row in group)
@@ -157,7 +163,8 @@ public class CatalogueImportService
                     if (string.IsNullOrWhiteSpace(row.SKU_ID)) continue;
 
                     var skuId = row.SKU_ID.Trim();
-                    var variant = product.Variants.FirstOrDefault(v => v.SkuId == skuId);
+                    var variant = product.Variants.FirstOrDefault(v =>
+                        string.Equals(v.SkuId, skuId, StringComparison.OrdinalIgnoreCase));
                     bool variantIsNew = variant == null;
 
                     if (variant == null)
@@ -227,7 +234,45 @@ public class CatalogueImportService
                     else result.Updated++;
                 }
 
-                if (!isNew && result.Added == 0 && result.Updated == 0)
+                // ── Handle images — always replace with sheet value ────────────
+                // Pick the first non-empty Images URL from any row in this group.
+                var imageUrl = group
+                    .Select(r => r.Images?.Trim())
+                    .FirstOrDefault(u => !string.IsNullOrWhiteSpace(u));
+
+                // Clear all existing images for this product regardless.
+                if (product.Images.Count > 0)
+                    _db.ProductImages.RemoveRange(product.Images);
+
+                if (!string.IsNullOrWhiteSpace(imageUrl))
+                {
+                    var embeddable = ToEmbeddableUrl(imageUrl);
+                    if (embeddable != null)
+                    {
+                        _db.ProductImages.Add(new ProductImage
+                        {
+                            ProductId = product.Id,
+                            Url = embeddable,
+                            AltText = product.MetaTitle ?? product.Name,
+                            SortOrder = 0,
+                            IsPrimary = true,
+                        });
+                        result.ImagesSet++;
+                    }
+                    else
+                    {
+                        result.Errors.Add($"Could not parse Drive URL for '{supplierItemNumber}': {imageUrl}");
+                        result.ImagesCleared++;
+                    }
+                }
+                else
+                {
+                    result.ImagesCleared++;
+                }
+
+                await _db.SaveChangesAsync();
+
+                if (isNew && result.Added == 0 && result.Updated == 0)
                     result.Unchanged++;
             }
             catch (Exception ex)
@@ -236,7 +281,75 @@ public class CatalogueImportService
             }
         }
 
+        // ── Delete stale variants not in the sheet ────────────────────────────
+        // Only remove variants that have a SkuId set (skip manually created ones).
+        try
+        {
+            var staleVariants = await _db.ProductVariants
+                .Where(v => v.SkuId != null && !sheetSkuIds.Contains(v.SkuId))
+                .ToListAsync();
+
+            if (staleVariants.Any())
+            {
+                var staleIds = staleVariants.Select(v => v.Id).ToList();
+
+                // Remove cart items that reference these variants
+                await _db.Database.ExecuteSqlRawAsync(
+                    $"DELETE FROM \"CartItems\" WHERE \"ProductVariantId\" = ANY(@p0)",
+                    new Npgsql.NpgsqlParameter("p0", staleIds.ToArray()));
+
+                // Null out order item variant references to preserve order history
+                await _db.Database.ExecuteSqlRawAsync(
+                    $"UPDATE \"OrderItems\" SET \"ProductVariantId\" = NULL WHERE \"ProductVariantId\" = ANY(@p0)",
+                    new Npgsql.NpgsqlParameter("p0", staleIds.ToArray()));
+
+                _db.ProductVariants.RemoveRange(staleVariants);
+                await _db.SaveChangesAsync();
+                result.VariantsDeleted += staleVariants.Count;
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"Stale variant cleanup: {ex.Message}");
+        }
+
+        // ── Delete stale products not in the sheet ────────────────────────────
+        // Only remove products that have a SupplierItemNumber set.
+        try
+        {
+            var staleProducts = await _db.Products
+                .Where(p => p.SupplierItemNumber != null && !sheetSupplierItemNumbers.Contains(p.SupplierItemNumber))
+                .ToListAsync();
+
+            if (staleProducts.Any())
+            {
+                var staleProductIds = staleProducts.Select(p => p.Id).ToList();
+
+                // Remove collection memberships
+                await _db.Database.ExecuteSqlRawAsync(
+                    $"DELETE FROM \"ProductCollections\" WHERE \"ProductId\" = ANY(@p0)",
+                    new Npgsql.NpgsqlParameter("p0", staleProductIds.ToArray()));
+
+                _db.Products.RemoveRange(staleProducts);
+                await _db.SaveChangesAsync();
+                result.ProductsDeleted += staleProducts.Count;
+            }
+        }
+        catch (Exception ex)
+        {
+            result.Errors.Add($"Stale product cleanup: {ex.Message}");
+        }
+
         return result;
+    }
+
+    // Convert a Google Drive share URL to a directly embeddable image URL.
+    private static string? ToEmbeddableUrl(string driveUrl)
+    {
+        var match = Regex.Match(driveUrl, @"/file/d/([a-zA-Z0-9_-]+)");
+        if (!match.Success) return null;
+        var fileId = match.Groups[1].Value;
+        return $"https://lh3.googleusercontent.com/d/{fileId}";
     }
 
     public static async Task EnsureProductInCollectionAsync(AppDbContext context, Product product, string productType)
@@ -304,9 +417,9 @@ public class CatalogueImportService
     {
         if (string.IsNullOrWhiteSpace(input)) return string.Empty;
         var slug = input.ToLowerInvariant();
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-");
-        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"-+", "-");
+        slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+        slug = Regex.Replace(slug, @"\s+", "-");
+        slug = Regex.Replace(slug, @"-+", "-");
         return slug.Trim('-');
     }
 }
@@ -332,6 +445,7 @@ public class CatalogueRow
     public string? Accessories_Included { get; set; }
     public string? Unit_Price_CNY { get; set; }
     public string? MOQ { get; set; }
+    public string? Images { get; set; }
     public string? Image_Filename { get; set; }
     public string? Image_Drive_Link { get; set; }
     public string? Source_URL { get; set; }
