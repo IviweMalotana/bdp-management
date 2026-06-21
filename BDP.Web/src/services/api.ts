@@ -157,6 +157,9 @@ export const catalogue = {
 
   generateAiImages: (payload?: { productIds?: number[]; onlyMissing?: boolean }) =>
     http.post<GenerateImagesResult>('/admin/catalogue/generate-images', payload ?? {}).then((r) => r.data),
+
+  wipeAll: () =>
+    http.post<{ success: boolean; message: string }>('/admin/catalogue/wipe-all').then((r) => r.data),
 }
 
 // ── Inventory ─────────────────────────────────────────────────────────────────

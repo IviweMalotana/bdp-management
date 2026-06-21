@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Upload, Loader2, Check, AlertCircle, Search, ChevronLeft, ChevronRight, BookOpen, Image as ImageIcon } from 'lucide-react'
+import { Upload, Loader2, Check, AlertCircle, Search, ChevronLeft, ChevronRight, BookOpen, Image as ImageIcon, Trash2 } from 'lucide-react'
 import { shipping as shippingApi, catalogue, type GenerateImagesResult } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
 import type { ShippingSettings } from '../../types'
@@ -12,6 +12,10 @@ interface ImportResult {
   added: number
   updated: number
   unchanged: number
+  imagesSet?: number
+  imagesCleared?: number
+  productsDeleted?: number
+  variantsDeleted?: number
   errors: string[]
   success: boolean
 }
@@ -118,6 +122,31 @@ export default function CataloguePage() {
   }, [token])
 
   useEffect(() => { fetchProducts(page, search) }, [page])
+
+  // ── Wipe All Products ──────────────────────────────────────────────────────
+  const [wiping, setWiping] = useState(false)
+  const [wipeResult, setWipeResult] = useState<string | null>(null)
+
+  const handleWipeAll = async () => {
+    if (!isAdmin) return
+    const confirmed = window.confirm(
+      'This will DELETE every product, variant, image, and pricing tier. Order history is kept. This cannot be undone. Continue?'
+    )
+    if (!confirmed) return
+    setWiping(true)
+    setWipeResult(null)
+    try {
+      const data = await catalogue.wipeAll()
+      setWipeResult(data.success ? `✓ ${data.message}` : `Error: ${data.message}`)
+      fetchProducts(1, '')
+      setPage(1)
+      setSearch('')
+    } catch (err: any) {
+      setWipeResult(`Error: ${err?.response?.data?.message ?? 'Wipe failed.'}`)
+    } finally {
+      setWiping(false)
+    }
+  }
 
   // ── Import from Google Sheet ───────────────────────────────────────────────
   const [sheetImporting, setSheetImporting] = useState(false)
@@ -271,16 +300,33 @@ export default function CataloguePage() {
             </p>
           </div>
           {isAdmin && (
-            <button
-              onClick={handleImportSheet}
-              disabled={sheetImporting || importing}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
-            >
-              {sheetImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
-              {sheetImporting ? 'Importing from Sheet…' : 'Import from Google Sheet'}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleWipeAll}
+                disabled={wiping || sheetImporting || importing}
+                title="Delete every product, variant, image and pricing tier"
+                className="flex items-center gap-2 px-4 py-2 bg-red-800 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {wiping ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                {wiping ? 'Wiping…' : 'Wipe All Products'}
+              </button>
+              <button
+                onClick={handleImportSheet}
+                disabled={sheetImporting || importing || wiping}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors"
+              >
+                {sheetImporting ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                {sheetImporting ? 'Importing from Sheet…' : 'Import from Google Sheet'}
+              </button>
+            </div>
           )}
         </div>
+
+        {wipeResult && (
+          <div className={`px-3 py-2 rounded-lg text-sm ${wipeResult.startsWith('✓') ? 'bg-green-900/20 border border-green-700 text-green-300' : 'bg-red-900/30 border border-red-700 text-red-300'}`}>
+            {wipeResult}
+          </div>
+        )}
 
         {/* Drop zone */}
         <div
@@ -326,6 +372,12 @@ export default function CataloguePage() {
             </div>
             <p className="text-gray-300">
               {importResult.added} added &nbsp;·&nbsp; {importResult.updated} updated &nbsp;·&nbsp; {importResult.unchanged} unchanged
+            </p>
+            <p className="text-gray-400 text-xs">
+              {importResult.imagesSet ?? 0} images set &nbsp;·&nbsp; {importResult.imagesCleared ?? 0} cleared
+              {(importResult.productsDeleted || importResult.variantsDeleted)
+                ? <> &nbsp;·&nbsp; {importResult.productsDeleted ?? 0} products / {importResult.variantsDeleted ?? 0} variants removed (not in sheet)</>
+                : null}
             </p>
             {importResult.errors.length > 0 && (
               <ul className="mt-2 space-y-0.5">
