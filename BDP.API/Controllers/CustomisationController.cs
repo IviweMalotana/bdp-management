@@ -52,6 +52,23 @@ public class CustomisationController : ControllerBase
         return Ok(options.Select(co => MapToDto(co, product.Supplier.Name)));
     }
 
+    // GET /api/customisation/all — every supplier's customisation options with
+    // true costs and computed profit, for the admin profitability dashboard.
+    [HttpGet("all")]
+    [Authorize]
+    public async Task<IActionResult> GetAll()
+    {
+        var options = await _context.CustomisationOptions
+            .Include(co => co.PricingTiers)
+            .Include(co => co.Supplier)
+            .OrderBy(co => co.Supplier.Name)
+            .ThenBy(co => co.Type)
+            .ThenBy(co => co.MinimumQuantity)
+            .ToListAsync();
+
+        return Ok(options.Select(co => MapToDto(co, co.Supplier?.Name ?? string.Empty)));
+    }
+
     // POST /api/customisation
     [HttpPost]
     [Authorize]
@@ -116,6 +133,43 @@ public class CustomisationController : ControllerBase
         return NoContent();
     }
 
+    // Customisation is priced as a 70% markup on the true supplier cost when no
+    // explicit sale price is stored — matching the product pricing model.
+    private const decimal CustomisationMarkupRate = 0.70m;
+
+    private static CustomisationPricingTierDto BuildTierDto(CustomisationPricingTier t)
+    {
+        var cost = t.CostPerUnitZAR;   // true supplier cost per unit
+        var derived = t.SalePriceZAR <= 0m;
+        var salePerUnit = derived
+            ? Math.Round(cost * (1 + CustomisationMarkupRate), 2)
+            : Math.Round(t.SalePriceZAR, 2);
+
+        var profitPerUnit = Math.Round(salePerUnit - cost, 4);
+        var totalCost = Math.Round(cost * t.Quantity, 2);
+        var totalSale = Math.Round(salePerUnit * t.Quantity, 2);
+        var totalProfit = Math.Round(totalSale - totalCost, 2);
+        var margin = totalSale > 0 ? Math.Round(totalProfit / totalSale * 100m, 2) : 0m;
+
+        return new CustomisationPricingTierDto
+        {
+            Id = t.Id,
+            Quantity = t.Quantity,
+            CostCNY = t.CostCNY,
+            CostWithShippingCNY = t.CostWithShippingCNY,
+            CostPerUnitZAR = cost,
+            SalePriceZAR = t.SalePriceZAR,
+            SKU = t.SKU,
+            SalePerUnitZAR = salePerUnit,
+            ProfitPerUnitZAR = profitPerUnit,
+            TotalCostZAR = totalCost,
+            TotalSaleZAR = totalSale,
+            TotalProfitZAR = totalProfit,
+            MarginPercent = margin,
+            SalePriceDerived = derived,
+        };
+    }
+
     private static CustomisationOptionDto MapToDto(CustomisationOption co, string supplierName) => new()
     {
         Id = co.Id,
@@ -124,15 +178,6 @@ public class CustomisationController : ControllerBase
         Type = co.Type,
         Link1688 = co.Link1688,
         MinimumQuantity = co.MinimumQuantity,
-        PricingTiers = co.PricingTiers?.OrderBy(t => t.Quantity).Select(t => new CustomisationPricingTierDto
-        {
-            Id = t.Id,
-            Quantity = t.Quantity,
-            CostCNY = t.CostCNY,
-            CostWithShippingCNY = t.CostWithShippingCNY,
-            CostPerUnitZAR = t.CostPerUnitZAR,
-            SalePriceZAR = t.SalePriceZAR,
-            SKU = t.SKU,
-        }).ToList() ?? new(),
+        PricingTiers = co.PricingTiers?.OrderBy(t => t.Quantity).Select(BuildTierDto).ToList() ?? new(),
     };
 }

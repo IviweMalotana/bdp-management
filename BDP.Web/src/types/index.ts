@@ -192,6 +192,32 @@ export interface CustomisationOption {
   notes?: string | null
 }
 
+// Profitability view (GET /customisation/all)
+export interface CustomisationProfitTier {
+  id: number
+  quantity: number
+  costPerUnitZAR: number
+  salePerUnitZAR: number
+  profitPerUnitZAR: number
+  totalCostZAR: number
+  totalSaleZAR: number
+  totalProfitZAR: number
+  marginPercent: number
+  salePriceDerived: boolean
+}
+
+export interface CustomisationProfitOption {
+  id: number
+  supplierId: number
+  supplierName: string
+  type: string
+  link1688?: string | null
+  minimumQuantity: number | null
+  productionLeadTimeDays: number
+  addsShippingWeight: boolean
+  pricingTiers: CustomisationProfitTier[]
+}
+
 // ── Supplier ──────────────────────────────────────────────────────────────────
 export interface Supplier {
   id: number
