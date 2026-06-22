@@ -41,6 +41,7 @@ export default function Header() {
   }, []);
 
   const staticNavLinks = [
+    { href: "/finder", label: "Find Your Bottle" },
     { href: "/customise", label: "Customise" },
     { href: "/for-business", label: "For Business" },
     { href: "/about", label: "About" },
