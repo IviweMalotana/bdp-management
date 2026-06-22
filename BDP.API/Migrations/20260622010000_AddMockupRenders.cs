@@ -16,8 +16,6 @@ namespace BDP.API.Migrations
                 name: "RenderCreditZAR",
                 table: "Orders",
                 type: "numeric(18,4)",
-                precision: 18,
-                scale: 4,
                 nullable: false,
                 defaultValue: 0m);
 
