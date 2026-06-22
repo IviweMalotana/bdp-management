@@ -132,7 +132,8 @@ public class StorefrontProductsController : ControllerBase
             productType = product.ProductType,
             product.Description,
             product.UsageSuitability,
-            product.WeightKg,
+            // WeightKg is intentionally NOT exposed to customers — shipping is
+            // shown as a price only, never as kg. Dimensions stay (product info).
             product.LengthCm,
             product.WidthCm,
             product.HeightCm,

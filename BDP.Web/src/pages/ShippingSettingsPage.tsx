@@ -19,12 +19,15 @@ export default function ShippingSettingsPage() {
   const cnyPerKg  = parseFloat(form.cnyPerKg)  || 0
   const cnyToZar  = parseFloat(form.cnyToZarRate) || 0
 
+  // Billable weight per unit is fixed — see ShippingCalculator.FixedUnitWeightKg on the API.
+  const FIXED_UNIT_KG = 0.4
+
   const previewExamples = [
-    { label: 'Serum 30ml',   cbm: 0.000000192, kg: 0.10 },
-    { label: 'Serum 40ml',   cbm: 0.000000224, kg: 0.12 },
-    { label: 'Pump/Spray',   cbm: 0.000000224, kg: 0.10 },
-    { label: 'Jar ≤30ml',    cbm: 0.000000180, kg: 0.12 },
-    { label: 'Jar >30ml',    cbm: 0.000000294, kg: 0.15 },
+    { label: 'Serum 30ml',   cbm: 0.000000192, kg: FIXED_UNIT_KG },
+    { label: 'Serum 40ml',   cbm: 0.000000224, kg: FIXED_UNIT_KG },
+    { label: 'Pump/Spray',   cbm: 0.000000224, kg: FIXED_UNIT_KG },
+    { label: 'Jar ≤30ml',    cbm: 0.000000180, kg: FIXED_UNIT_KG },
+    { label: 'Jar >30ml',    cbm: 0.000000294, kg: FIXED_UNIT_KG },
   ]
 
   const calcPerUnit = (cbm: number, kg: number) =>
@@ -145,7 +148,8 @@ export default function ShippingSettingsPage() {
           {/* Live preview */}
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
             <p className="text-sm font-semibold text-white mb-4">Shipping Cost Preview (per unit)</p>
-            <p className="text-xs text-gray-500 mb-3">Formula: ((CBM × ¥/CBM) + (kg × ¥/kg)) × CNY→ZAR</p>
+            <p className="text-xs text-gray-500 mb-1">Formula: ((CBM × ¥/CBM) + (kg × ¥/kg)) × CNY→ZAR</p>
+            <p className="text-xs text-gray-600 mb-3">Billable weight is fixed at {FIXED_UNIT_KG} kg per unit for every product.</p>
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-gray-800">

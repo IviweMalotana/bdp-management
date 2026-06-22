@@ -103,7 +103,7 @@ interface ProductImage { url: string; altText: string; isPrimary: boolean }
 interface Product {
   id: number; slug: string; name: string; category: string; productType?: string;
   description?: string; usageSuitability?: string;
-  weightKg: number; lengthCm: number; widthCm: number; heightCm: number;
+  lengthCm: number; widthCm: number; heightCm: number;
   images: ProductImage[];
   variants: Variant[];
   customisationOptions: CustomisationOption[];
@@ -716,15 +716,12 @@ export default function PDPClient({ product }: { product: Product }) {
           </p>
 
           {/* Specs accordion */}
-          {(product.weightKg > 0 || selectedVariant.bodyMaterial || selectedVariant.closureType || selectedVariant.accessoriesIncluded) && (
+          {(product.lengthCm > 0 || selectedVariant.bodyMaterial || selectedVariant.closureType || selectedVariant.accessoriesIncluded) && (
             <details className="mt-6 border-t" style={{ borderColor: "#C9B8A8" }}>
               <summary className="py-3 text-xs uppercase tracking-widest cursor-pointer hover:opacity-70" style={{ color: "#4A4540" }}>
                 Technical specifications
               </summary>
               <dl className="py-3 space-y-2 text-sm" style={{ color: "#4A4540" }}>
-                {product.weightKg > 0 && (
-                  <div className="flex gap-4"><dt className="w-24 shrink-0">Weight</dt><dd>{product.weightKg} kg</dd></div>
-                )}
                 {product.lengthCm > 0 && (
                   <div className="flex gap-4"><dt className="w-24 shrink-0">Dimensions</dt><dd>{product.lengthCm} × {product.widthCm} × {product.heightCm} cm</dd></div>
                 )}

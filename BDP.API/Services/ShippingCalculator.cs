@@ -2,12 +2,21 @@ namespace BDP.API.Services;
 
 public static class ShippingCalculator
 {
+    /// <summary>
+    /// Fixed billable weight per unit (kg). We intentionally ignore the
+    /// uploaded/real per-unit weight and always bill 0.4 kg so shipping cost
+    /// is consistent across every product, customer-facing and internal.
+    /// The <c>weightKg</c> parameters below are kept for signature stability
+    /// but are deliberately not used.
+    /// </summary>
+    public const decimal FixedUnitWeightKg = 0.4m;
+
     public static decimal CalculateShippingZAR(
         decimal weightKg, decimal volumeCBM, int quantity,
         decimal cnyPerCbm, decimal cnyPerKg, decimal cnyToZar)
     {
         decimal totalCBM = volumeCBM * quantity;
-        decimal totalKg = weightKg * quantity;
+        decimal totalKg = FixedUnitWeightKg * quantity;
         decimal shippingCNY = (totalCBM * cnyPerCbm) + (totalKg * cnyPerKg);
         return shippingCNY * cnyToZar;
     }
@@ -16,7 +25,7 @@ public static class ShippingCalculator
         decimal weightKg, decimal volumeCBM,
         decimal cnyPerCbm, decimal cnyPerKg, decimal cnyToZar)
     {
-        decimal shippingCNY = (volumeCBM * cnyPerCbm) + (weightKg * cnyPerKg);
+        decimal shippingCNY = (volumeCBM * cnyPerCbm) + (FixedUnitWeightKg * cnyPerKg);
         return shippingCNY * cnyToZar;
     }
 
