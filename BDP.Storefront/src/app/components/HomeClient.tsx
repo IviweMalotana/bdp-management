@@ -101,8 +101,7 @@ function HeroSection() {
             className="text-lg mb-10 max-w-md"
             style={{ color: "#B8B0A4", lineHeight: 1.7 }}
           >
-            Premium cosmetic packaging wholesale — from 10 units to 10,000.
-            South Africa&apos;s home for skincare brands and hospitality.
+            Bottles, jars and droppers from 10 units to 10,000. Start your skincare line without the massive upfront spend — SA-based, brand-ready.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
