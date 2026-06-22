@@ -22,7 +22,6 @@ export default function ShopClient() {
   const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  // Seed initial filter state from the URL so dropdown/footer links land pre-filtered.
   const [category, setCategory] = useState(searchParams.get("category") ?? "");
   const [search, setSearch] = useState(searchParams.get("search") ?? "");
   const [searchInput, setSearchInput] = useState(searchParams.get("search") ?? "");
@@ -30,6 +29,15 @@ export default function ShopClient() {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const externalUpdate = useRef(false);
+
+  // Sync state when the URL changes (e.g. user clicks a category in the header while already on /shop).
+  useEffect(() => {
+    externalUpdate.current = true;
+    setCategory(searchParams.get("category") ?? "");
+    setSearch(searchParams.get("search") ?? "");
+    setSearchInput(searchParams.get("search") ?? "");
+  }, [searchParams]);
 
   // Fetch categories once
   useEffect(() => {
@@ -48,19 +56,19 @@ export default function ShopClient() {
     const t = setTimeout(() => setSearch(searchInput), 300);
     return () => clearTimeout(t);
   }, [searchInput]);
-
-  // Keep the URL shareable (shallow, no reload) when category/search change.
-  const didMount = useRef(false);
   useEffect(() => {
-    if (!didMount.current) {
-      didMount.current = true;
+    if (externalUpdate.current) {
+      externalUpdate.current = false;
       return;
     }
     const params = new URLSearchParams();
     if (category) params.set("category", category);
     if (search) params.set("search", search);
     const qs = params.toString();
-    router.replace(qs ? `/shop?${qs}` : "/shop", { scroll: false });
+    const target = qs ? `/shop?${qs}` : "/shop";
+    if (typeof window !== "undefined" && window.location.pathname + window.location.search !== target) {
+      router.replace(target, { scroll: false });
+    }
   }, [category, search, router]);
 
   // Fetch first page whenever filters change
