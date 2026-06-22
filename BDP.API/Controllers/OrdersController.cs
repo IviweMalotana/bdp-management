@@ -6,6 +6,7 @@ using BDP.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace BDP.API.Controllers;
 
@@ -349,7 +350,8 @@ public class OrdersController : ControllerBase
         string RecipientAddress,
         string RecipientCity,
         string RecipientPostcode,
-        string CountryCode = "ZA"
+        string CountryCode = "ZA",
+        string RecipientProvince = ""
     );
 
     public record MarkShippedRequest(string TrackingNumber, string? TrackingCarrier = "Manual");
@@ -369,6 +371,20 @@ public class OrdersController : ControllerBase
         if (!_yunExpress.HasCredentials)
             return BadRequest(new { message = "YunExpress credentials not configured. Set YunExpress__AppKey and YunExpress__AppToken in Railway." });
 
+        // Province: prefer what the caller sent; otherwise pull it from the order's
+        // saved shipping address so the YunExpress order has a valid province.
+        var province = dto.RecipientProvince;
+        if (string.IsNullOrWhiteSpace(province) && !string.IsNullOrEmpty(order.ShippingAddressJson))
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(order.ShippingAddressJson);
+                if (doc.RootElement.TryGetProperty("Province", out var p))
+                    province = p.GetString() ?? "";
+            }
+            catch { /* malformed address JSON — fall through with empty province */ }
+        }
+
         var result = await _yunExpress.CreateOrderAsync(new YunExpressService.CreateOrderRequest(
             OrderReference: order.OrderNumber,
             CountryCode: dto.CountryCode,
@@ -383,7 +399,8 @@ public class OrdersController : ControllerBase
             RecipientPhone: dto.RecipientPhone,
             RecipientAddress: dto.RecipientAddress,
             RecipientCity: dto.RecipientCity,
-            RecipientPostcode: dto.RecipientPostcode
+            RecipientPostcode: dto.RecipientPostcode,
+            RecipientProvince: province
         ));
 
         if (!result.Success)

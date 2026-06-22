@@ -300,7 +300,8 @@ public class YunExpressService
         string RecipientPhone,
         string RecipientAddress,
         string RecipientCity,
-        string RecipientPostcode
+        string RecipientPostcode,
+        string RecipientProvince = ""
     );
 
     public record CreateOrderResult(
@@ -315,16 +316,24 @@ public class YunExpressService
     {
         try
         {
+            // Province falls back to city when not supplied; postcode must be sent or
+            // YunExpress rejects / mis-routes the shipment.
+            var province = !string.IsNullOrWhiteSpace(req.RecipientProvince)
+                ? req.RecipientProvince
+                : req.RecipientCity;
+
             var result = await CallSoapAsync("createOrder", new
             {
                 platform = "OTHER",
                 shipping_method = req.ProductCode,
                 reference_no = req.OrderReference,
                 country_code = req.CountryCode,
-                province = req.RecipientAddress,
+                province,
                 city = req.RecipientCity,
                 district = "",
                 address1 = req.RecipientAddress,
+                zip_code = req.RecipientPostcode,
+                postcode = req.RecipientPostcode,
                 name = req.RecipientName,
                 phone = "",
                 cell_phone = req.RecipientPhone,

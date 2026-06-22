@@ -41,6 +41,8 @@ def _parse_text_overlays(text: Optional[str]) -> Optional[List[Dict[str, Any]]]:
 @click.option("--text", "text", default=None, help="Text overlays JSON string or file path.")
 @click.option("--output", type=click.Path(), default="mockup.png", help="Output PNG path.")
 @click.option("--debug", is_flag=True, default=False, help="Dump debug layers.")
+@click.option("--before-after", is_flag=True, default=False,
+              help="Also save a side-by-side before/after comparison image.")
 def cli(
     ctx: click.Context,
     bottle: Optional[str],
@@ -52,6 +54,7 @@ def cli(
     text: Optional[str],
     output: str,
     debug: bool,
+    before_after: bool,
 ) -> None:
     """Generate bottle label mockups. Run with no subcommand for single mode."""
     if ctx.invoked_subcommand is not None:
@@ -71,8 +74,12 @@ def cli(
         output_path=output,
         debug_mode=debug,
         substrate=substrate,
+        before_after=before_after,
     )
     click.echo(f"Wrote {out}")
+    if before_after:
+        import os as _os
+        click.echo(f"Wrote {_os.path.splitext(out)[0]}_before_after.png")
 
 
 @cli.command()
