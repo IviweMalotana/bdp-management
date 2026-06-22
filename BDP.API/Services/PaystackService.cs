@@ -88,6 +88,30 @@ public class PaystackService
         return (result.Data.Reference, result.Data.AuthorizationUrl, result.Data.AccessCode);
     }
 
+    /// <summary>
+    /// Generic transaction initialize with custom metadata + callback. Used for one-off
+    /// charges that aren't orders (e.g. AI mockup render fees).
+    /// </summary>
+    public async Task<(string reference, string authorizationUrl, string accessCode)> InitializeTransactionAsync(
+        string email, decimal amountZAR, object metadata, string? callbackUrl = null)
+    {
+        var payload = new
+        {
+            email,
+            amount = (long)(amountZAR * 100),
+            currency = "ZAR",
+            metadata,
+            callback_url = callbackUrl ?? _config["Paystack:StorefrontCallbackUrl"]
+        };
+        var response = await _http.PostAsync("/transaction/initialize",
+            new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
+        var json = await response.Content.ReadAsStringAsync();
+        var result = JsonSerializer.Deserialize<PaystackResponse<PaystackInitializeResult>>(json);
+        if (result?.Data == null)
+            throw new InvalidOperationException($"Paystack initialization failed: {json}");
+        return (result.Data.Reference, result.Data.AuthorizationUrl, result.Data.AccessCode);
+    }
+
     public bool VerifyWebhookSignature(string rawBody, string signature)
     {
         if (string.IsNullOrEmpty(_secretKey)) return false;

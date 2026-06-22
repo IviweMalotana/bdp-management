@@ -160,7 +160,15 @@ public class StorefrontCheckoutController : ControllerBase
             ? req.ShippingPriceZAR.Value
             : await _shipping.CalculateAsync(totalWeight, totalVolume, cart.Items.Sum(i => i.Quantity));
 
-        var totalZAR = subtotal + shippingZAR;
+        // Redeem any available AI mockup render credits for this email (the render fee
+        // paid earlier is credited back against this order, capped at the subtotal).
+        var emailKey = email.Trim().ToLowerInvariant();
+        var credits = await _db.MockupRenders
+            .Where(r => r.Email == emailKey && r.CreditStatus == "available")
+            .ToListAsync();
+        var renderCredit = Math.Min(credits.Sum(c => c.FeeZAR), subtotal);
+
+        var totalZAR = subtotal + shippingZAR - renderCredit;
 
         var orderNumber = $"SF-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
         var order = new Order
@@ -173,6 +181,7 @@ public class StorefrontCheckoutController : ControllerBase
             FulfilmentStatus = "Placed",
             SubtotalZAR = subtotal,
             ShippingCostZAR = shippingZAR,
+            RenderCreditZAR = renderCredit,
             TotalZAR = totalZAR,
             IsPaid = false,
             PaymentMethod = req.PaymentMethod,
@@ -185,6 +194,17 @@ public class StorefrontCheckoutController : ControllerBase
 
         _db.Orders.Add(order);
         await _db.SaveChangesAsync();
+
+        // Mark redeemed render credits against this order.
+        if (renderCredit > 0)
+        {
+            foreach (var c in credits)
+            {
+                c.CreditStatus = "redeemed";
+                c.RedeemedOrderId = order.Id;
+            }
+            await _db.SaveChangesAsync();
+        }
 
         // Copy artwork from cart items to the newly-created order items
         var cartItemsList = cart.Items.ToList();
