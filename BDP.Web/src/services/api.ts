@@ -256,6 +256,9 @@ export const orders = {
 
   markShipped: (id: number, body: { trackingNumber: string; trackingCarrier?: string }) =>
     http.patch<Order>(`/orders/${id}/mark-shipped`, body).then((r) => r.data),
+
+  testShipment: (body: object, dryRun: boolean) =>
+    http.post(`/orders/shipment/test?dryRun=${dryRun}`, body).then((r) => r.data),
 }
 
 // ── Invoices ──────────────────────────────────────────────────────────────────
