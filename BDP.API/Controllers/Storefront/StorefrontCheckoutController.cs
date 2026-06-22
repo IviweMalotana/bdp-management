@@ -16,17 +16,20 @@ public class StorefrontCheckoutController : ControllerBase
     private readonly ShippingCalculatorService _shipping;
     private readonly PaystackService _paystack;
     private readonly IConfiguration _config;
+    private readonly PricingService _pricing;
 
     public StorefrontCheckoutController(
         AppDbContext db,
         ShippingCalculatorService shipping,
         PaystackService paystack,
-        IConfiguration config)
+        IConfiguration config,
+        PricingService pricing)
     {
         _db = db;
         _shipping = shipping;
         _paystack = paystack;
         _config = config;
+        _pricing = pricing;
     }
 
     public record ShippingQuoteAddress(string City, string Province, string PostalCode);
@@ -77,7 +80,12 @@ public class StorefrontCheckoutController : ControllerBase
             .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.PricingTiers)
             .Include(c => c.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product)
             .Include(c => c.Items).ThenInclude(i => i.Artworks)
+            .Include(c => c.Items).ThenInclude(i => i.CustomisationOption)
             .FirstOrDefaultAsync(c => c.Id == req.CartId);
+
+        // Pre-load customisation settings for pricing
+        var customSettings = await _db.CustomisationSettings.ToListAsync();
+        var rate = await _pricing.GetLiveExchangeRate();
 
         if (cart == null) return NotFound("Cart not found.");
         if (!cart.Items.Any()) return BadRequest("Cart is empty.");
@@ -105,6 +113,33 @@ public class StorefrontCheckoutController : ControllerBase
             var lineTotal = unitPrice * item.Quantity;
             subtotal += lineTotal;
 
+            // Compute customisation cost server-side (same logic as StorefrontPricingController)
+            decimal customisationCost = 0;
+            if (item.CustomisationOption != null)
+            {
+                var setting = customSettings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type);
+                if (setting != null)
+                {
+                    var customMoq = item.CustomisationOption.MinimumQuantity ?? setting.DefaultMinimumQuantity;
+                    if (item.Quantity >= customMoq)
+                    {
+                        decimal customUnitPrice;
+                        if (setting.Type == "ColourChange")
+                        {
+                            customUnitPrice = setting.PricePerUnitZAR;
+                        }
+                        else
+                        {
+                            var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
+                            var markup = PricingService.InterpolateMarkup(item.Quantity);
+                            customUnitPrice = Math.Round(costZAR * (1 + markup / 100m), 4);
+                        }
+                        customisationCost = Math.Round(customUnitPrice * item.Quantity, 2);
+                    }
+                }
+            }
+            subtotal += customisationCost;
+
             orderItems.Add(new OrderItem
             {
                 ProductVariantId = item.ProductVariantId,
@@ -113,7 +148,7 @@ public class StorefrontCheckoutController : ControllerBase
                 Quantity = item.Quantity,
                 UnitPriceZAR = unitPrice,
                 LineTotal = lineTotal,
-                CustomisationCostZAR = 0
+                CustomisationCostZAR = customisationCost
             });
         }
 

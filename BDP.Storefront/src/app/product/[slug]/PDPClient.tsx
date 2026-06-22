@@ -42,6 +42,7 @@ interface Variant {
   pricingTiers: Tier[];
 }
 interface CustomisationOption {
+  id?: number;
   type: string;
   pricePerUnitZAR: number;   // sale price at MOQ anchor (used as flat price for ColourChange)
   costPerUnitZAR: number;    // your cost — used to compute interpolated sale price for SS/HT
@@ -415,8 +416,12 @@ export default function PDPClient({ product }: { product: Product }) {
     setAdding(true);
     try {
       const token = getSessionToken();
-      // Customisation option linkage is resolved server-side; pass undefined for now
-      const customisationId = undefined;
+      // Resolve the selected customisation option's DB id (silk/hot are mutually exclusive; colour is independent)
+      const selectedOption = printMethod === "SilkScreen" ? silkOption
+        : printMethod === "HotStamping" ? hotOption
+        : null;
+      // If only colour change is selected (no print method), use colour option id
+      const customisationId = selectedOption?.id ?? (colourChange ? colourOption?.id : undefined);
       const result = await addToCart(token, selectedVariant.id, quantity, customisationId, jwt ?? undefined);
       setCart(result as Parameters<typeof setCart>[0]);
       setAdded(true);
