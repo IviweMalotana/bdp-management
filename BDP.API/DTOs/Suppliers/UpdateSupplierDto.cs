@@ -9,7 +9,12 @@ public class UpdateSupplierDto
     public string? Address { get; set; }
     [EmailAddress] public string? ContactEmail { get; set; }
     public string? ContactPhone { get; set; }
+    public string? Website { get; set; }
+    public int LeadTimeDays { get; set; }
+    public int MinOrderQuantity { get; set; }
+    public string? Notes { get; set; }
     public bool SuppliesBottles { get; set; }
     public bool SuppliesCustomisation { get; set; }
+    public bool OffersCustomisation { get; set; }
     public bool IsActive { get; set; } = true;
 }

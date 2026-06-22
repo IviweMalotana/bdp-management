@@ -83,12 +83,12 @@ public class StorefrontCheckoutController : ControllerBase
             .Include(c => c.Items).ThenInclude(i => i.CustomisationOption)
             .FirstOrDefaultAsync(c => c.Id == req.CartId);
 
+        if (cart == null) return NotFound("Cart not found.");
+        if (!cart.Items.Any()) return BadRequest("Cart is empty.");
+
         // Pre-load customisation settings for pricing
         var customSettings = await _db.CustomisationSettings.ToListAsync();
         var rate = await _pricing.GetLiveExchangeRate();
-
-        if (cart == null) return NotFound("Cart not found.");
-        if (!cart.Items.Any()) return BadRequest("Cart is empty.");
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var email = req.GuestEmail ?? User.FindFirstValue(ClaimTypes.Email) ?? string.Empty;

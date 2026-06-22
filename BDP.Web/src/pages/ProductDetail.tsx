@@ -6,12 +6,6 @@ import { ChevronLeft, Pencil, ExternalLink, Plus, Trash2, X, Loader2 } from 'luc
 import { useAuthStore } from '../store/authStore'
 import ProductForm from '../components/ProductForm'
 
-const LOC_COLOUR: Record<string, string> = {
-  'Cape Town':    'bg-green-500/20 text-green-400',
-  'China':        'bg-blue-500/20 text-blue-400',
-  'ZQ Warehouse': 'bg-purple-500/20 text-purple-400',
-}
-
 const SIZES_ML = ['5ml','10ml','15ml','20ml','30ml','50ml','60ml','100ml','120ml','150ml','200ml','250ml','300ml','500ml','1000ml']
 const SIZES_G  = ['5g','10g','15g','20g','30g','50g','100g','150g','200g','250g','300g','500g']
 const TEXTURES = ['Matte', 'Clear', 'Frosted']
@@ -20,7 +14,7 @@ const iCls = 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg tex
 interface VariantForm { size: string; bottleColour: string; lidColour: string; texture: string }
 const emptyVariant = (): VariantForm => ({ size: '', bottleColour: '', lidColour: '', texture: '' })
 
-type Tab = 'variants' | 'pricing' | 'customisation' | 'inventory'
+type Tab = 'variants' | 'pricing' | 'customisation'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
@@ -127,18 +121,20 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Details grid */}
+      {/* Details grid — only render fields that have a value */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {([
           ['Category', product.category],
-          ['Size', `${product.sizeML}ml`],
+          ['Size', product.sizeML ? `${product.sizeML}ml` : null],
           ['Bottle Colour', product.bottleColour],
           ['Lid Colour', product.lidColour],
           ['Texture', product.texture],
           ['Supplier', product.supplierName],
-          ['Cost CNY', `¥${product.costCNY}`],
-          ['Cost ZAR', `R${(product.costPerUnitZAR ?? 0).toFixed(2)}`],
-        ] as [string, string][]).map(([label, val]) => (
+          ['Cost CNY', product.costCNY != null ? `¥${product.costCNY}` : null],
+          ['Cost ZAR', product.costPerUnitZAR != null ? `R${product.costPerUnitZAR.toFixed(2)}` : null],
+        ] as [string, string | null | undefined][])
+          .filter((entry): entry is [string, string] => Boolean(entry[1]))
+          .map(([label, val]) => (
           <div key={label} className="bg-gray-900 border border-gray-800 rounded-lg p-3">
             <p className="text-xs text-gray-500 mb-1">{label}</p>
             <p className="text-sm font-medium text-white">{val}</p>
@@ -160,7 +156,6 @@ export default function ProductDetail() {
             { key: 'variants',       label: `Variants (${product.variants?.length ?? 0})` },
             { key: 'pricing',        label: `Pricing Tiers (${product.pricingTiers?.length ?? 0})` },
             { key: 'customisation',  label: `Pricing & Customisation (${product.productPricingTiers?.length ?? 0})` },
-            { key: 'inventory',      label: `Inventory (${product.inventoryItems?.length ?? 0})` },
           ] as { key: Tab; label: string }[]).map(({ key, label }) => (
             <button
               key={key}
@@ -375,44 +370,6 @@ export default function ProductDetail() {
           })()
         )}
 
-        {/* Inventory tab */}
-        {tab === 'inventory' && (
-          !product.inventoryItems || product.inventoryItems.length === 0 ? (
-            <p className="px-5 py-8 text-sm text-gray-500 text-center">No inventory records found.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-800">
-                    {['Location', 'On Hand', 'Available', 'Incoming', 'Committed', 'Status'].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {product.inventoryItems.map((ii) => (
-                    <tr key={ii.id} className="hover:bg-gray-800/50">
-                      <td className="px-4 py-3">
-                        <span className={`text-xs px-2 py-1 rounded font-medium ${LOC_COLOUR[ii.location] ?? 'bg-gray-700 text-gray-400'}`}>
-                          {ii.location}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-gray-300 font-semibold">{ii.onHandStock}</td>
-                      <td className={`px-4 py-3 font-semibold ${ii.availableStock === 0 ? 'text-red-400' : 'text-gray-300'}`}>{ii.availableStock}</td>
-                      <td className="px-4 py-3 text-gray-300">{ii.incomingStock}</td>
-                      <td className="px-4 py-3 text-gray-300">{ii.committedStock}</td>
-                      <td className="px-4 py-3">
-                        <span className={`text-xs font-medium ${ii.isStocked ? 'text-green-400' : 'text-gray-500'}`}>
-                          {ii.isStocked ? 'Stocked' : 'Unstocked'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )
-        )}
       </div>
 
       {showEdit && (

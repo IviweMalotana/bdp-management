@@ -54,6 +54,7 @@ public class ShipmentsController : ControllerBase
 
         var productIds = dto.Items.Select(i => i.ProductId).Distinct().ToList();
         var products = await _context.Products
+            .Include(p => p.Variants)
             .Where(p => productIds.Contains(p.Id))
             .ToDictionaryAsync(p => p.Id);
 
@@ -90,7 +91,7 @@ public class ShipmentsController : ControllerBase
                 ShipmentId = shipment.Id,
                 ProductId = item.ProductId,
                 ProductName = product.Name,
-                SKU = string.Empty,
+                SKU = product.Variants?.FirstOrDefault()?.SKU ?? string.Empty,
                 Quantity = item.Quantity,
                 CostPerUnitZAR = item.CostPerUnitZAR,
                 TotalCostZAR = Math.Round(item.Quantity * item.CostPerUnitZAR, 4),

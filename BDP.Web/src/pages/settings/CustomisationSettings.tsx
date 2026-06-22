@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Paintbrush, Loader2, Check, AlertCircle, Save } from 'lucide-react'
-import axios from 'axios'
+import http from '../../services/api'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,16 +31,6 @@ const TYPE_LABELS: Record<string, string> = {
   HotStamping:  'Hot Stamping',
   ColourChange: 'Colour Change',
 }
-
-const http = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
-  headers: { 'Content-Type': 'application/json' },
-})
-http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('bdp_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-})
 
 // ── Main component ────────────────────────────────────────────────────────────
 

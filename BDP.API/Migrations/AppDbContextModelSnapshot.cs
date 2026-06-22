@@ -1431,8 +1431,17 @@ namespace BDP.API.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("LeadTimeDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MinOrderQuantity")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Notes")
                         .HasColumnType("text");
 
                     b.Property<bool>("SuppliesBottles")
@@ -1440,6 +1449,9 @@ namespace BDP.API.Migrations
 
                     b.Property<bool>("SuppliesCustomisation")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Website")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

@@ -69,7 +69,7 @@ export default function ClientDetail() {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => navigate(`/orders/new?clientId=${client.id}`)}
+            onClick={() => navigate(`/b2b-orders/new?clientId=${client.id}`)}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Plus size={15} />
@@ -160,7 +160,7 @@ export default function ClientDetail() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <button onClick={() => navigate(`/orders/${o.id}`)} className="text-xs text-indigo-400 hover:text-indigo-300">View →</button>
+                    <button onClick={() => navigate(`/b2b-orders/${o.id}`)} className="text-xs text-indigo-400 hover:text-indigo-300">View →</button>
                   </td>
                 </tr>
               ))}

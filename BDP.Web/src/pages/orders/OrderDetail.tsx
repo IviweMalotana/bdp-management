@@ -177,7 +177,7 @@ export default function OrderDetail() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/orders')} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800">
+          <button onClick={() => navigate('/b2b-orders')} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800">
             <ArrowLeft size={18} />
           </button>
           <div>

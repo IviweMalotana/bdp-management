@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Save, Plus, Trash2 } from 'lucide-react'
 import type { Product, ProductVariant } from '../../types'
 import { recurringOrders as recurringApi, clients as clientsApi, products as productsApi } from '../../services/api'
@@ -20,6 +20,8 @@ const inp = 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text
 
 export default function RecurringOrderForm() {
   const navigate = useNavigate()
+  const { id } = useParams()
+  const isEdit = !!id
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -49,6 +51,30 @@ export default function RecurringOrderForm() {
   useEffect(() => {
     productsApi.getAll({ pageSize: 200 }).then((r) => setAllProducts(r.items ?? []))
   }, [])
+
+  // Prefill when editing an existing recurring order
+  useEffect(() => {
+    if (!id) return
+    recurringApi.getById(Number(id)).then((r) => {
+      setSelectedClientId(r.clientId)
+      setSelectedClientName(r.clientName)
+      setClientSearch(r.clientName)
+      setName(r.name)
+      setFrequency(FREQUENCY_OPTIONS.includes(r.frequency) ? r.frequency : 'Custom')
+      setFrequencyDays(r.frequencyDays)
+      setStartDate(r.contractStartDate?.slice(0, 10) ?? '')
+      setEndDate(r.contractEndDate?.slice(0, 10) ?? '')
+      setNotes(r.notes ?? '')
+      setItems((r.items ?? []).map((it) => ({
+        productId: 0,
+        productName: it.productName,
+        variantId: it.productVariantId,
+        variantLabel: it.variantName,
+        customisationOptionId: it.customisationOptionId ?? undefined,
+        quantity: it.quantity,
+      })))
+    }).catch(() => setError('Failed to load recurring order.'))
+  }, [id])
 
   useEffect(() => {
     if (!clientSearch.trim()) { setClientResults([]); return }
@@ -85,10 +111,15 @@ export default function RecurringOrderForm() {
         notes: notes || null,
         items: items.map((i) => ({ productVariantId: i.variantId, customisationOptionId: i.customisationOptionId ?? null, quantity: i.quantity })),
       }
-      const created = await recurringApi.create(body)
-      navigate(`/recurring-orders/${created.id}`)
+      if (isEdit) {
+        await recurringApi.update(Number(id), body)
+        navigate(`/recurring-orders/${id}`)
+      } else {
+        const created = await recurringApi.create(body)
+        navigate(`/recurring-orders/${created.id}`)
+      }
     } catch (e: any) {
-      setError(e?.response?.data?.message ?? 'Failed to create recurring order')
+      setError(e?.response?.data?.message ?? `Failed to ${isEdit ? 'update' : 'create'} recurring order`)
     } finally {
       setSaving(false)
     }
@@ -100,7 +131,7 @@ export default function RecurringOrderForm() {
         <button onClick={() => navigate('/recurring-orders')} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800">
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-2xl font-bold text-white">New Recurring Order</h1>
+        <h1 className="text-2xl font-bold text-white">{isEdit ? 'Edit Recurring Order' : 'New Recurring Order'}</h1>
       </div>
 
       {error && <div className="px-4 py-3 bg-red-900/20 border border-red-800 rounded-lg text-red-400 text-sm">{error}</div>}
@@ -235,7 +266,7 @@ export default function RecurringOrderForm() {
         <div className="flex justify-end gap-3">
           <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Cancel</button>
           <button type="submit" disabled={saving} className="flex items-center gap-2 px-5 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-lg text-sm font-medium">
-            <Save size={15} />{saving ? 'Saving…' : 'Create Recurring Order'}
+            <Save size={15} />{saving ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Recurring Order'}
           </button>
         </div>
       </form>
