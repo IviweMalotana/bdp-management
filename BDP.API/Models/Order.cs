@@ -12,7 +12,6 @@ public class Order
     public DateTime? DeliveredDate { get; set; }
     public decimal SubtotalZAR { get; set; }
     public decimal ShippingCostZAR { get; set; }
-    public decimal RenderCreditZAR { get; set; }
     public decimal TotalZAR { get; set; }
     public bool IsPaid { get; set; }
     public DateTime? PaidAt { get; set; }

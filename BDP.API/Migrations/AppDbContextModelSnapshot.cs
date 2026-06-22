@@ -653,60 +653,6 @@ namespace BDP.API.Migrations
                     b.ToTable("Invoices");
                 });
 
-            modelBuilder.Entity("BDP.API.Models.MockupRender", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreditStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<decimal>("FeeZAR")
-                        .HasColumnType("numeric");
-
-                    b.Property<bool>("IsPaid")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("PaystackReference")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("ProductVariantId")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("RedeemedOrderId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ResultUrl")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SourceUrl")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Email");
-
-                    b.HasIndex("PaystackReference");
-
-                    b.HasIndex("ProductVariantId");
-
-                    b.ToTable("MockupRenders");
-                });
-
             modelBuilder.Entity("BDP.API.Models.Order", b =>
                 {
                     b.Property<int>("Id")
@@ -771,10 +717,6 @@ namespace BDP.API.Migrations
 
                     b.Property<string>("ShippingAddressJson")
                         .HasColumnType("text");
-
-                    b.Property<decimal>("RenderCreditZAR")
-                        .HasPrecision(18, 4)
-                        .HasColumnType("numeric(18,4)");
 
                     b.Property<decimal>("ShippingCostZAR")
                         .HasPrecision(18, 4)
@@ -1724,16 +1666,6 @@ namespace BDP.API.Migrations
                     b.Navigation("Client");
 
                     b.Navigation("Order");
-                });
-
-            modelBuilder.Entity("BDP.API.Models.MockupRender", b =>
-                {
-                    b.HasOne("BDP.API.Models.ProductVariant", "ProductVariant")
-                        .WithMany()
-                        .HasForeignKey("ProductVariantId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("ProductVariant");
                 });
 
             modelBuilder.Entity("BDP.API.Models.Order", b =>

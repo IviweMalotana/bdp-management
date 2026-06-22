@@ -121,6 +121,7 @@ def generate_mockup(
     output_path: str = "mockup.png",
     debug_mode: bool = False,
     substrate: Optional[str] = None,
+    before_after: bool = False,
 ) -> str:
     """Generate a bottle-label mockup and save it to ``output_path``.
 
@@ -133,6 +134,8 @@ def generate_mockup(
         text_overlays: optional list of text-config dicts.
         output_path: where to save the final PNG.
         debug_mode: if True, also dump intermediate debug layers.
+        before_after: if True, also save a side-by-side "before vs after"
+            comparison next to the output as ``{stem}_before_after.png``.
 
     Returns:
         The output path.
@@ -206,7 +209,44 @@ def generate_mockup(
     os.makedirs(out_dir, exist_ok=True)
     if not cv2.imwrite(output_path, out_bgr):
         raise IOError(f"Failed to write output: {output_path}")
+
+    # --- Optional before/after comparison -----------------------------------
+    if before_after:
+        ba_path = os.path.splitext(output_path)[0] + "_before_after.png"
+        ba = _make_before_after(bottle, out_bgr)
+        if not cv2.imwrite(ba_path, ba):
+            raise IOError(f"Failed to write before/after: {ba_path}")
+
     return output_path
+
+
+def _make_before_after(before_bgr: np.ndarray, after_bgr: np.ndarray) -> np.ndarray:
+    """Build a labelled side-by-side ``[before | after]`` image (BGR)."""
+    h = min(before_bgr.shape[0], after_bgr.shape[0])
+
+    def _fit(img: np.ndarray) -> np.ndarray:
+        scale = h / img.shape[0]
+        return cv2.resize(img, (max(1, int(img.shape[1] * scale)), h), interpolation=cv2.INTER_AREA)
+
+    left = _fit(before_bgr)
+    right = _fit(after_bgr)
+
+    gap = max(8, h // 80)
+    divider = np.full((h, gap, 3), 245, dtype=np.uint8)
+    strip = np.hstack([left, divider, right])
+
+    # Caption bar.
+    bar_h = max(28, h // 14)
+    bar = np.full((bar_h, strip.shape[1], 3), 26, dtype=np.uint8)  # dark bar
+    canvas = np.vstack([bar, strip])
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    scale = max(0.5, h / 1400.0)
+    thick = max(1, int(round(scale * 2)))
+    y = int(bar_h * 0.68)
+    cv2.putText(canvas, "BEFORE", (int(left.shape[1] * 0.5) - 60, y), font, scale, (235, 235, 235), thick, cv2.LINE_AA)
+    cv2.putText(canvas, "AFTER", (left.shape[1] + gap + int(right.shape[1] * 0.5) - 50, y), font, scale, (196, 168, 130), thick, cv2.LINE_AA)
+    return canvas
 
 
 def _flat_label_size(template: Dict[str, Any]) -> Tuple[int, int]:
