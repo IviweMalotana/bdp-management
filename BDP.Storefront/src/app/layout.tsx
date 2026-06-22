@@ -5,7 +5,7 @@ import Footer from "./components/Footer";
 import CurrencyInitialiser from "./components/CurrencyInitialiser";
 
 export const metadata: Metadata = {
-  title: "be different packaging — cosmetic packaging wholesale",
+  title: "be different packaging | cosmetic packaging wholesale",
   description:
     "Premium cosmetic packaging from 10 units. South Africa's home for skincare and hospitality brands.",
 };

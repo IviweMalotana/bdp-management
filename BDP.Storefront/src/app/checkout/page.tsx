@@ -210,18 +210,18 @@ function ArtworkUploader({
         {status === "idle" && (
           <p className="text-xs" style={{ color: "#9E8F83" }}>
             Click or drag to upload artwork<br />
-            <span style={{ color: "#C9B8A8" }}>PDF, AI, EPS, PNG, JPG, SVG — max 20 MB</span>
+            <span style={{ color: "#C9B8A8" }}>PDF, AI, EPS, PNG, JPG, SVG. Max 20 MB</span>
           </p>
         )}
         {status === "uploading" && <p className="text-xs" style={{ color: "#9E8F83" }}>Uploading…</p>}
         {status === "done" && (
           <p className="text-xs" style={{ color: "#4A4540" }}>
-            ✓ {fileName} uploaded —{" "}
+            ✓ {fileName} uploaded.{" "}
             <span className="underline cursor-pointer" onClick={(e) => { e.stopPropagation(); inputRef.current?.click(); }}>replace</span>
           </p>
         )}
         {status === "error" && (
-          <p className="text-xs" style={{ color: "#D4A89A" }}>{errorMsg} — click to retry</p>
+          <p className="text-xs" style={{ color: "#D4A89A" }}>{errorMsg}. Click to retry</p>
         )}
       </div>
     </div>
@@ -573,7 +573,7 @@ export default function CheckoutPage() {
                   cartItemId={item.id}
                   sessionToken={getSessionToken()}
                   jwt={jwt}
-                  label={`${item.variant?.sku} × ${item.quantity} — customisation artwork`}
+                  label={`Customisation artwork for ${item.variant?.sku} × ${item.quantity}`}
                 />
               ))}
             </div>

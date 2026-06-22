@@ -87,11 +87,11 @@ export default function ContactPage() {
                     Email
                   </span>
                   <a
-                    href="mailto:hello@bdpmanagement.co.za"
+                    href="mailto:sales@bedifferentpackaging.com"
                     className="hover:opacity-70 transition-opacity"
                     style={{ color: "#1C1A17" }}
                   >
-                    hello@bdpmanagement.co.za
+                    sales@bedifferentpackaging.com
                   </a>
                 </span>
               </li>

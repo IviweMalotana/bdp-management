@@ -101,7 +101,7 @@ function HeroSection() {
             className="text-lg mb-10 max-w-md"
             style={{ color: "#B8B0A4", lineHeight: 1.7 }}
           >
-            Bottles, jars and droppers from 10 units to 10,000. Start your skincare line without the massive upfront spend — SA-based, brand-ready.
+            Bottles, jars and droppers from 10 units to 10,000. Start your skincare line without the massive upfront spend. SA-based and brand-ready.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
@@ -437,7 +437,7 @@ function PricingSection() {
           the more you order, the less you pay.
         </h2>
         <p className="pricing-fade text-sm mb-8" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
-          Buy more, pay less. Simple. Slide the quantity up on any product and watch the price drop in real time — no quotes, no waiting.
+          Buy more, pay less. Simple. Slide the quantity up on any product and watch the price drop in real time. No quotes, no waiting.
         </p>
         <Link href="/shop" className="pricing-fade inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
           See pricing tiers →
