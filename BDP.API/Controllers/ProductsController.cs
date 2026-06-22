@@ -108,7 +108,15 @@ public class ProductsController : ControllerBase
 
         if (product == null) return NotFound(new { message = $"Product {id} not found." });
 
-        return Ok(MapToDetailDto(product));
+        var (rate, buffer) = await GetCostInputsAsync();
+        return Ok(MapToDetailDto(product, rate, buffer));
+    }
+
+    // Pulls the live CNY→ZAR rate and per-unit buffer used to derive actual cost.
+    private async Task<(decimal rate, decimal buffer)> GetCostInputsAsync()
+    {
+        var settings = await _context.ShippingSettings.FindAsync(1);
+        return (settings?.CnyToZarRate ?? 2.40m, settings?.BufferCNY ?? 3.00m);
     }
 
     // POST /api/products
@@ -192,7 +200,8 @@ public class ProductsController : ControllerBase
             .Include(p => p.ProductCollections).ThenInclude(pc => pc.Collection)
             .FirstAsync(p => p.Id == id);
 
-        return Ok(MapToDetailDto(updated));
+        var (rate, buffer) = await GetCostInputsAsync();
+        return Ok(MapToDetailDto(updated, rate, buffer));
     }
 
     // DELETE /api/products/{id}
@@ -402,7 +411,39 @@ public class ProductsController : ControllerBase
         }).ToList() ?? new(),
     };
 
-    private static ProductDetailDto MapToDetailDto(Product p) => new()
+    // Builds the per-tier cost/sale/profit breakdown for the admin view.
+    private static VariantPricingTierDto BuildTierDto(ProductPricingTier t,
+        decimal actualCostPerUnitZAR)
+    {
+        // Sale per unit: SalePriceZAR is the total for the tier quantity.
+        var salePerUnit = t.Quantity > 0 ? Math.Round(t.SalePriceZAR / t.Quantity, 4) : 0m;
+        var profitPerUnit = Math.Round(salePerUnit - actualCostPerUnitZAR, 4);
+        var totalCost = Math.Round(actualCostPerUnitZAR * t.Quantity, 2);
+        var totalSale = Math.Round(t.SalePriceZAR, 2);
+        var totalProfit = Math.Round(totalSale - totalCost, 2);
+        var margin = totalSale > 0 ? Math.Round(totalProfit / totalSale * 100m, 2) : 0m;
+
+        return new VariantPricingTierDto
+        {
+            Id = t.Id,
+            Quantity = t.Quantity,
+            CostCNY = t.CostCNY,
+            CostWithShippingCNY = t.CostWithShippingCNY,
+            CostWithDutiesCNY = t.CostWithDutiesCNY,
+            CostPerUnitZAR = t.CostPerUnitZAR,
+            SalePriceZAR = t.SalePriceZAR,
+            SKU = t.SKU,
+            SalePerUnitZAR = salePerUnit,
+            ActualCostPerUnitZAR = actualCostPerUnitZAR,
+            ProfitPerUnitZAR = profitPerUnit,
+            TotalCostZAR = totalCost,
+            TotalSaleZAR = totalSale,
+            TotalProfitZAR = totalProfit,
+            MarginPercent = margin,
+        };
+    }
+
+    private static ProductDetailDto MapToDetailDto(Product p, decimal cnyToZar, decimal bufferCNY) => new()
     {
         Id = p.Id,
         Name = p.Name,
@@ -422,26 +463,23 @@ public class ProductsController : ControllerBase
         HeightCm = p.HeightCm,
         CreatedAt = p.CreatedAt,
         UpdatedAt = p.UpdatedAt,
-        Variants = p.Variants?.Select(pv => new ProductVariantDto
+        Variants = p.Variants?.Select(pv =>
         {
-            Id = pv.Id,
-            Size = pv.Size,
-            BottleColour = pv.BottleColour,
-            LidColour = pv.LidColour,
-            Texture = pv.Texture,
-            SKU = pv.SKU,
-            IsActive = pv.IsActive,
-            PricingTiers = pv.PricingTiers?.OrderBy(t => t.Quantity).Select(t => new VariantPricingTierDto
+            var actualCostPerUnitZAR = Math.Round((pv.UnitPriceCNY + bufferCNY) * cnyToZar, 4);
+            return new ProductVariantDto
             {
-                Id = t.Id,
-                Quantity = t.Quantity,
-                CostCNY = t.CostCNY,
-                CostWithShippingCNY = t.CostWithShippingCNY,
-                CostWithDutiesCNY = t.CostWithDutiesCNY,
-                CostPerUnitZAR = t.CostPerUnitZAR,
-                SalePriceZAR = t.SalePriceZAR,
-                SKU = t.SKU,
-            }).ToList() ?? new(),
+                Id = pv.Id,
+                Size = pv.Size,
+                BottleColour = pv.BottleColour,
+                LidColour = pv.LidColour,
+                Texture = pv.Texture,
+                SKU = pv.SKU,
+                IsActive = pv.IsActive,
+                UnitPriceCNY = pv.UnitPriceCNY,
+                ActualCostPerUnitZAR = actualCostPerUnitZAR,
+                PricingTiers = pv.PricingTiers?.OrderBy(t => t.Quantity)
+                    .Select(t => BuildTierDto(t, actualCostPerUnitZAR)).ToList() ?? new(),
+            };
         }).ToList() ?? new(),
         Images = p.Images?.OrderBy(i => i.SortOrder).Select(i => new ProductImageDto
         {
