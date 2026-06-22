@@ -83,6 +83,7 @@ export default function FinderClient() {
 
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<Product[]>([]);
+  const [shopHref, setShopHref] = useState("/shop");
 
   useEffect(() => {
     fetch(`${API}/api/storefront/categories`)
@@ -109,6 +110,11 @@ export default function FinderClient() {
       const params = new URLSearchParams({ pageSize: "50" });
       if (matchedCategory) params.set("category", matchedCategory);
       else if (use?.search) params.set("search", use.search);
+
+      // CTA should land on the same filtered shop view (never a bare dead-end).
+      if (matchedCategory) setShopHref(`/shop?category=${encodeURIComponent(matchedCategory)}`);
+      else if (use?.search) setShopHref(`/shop?search=${encodeURIComponent(use.search)}`);
+      else setShopHref("/shop");
 
       const res = await fetch(`${API}/api/storefront/products?${params}`);
       const data = await res.json();
@@ -142,7 +148,7 @@ export default function FinderClient() {
   const stageMsg = stageIdx !== null ? STAGE_MESSAGE[STAGE_OPTIONS[stageIdx].key] : "";
 
   const restart = () => {
-    setStep(0); setUseIdx(null); setSizeIdx(null); setLookIdx(null); setStageIdx(null); setResults([]);
+    setStep(0); setUseIdx(null); setSizeIdx(null); setLookIdx(null); setStageIdx(null); setResults([]); setShopHref("/shop");
   };
 
   /* ── render ──────────────────────────────────────────────────── */
@@ -224,8 +230,8 @@ export default function FinderClient() {
                   ))}
                 </div>
                 <div className="flex flex-wrap gap-4 mt-12">
-                  <Link href="/shop" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
-                    Browse the full shop →
+                  <Link href={shopHref} className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
+                    See all matches →
                   </Link>
                   <button onClick={restart} className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide border transition-colors hover:bg-[#1A1A18] hover:text-[#F5F0E8]" style={{ borderColor: "#1A1A18", color: "#1A1A18", borderRadius: "2px" }}>
                     Start over

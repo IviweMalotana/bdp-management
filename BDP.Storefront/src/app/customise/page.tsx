@@ -80,7 +80,7 @@ export default function CustomisePage() {
       {/* Hero */}
       <section
         ref={heroRef}
-        className="py-24 md:py-32 px-4"
+        className="py-16 md:py-20 px-4"
         style={{ backgroundColor: "#FAF8F5" }}
       >
         <div className="max-w-4xl mx-auto">

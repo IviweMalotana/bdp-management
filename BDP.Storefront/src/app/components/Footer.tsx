@@ -1,11 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+
+const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5252";
 
 export default function Footer() {
   const [email, setEmail] = useState("");
   const [subscribed, setSubscribed] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch(`${API}/api/storefront/categories`)
+      .then((r) => r.json())
+      .then((data: { category: string }[]) => {
+        if (Array.isArray(data)) setCategories(data.slice(0, 5).map((c) => c.category));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleSubscribe = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,19 +92,23 @@ export default function Footer() {
               Shop
             </h3>
             <ul className="space-y-2">
-              {[
-                ["All packaging", "/shop"],
-                ["Collections", "/collections"],
-                ["New arrivals", "/shop?sort=newest"],
-                ["Best sellers", "/shop?sort=popular"],
-              ].map(([label, href]) => (
-                <li key={href}>
+              <li>
+                <Link
+                  href="/shop"
+                  className="text-sm hover:opacity-70 transition-opacity"
+                  style={{ color: "#1C1A17" }}
+                >
+                  All packaging
+                </Link>
+              </li>
+              {categories.map((cat) => (
+                <li key={cat}>
                   <Link
-                    href={href}
+                    href={`/shop?category=${encodeURIComponent(cat)}`}
                     className="text-sm hover:opacity-70 transition-opacity"
                     style={{ color: "#1C1A17" }}
                   >
-                    {label}
+                    {cat}
                   </Link>
                 </li>
               ))}

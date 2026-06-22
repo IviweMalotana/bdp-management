@@ -17,9 +17,12 @@ interface CartState {
   items: CartItem[];
   sessionToken: string;
   cartId: number | null;
+  drawerOpen: boolean;
   setCart: (data: { id: number; sessionToken: string; items: CartItem[] }) => void;
   clearCart: () => void;
   getSessionToken: () => string;
+  openDrawer: () => void;
+  closeDrawer: () => void;
 }
 
 function generateToken() {
@@ -34,6 +37,7 @@ export const useCartStore = create<CartState>()(
       items: [],
       sessionToken: generateToken(),
       cartId: null,
+      drawerOpen: false,
       setCart: (data) =>
         set({
           cartId: data.id,
@@ -42,7 +46,16 @@ export const useCartStore = create<CartState>()(
         }),
       clearCart: () => set({ items: [], cartId: null }),
       getSessionToken: () => get().sessionToken,
+      openDrawer: () => set({ drawerOpen: true }),
+      closeDrawer: () => set({ drawerOpen: false }),
     }),
-    { name: "bdp-cart" }
+    {
+      name: "bdp-cart",
+      partialize: (s) => ({
+        items: s.items,
+        sessionToken: s.sessionToken,
+        cartId: s.cartId,
+      }),
+    }
   )
 );
