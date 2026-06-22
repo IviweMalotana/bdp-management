@@ -13,13 +13,15 @@ public class PaystackWebhookController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly PaystackService _paystack;
+    private readonly OrderEmailService _orderEmail;
     private readonly ILogger<PaystackWebhookController> _logger;
 
     public PaystackWebhookController(AppDbContext context, PaystackService paystack,
-        ILogger<PaystackWebhookController> logger)
+        OrderEmailService orderEmail, ILogger<PaystackWebhookController> logger)
     {
         _context = context;
         _paystack = paystack;
+        _orderEmail = orderEmail;
         _logger = logger;
     }
 
@@ -59,6 +61,10 @@ public class PaystackWebhookController : ControllerBase
 
     private async Task HandlePaymentSuccess(PaystackWebhookData data)
     {
+        // Track an order that transitions to paid for the first time so we send
+        // exactly one confirmation email (Paystack retries webhooks).
+        int? newlyPaidOrderId = null;
+
         // Update invoice if metadata contains invoice_id
         var invoiceId = data.Metadata?.InvoiceId;
         if (invoiceId.HasValue)
@@ -78,6 +84,7 @@ public class PaystackWebhookController : ControllerBase
             var order = await _context.Orders.FindAsync(orderId.Value);
             if (order != null)
             {
+                if (!order.IsPaid) newlyPaidOrderId = order.Id;
                 order.IsPaid = true;
                 order.PaidAt = data.PaidAt ?? DateTime.UtcNow;
                 order.PaystackPaymentReference = data.Reference;
@@ -91,11 +98,16 @@ public class PaystackWebhookController : ControllerBase
                 .FirstOrDefaultAsync(o => o.PaystackPaymentReference == data.Reference);
             if (order != null)
             {
+                if (!order.IsPaid) newlyPaidOrderId = order.Id;
                 order.IsPaid = true;
                 order.PaidAt = data.PaidAt ?? DateTime.UtcNow;
             }
         }
 
         await _context.SaveChangesAsync();
+
+        // Send the customer their confirmation once payment is locked in.
+        if (newlyPaidOrderId.HasValue)
+            await _orderEmail.TrySendOrderConfirmationAsync(newlyPaidOrderId.Value);
     }
 }

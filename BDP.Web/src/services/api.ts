@@ -261,6 +261,15 @@ export const orders = {
     http.post(`/orders/shipment/test?dryRun=${dryRun}`, body).then((r) => r.data),
 }
 
+// ── Email ───────────────────────────────────────────────────────────────────────
+export const email = {
+  status: () =>
+    http.get<{ configured: boolean; fromAddress: string }>('/email/status').then((r) => r.data),
+
+  sendTest: (body: { to: string; subject?: string; message?: string }) =>
+    http.post('/email/test', body).then((r) => r.data),
+}
+
 // ── Invoices ──────────────────────────────────────────────────────────────────
 export const invoices = {
   getAll: (params?: { status?: string; clientId?: number }) =>
