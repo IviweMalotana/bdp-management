@@ -116,7 +116,7 @@ function HeroSection() {
               Shop Packaging
             </Link>
             <Link
-              href="/for-business"
+              href="/finder"
               className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-colors border hover:bg-[#1A1A18] hover:text-[#F5F0E8]"
               style={{
                 borderColor: "#1A1A18",
@@ -124,7 +124,7 @@ function HeroSection() {
                 borderRadius: "2px",
               }}
             >
-              For Business →
+              Help me choose →
             </Link>
           </div>
         </div>
