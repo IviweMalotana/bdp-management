@@ -206,6 +206,13 @@ using (var scope = app.Services.CreateScope())
     await db.SaveChangesAsync();
 }
 
+// Always seed/refresh real per-supplier customisation costs (idempotent)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await BDP.API.Data.CustomisationCostSeeder.SeedAsync(db);
+}
+
 // Fire-and-forget currency rate refresh on startup (non-blocking)
 _ = Task.Run(async () =>
 {
