@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import gsap from "gsap";
@@ -232,6 +232,9 @@ function SegmentsSection() {
 
 function FeaturedSection({ products }: { products: any[] }) {
   const ref = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -246,6 +249,49 @@ function FeaturedSection({ products }: { products: any[] }) {
     });
   }, []);
 
+  const updateArrows = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  };
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [products]);
+
+  const scrollByCards = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".product-fade");
+    const gap = 24;
+    const amount = card ? (card.offsetWidth + gap) * 2 : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  };
+
+  const arrowStyle = (enabled: boolean): CSSProperties => ({
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    border: "1px solid rgba(184,169,154,0.5)",
+    background: "#FFFFFF",
+    color: "#1A1A18",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: enabled ? "pointer" : "not-allowed",
+    opacity: enabled ? 1 : 0.35,
+    transition: "opacity 0.2s ease",
+  });
+
   return (
     <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#F5F0E8" }}>
       <div className="max-w-7xl mx-auto">
@@ -256,14 +302,28 @@ function FeaturedSection({ products }: { products: any[] }) {
           >
             featured packaging
           </h2>
-          <Link href="/shop" className="text-sm hidden md:block hover:opacity-70 transition-opacity" style={{ color: "#B8B0A4" }}>
-            View all →
-          </Link>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2">
+              <button aria-label="Previous" onClick={() => scrollByCards(-1)} disabled={!canScrollLeft} style={arrowStyle(canScrollLeft)}>←</button>
+              <button aria-label="Next" onClick={() => scrollByCards(1)} disabled={!canScrollRight} style={arrowStyle(canScrollRight)}>→</button>
+            </div>
+            <Link href="/shop" className="text-sm hover:opacity-70 transition-opacity" style={{ color: "#B8B0A4" }}>
+              View all →
+            </Link>
+          </div>
         </div>
         {products.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div
+            ref={trackRef}
+            className="featured-carousel flex gap-6 overflow-x-auto pb-2"
+            style={{ scrollSnapType: "x mandatory", scrollbarWidth: "none" }}
+          >
             {products.map((p: any) => (
-              <div key={p.slug} className="product-fade">
+              <div
+                key={p.slug}
+                className="product-fade shrink-0"
+                style={{ scrollSnapAlign: "start", width: "calc((100% - 18px) / 2)", maxWidth: 300 }}
+              >
                 <ProductCard {...p} />
               </div>
             ))}
@@ -276,6 +336,16 @@ function FeaturedSection({ products }: { products: any[] }) {
           </div>
         )}
       </div>
+      <style jsx>{`
+        .featured-carousel::-webkit-scrollbar {
+          display: none;
+        }
+        @media (min-width: 768px) {
+          .featured-carousel > .product-fade {
+            width: calc((100% - 72px) / 4) !important;
+          }
+        }
+      `}</style>
     </section>
   );
 }
