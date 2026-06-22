@@ -6,6 +6,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useCurrencyStore } from "@/store/currencyStore";
 import { addToCart } from "@/lib/api";
 import QuantityInput from "@/app/components/QuantityInput";
+import LogoVisualizer from "@/app/components/LogoVisualizer";
 import { convertFromZAR, formatCurrency } from "@/lib/currency";
 
 function formatZAR(n: number) {
@@ -692,6 +693,12 @@ export default function PDPClient({ product }: { product: Product }) {
           )}
         </div>
       </div>
+
+      <LogoVisualizer
+        productImageUrl={images[0]?.url || undefined}
+        productName={product.name}
+        variantId={selectedVariant.id}
+      />
     </div>
   );
 }

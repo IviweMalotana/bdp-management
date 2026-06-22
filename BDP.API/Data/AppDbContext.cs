@@ -36,6 +36,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CartItemArtwork> CartItemArtworks => Set<CartItemArtwork>();
     public DbSet<OrderItemArtwork> OrderItemArtworks => Set<OrderItemArtwork>();
     public DbSet<CurrencyRate> CurrencyRates => Set<CurrencyRate>();
+    public DbSet<MockupRender> MockupRenders => Set<MockupRender>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -304,6 +305,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
             .Property(o => o.ShippingCostZAR).HasPrecision(18, 4);
         builder.Entity<Order>()
             .Property(o => o.TotalZAR).HasPrecision(18, 4);
+        builder.Entity<Order>()
+            .Property(o => o.RenderCreditZAR).HasPrecision(18, 4);
 
         // Decimal precision — OrderItem
         builder.Entity<OrderItem>()
