@@ -35,6 +35,8 @@ import CollectionForm from './pages/collections/CollectionForm'
 import PendingApplications from './pages/b2b/PendingApplications'
 import CataloguePage from './pages/catalogue/CataloguePage'
 import CustomisationSettings from './pages/settings/CustomisationSettings'
+import YunExpressTestPage from './pages/YunExpressTestPage'
+import EmailTestPage from './pages/EmailTestPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
@@ -113,6 +115,8 @@ export default function App() {
 
             {/* Catalogue */}
             <Route path="/catalogue" element={<CataloguePage />} />
+            <Route path="/yunexpress-test" element={<YunExpressTestPage />} />
+            <Route path="/email-test" element={<EmailTestPage />} />
           </Route>
         </Route>
 

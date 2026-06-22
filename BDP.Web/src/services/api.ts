@@ -256,6 +256,18 @@ export const orders = {
 
   markShipped: (id: number, body: { trackingNumber: string; trackingCarrier?: string }) =>
     http.patch<Order>(`/orders/${id}/mark-shipped`, body).then((r) => r.data),
+
+  testShipment: (body: object, dryRun: boolean) =>
+    http.post(`/orders/shipment/test?dryRun=${dryRun}`, body).then((r) => r.data),
+}
+
+// ── Email ───────────────────────────────────────────────────────────────────────
+export const email = {
+  status: () =>
+    http.get<{ configured: boolean; fromAddress: string }>('/email/status').then((r) => r.data),
+
+  sendTest: (body: { to: string; subject?: string; message?: string }) =>
+    http.post('/email/test', body).then((r) => r.data),
 }
 
 // ── Invoices ──────────────────────────────────────────────────────────────────

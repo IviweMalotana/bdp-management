@@ -418,6 +418,70 @@ public class OrdersController : ControllerBase
         return Ok(new { trackingNumber = result.WaybillNumber, yunOrderId = result.YunOrderId, labelUrl = result.LabelUrl });
     }
 
+    // POST /api/orders/shipment/test
+    // Fire a mock/test YunExpress shipment without touching a real order.
+    //   ?dryRun=true  → returns the exact SOAP payload we'd send (no transmission, credentials redacted)
+    //   ?dryRun=false → creates a REAL test order at YunExpress, then cancels it, returning the waybill
+    [HttpPost("shipment/test")]
+    public async Task<IActionResult> TestShipment([FromBody] CreateShipmentRequest dto, [FromQuery] bool dryRun = true)
+    {
+        var req = new YunExpressService.CreateOrderRequest(
+            OrderReference: $"TEST-{DateTime.UtcNow:yyyyMMddHHmmss}",
+            CountryCode: dto.CountryCode,
+            ProductCode: dto.ProductCode,
+            WeightKg: dto.WeightKg,
+            LengthCm: dto.LengthCm,
+            WidthCm: dto.WidthCm,
+            HeightCm: dto.HeightCm,
+            Pieces: dto.Pieces,
+            DeclaredValueUSD: dto.DeclaredValueUSD,
+            RecipientName: dto.RecipientName,
+            RecipientPhone: dto.RecipientPhone,
+            RecipientAddress: dto.RecipientAddress,
+            RecipientCity: dto.RecipientCity,
+            RecipientPostcode: dto.RecipientPostcode,
+            RecipientProvince: dto.RecipientProvince
+        );
+
+        if (dryRun)
+        {
+            // No network call — preview the payload so you can eyeball province/postcode/weights.
+            return Ok(new
+            {
+                mode = "dry-run",
+                reference = req.OrderReference,
+                hasCredentials = _yunExpress.HasCredentials,
+                soapPayload = _yunExpress.PreviewCreateOrderPayload(req)
+            });
+        }
+
+        if (!_yunExpress.HasCredentials)
+            return BadRequest(new { message = "YunExpress credentials not configured. Set YunExpress__AppKey and YunExpress__AppToken in Railway." });
+
+        var result = await _yunExpress.CreateOrderAsync(req);
+        if (!result.Success)
+            return StatusCode(502, new { mode = "live-test", success = false, message = result.ErrorMessage });
+
+        // Immediately cancel so the test order doesn't actually ship.
+        var cancelled = false;
+        if (!string.IsNullOrEmpty(result.YunOrderId))
+            cancelled = await _yunExpress.CancelOrderAsync(result.YunOrderId);
+
+        return Ok(new
+        {
+            mode = "live-test",
+            success = true,
+            reference = req.OrderReference,
+            trackingNumber = result.WaybillNumber,
+            yunOrderId = result.YunOrderId,
+            labelUrl = result.LabelUrl,
+            cancelled,
+            note = cancelled
+                ? "Test order created and cancelled at YunExpress."
+                : "Test order created but could NOT be auto-cancelled — cancel it manually in the YunExpress portal."
+        });
+    }
+
     // GET /api/orders/{id}/shipment/label
     [HttpGet("{id:int}/shipment/label")]
     public async Task<IActionResult> GetShipmentLabel(int id)

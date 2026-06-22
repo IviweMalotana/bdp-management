@@ -18,6 +18,8 @@ import {
   UserCheck,
   BookOpen,
   Paintbrush,
+  FlaskConical,
+  Mail,
 } from 'lucide-react'
 
 const NAV = [
@@ -41,6 +43,8 @@ const NAV = [
   { to: '/shipping-rates',          label: 'Shipping Rates',  icon: Globe },
   { to: '/settings/shipping',       label: 'Shipping',        icon: Settings },
   { to: '/settings/customisation',  label: 'Customisation',   icon: Paintbrush },
+  { to: '/yunexpress-test',         label: 'YunExpress Test', icon: FlaskConical },
+  { to: '/email-test',              label: 'Email Test',      icon: Mail },
 ]
 
 const ROLE_COLOURS: Record<string, string> = {

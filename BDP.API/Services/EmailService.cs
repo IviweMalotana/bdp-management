@@ -15,6 +15,11 @@ public class EmailService
         _logger = logger;
     }
 
+    public bool IsConfigured =>
+        !string.IsNullOrEmpty(_config["Email:SmtpHost"] ?? _config["Email__SmtpHost"]);
+
+    public string FromAddress => _config["Email:FromAddress"] ?? "noreply@bdp.co.za";
+
     public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody,
         (byte[] data, string fileName, string contentType)? attachment = null)
     {
