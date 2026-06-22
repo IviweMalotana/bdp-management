@@ -53,10 +53,8 @@ const portfolioImages = [
 const reviews = [
   { author: "Yvette Deshawn", location: "USA", rating: 5, date: "Jun 2025", body: "Very nice jars and I want to order more—I wanted a jar that would stand out and this one really works!" },
   { author: "Sarah Peter", location: "USA", rating: 5, date: "Jun 2025", body: "This is my second order of these bottles, they are so cute I needed them in all of the available colors. The price is great and the customer service that Ivy provided is top notch." },
-  { author: "Sarah Peter", location: "USA", rating: 5, date: "Jun 2025", body: "These are adorable little bottles that added a nice touch to the shelves of my perfume collection!! Ivy in customer service provided excellent communication and went above and beyond to make sure I was satisfied." },
   { author: "Michelle", location: "USA", rating: 5, date: "Jun 2025", body: "I received my samples and I'm very pleased! I will be placing another order soon." },
   { author: "Chinweoke Nnanna", location: "USA", rating: 5, date: "Jul 2025", body: "This is a cute bottle, and just right for my needs." },
-  { author: "Sarah Peter", location: "USA", rating: 5, date: "Jun 2025", body: "Great product with fast shipping, thank you!" },
   { author: "Shona Ross", location: "UK", rating: 4, date: "Jul 2025", body: "Looks so lovely on my dressing table!" },
 ];
 
