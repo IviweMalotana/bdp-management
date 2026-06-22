@@ -52,7 +52,7 @@ const reasons = [
   },
   {
     title: "Transparent pricing. Flexible MOQs.",
-    description: "Pricing tiers are shown up front — no hidden fees, no surprise quotes. MOQs start from as low as 500 units on selected lines, making quality packaging accessible to independent brands.",
+    description: "Pricing tiers are shown up front. No hidden fees, no surprise quotes. MOQs start from as low as 500 units on selected lines, making quality packaging accessible to independent brands.",
   },
 ];
 
@@ -136,7 +136,7 @@ export default function AboutPage() {
           style={{ color: "#4A4540" }}
         >
           BDP Management is a cosmetic packaging wholesale supplier connecting
-          South African brands with quality Chinese manufacturing — so you can
+          South African brands with quality Chinese manufacturing, so you can
           focus on what matters most: your product.
         </p>
       </section>

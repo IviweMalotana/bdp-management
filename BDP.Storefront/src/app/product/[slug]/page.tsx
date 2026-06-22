@@ -19,7 +19,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const product = await getProduct(slug);
   if (!product) return {};
-  return { title: `${product.name} — BDP Management` };
+  return { title: `${product.name} | BDP Management` };
 }
 
 export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {

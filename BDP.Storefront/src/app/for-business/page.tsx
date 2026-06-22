@@ -184,7 +184,7 @@ export default function ForBusinessPage() {
             className="hero-animate text-lg max-w-xl mb-12"
             style={{ color: "#C9B8A8", lineHeight: 1.8 }}
           >
-            Hotels, spas, and salons need reliable supply — not one-off orders.
+            Hotels, spas, and salons need reliable supply, not one-off orders.
             We&apos;ve built the infrastructure for it.
           </p>
           <Link

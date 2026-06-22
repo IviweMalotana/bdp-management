@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import ShopClient from "./ShopClient";
 
 export const metadata = {
-  title: "Shop Packaging — BDP Management",
+  title: "Shop Packaging | BDP Management",
 };
 
 export default function ShopPage() {

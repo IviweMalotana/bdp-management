@@ -28,7 +28,7 @@ export default async function CollectionsPage() {
         collections
       </h1>
       <p className="text-sm mb-16 max-w-lg" style={{ color: "#4A4540", lineHeight: 1.8 }}>
-        Browse by packaging type — dropper bottles, cream jars, pump bottles, and more. Each collection brings together wholesale options for cosmetic brands, skincare manufacturers, and private label suppliers.
+        Browse by packaging type. Dropper bottles, cream jars, pump bottles, and more. Each collection brings together wholesale options for cosmetic brands, skincare manufacturers, and private label suppliers.
       </p>
 
       {collections.length === 0 ? (

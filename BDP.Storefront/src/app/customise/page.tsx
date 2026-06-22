@@ -13,7 +13,7 @@ const TECHNIQUES = [
     moq: 100,
     lead: "4–6 weeks",
     description:
-      "Up to 2 colours printed directly onto the bottle. Clean, precise, and durable — ideal for logos, wordmarks, and simple graphics.",
+      "Up to 2 colours printed directly onto the bottle. Clean, precise, and durable. Ideal for logos, wordmarks, and simple graphics.",
     startingFrom: "R15.00 / unit",
   },
   {

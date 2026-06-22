@@ -248,7 +248,7 @@ export default function OrderDetailPage() {
             <div>
               {order.shippingServiceName && (
                 <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>
-                  {order.trackingCarrier ?? "YunExpress"} — {order.shippingServiceName}
+                  {order.trackingCarrier ?? "YunExpress"}, {order.shippingServiceName}
                 </p>
               )}
               {order.trackingNumber ? (

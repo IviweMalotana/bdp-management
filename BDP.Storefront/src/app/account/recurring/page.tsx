@@ -131,7 +131,7 @@ export default function RecurringOrdersPage() {
   const variantOptions = products.flatMap((p) =>
     (p.variants ?? []).map((v) => ({
       id: v.id,
-      label: `${p.name} — ${v.size} ${v.bottleColour}`.trim(),
+      label: `${p.name}, ${v.size} ${v.bottleColour}`.trim(),
     }))
   );
 
