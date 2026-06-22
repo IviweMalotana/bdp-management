@@ -32,6 +32,7 @@ METHOD_CONFIGS: Dict[str, Dict[str, Any]] = {
         "shadow_opacity": 0.20,
         "surface_texture": "vinyl",
         "texture_opacity": 0.12,
+        "substrate": "matte_paper",
         "blend_mode": "normal",
         "opacity": 1.0,
         "has_emboss": False,
@@ -114,6 +115,59 @@ FOIL_COLORS: Dict[str, Any] = {
 }
 
 VALID_FOILS: Tuple[str, ...] = tuple(FOIL_COLORS.keys())
+
+
+# ---------------------------------------------------------------------------
+# Sticker substrate library
+# ---------------------------------------------------------------------------
+# Each substrate describes the look of the physical material the sticker is
+# printed on. ``grain`` is base texture opacity, ``anisotropy`` biases the grain
+# direction (0 = isotropic, 1 = strongly directional), ``sheen`` adds a soft
+# specular response, and ``tint`` is a multiplicative RGB colour cast.
+SUBSTRATES: Dict[str, Dict[str, Any]] = {
+    "matte_paper": {
+        "grain": 0.10,
+        "anisotropy": 0.25,
+        "grain_angle_deg": 0.0,
+        "sheen": 0.04,
+        "tint": (1.0, 1.0, 1.0),
+    },
+    "gloss_vinyl": {
+        "grain": 0.05,
+        "anisotropy": 0.10,
+        "grain_angle_deg": 0.0,
+        "sheen": 0.22,
+        "tint": (1.0, 1.0, 1.0),
+    },
+    "textured_linen": {
+        "grain": 0.18,
+        "anisotropy": 0.85,
+        "grain_angle_deg": 35.0,
+        "sheen": 0.06,
+        "tint": (0.99, 0.985, 0.96),
+    },
+    "kraft": {
+        "grain": 0.16,
+        "anisotropy": 0.45,
+        "grain_angle_deg": 12.0,
+        "sheen": 0.03,
+        "tint": (0.92, 0.82, 0.66),
+    },
+}
+
+DEFAULT_SUBSTRATE = "matte_paper"
+
+VALID_SUBSTRATES: Tuple[str, ...] = tuple(SUBSTRATES.keys())
+
+
+def get_substrate(substrate: Optional[str]) -> Dict[str, Any]:
+    """Return the substrate config (defaults to ``matte_paper``)."""
+    name = substrate or DEFAULT_SUBSTRATE
+    if name not in SUBSTRATES:
+        raise ValueError(
+            f"Unknown substrate {name!r}. Valid substrates: {', '.join(VALID_SUBSTRATES)}"
+        )
+    return SUBSTRATES[name]
 
 # Foils that should be rendered with a reduced specular response.
 MATTE_FOILS: Tuple[str, ...] = ("matte_gold", "matte_silver")

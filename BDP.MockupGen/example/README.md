@@ -49,7 +49,38 @@ Expected outputs:
 | `expected_silkscreen.png` | Ink fused to the glass, slightly translucent, no edge/shadow |
 | `expected_hotstamp_gold.png` | Reflective gold foil with a directional specular highlight and crisp edges |
 
-## 3. Bonus — foil swatch strip
+## 3. Generate a supplier handoff pack
+
+Produce factory-ready production artwork from the synthesized assets (flat label,
+spec sheet PDF, placement JSON — not a warped preview):
+
+```bash
+python mockup.py supplier-pack \
+  --mark example/logo.png \
+  --template templates/SAMPLE-001.json \
+  --method hot_stamping --foil gold \
+  --text example/texts.json \
+  --label-width-mm 60 --label-height-mm 90 \
+  --dpi 300 --bleed-mm 3 \
+  --out-dir example/supplier_pack
+```
+
+This writes into `example/supplier_pack/`:
+
+- `artwork_print_ready.png` — flat label at 60×90 mm + 3 mm bleed @ 300 dpi
+- `spec_sheet.pdf` — one-page spec sheet (method, foil, dimensions, colours, placement)
+- `placement.json` — machine-readable placement spec (px + mm)
+
+Try a sticker substrate variant too:
+
+```bash
+python mockup.py --bottle example/bottle.png --logo example/logo.png \
+  --template templates/SAMPLE-001.json \
+  --method sticker --substrate kraft --text example/texts.json \
+  --output example/expected_sticker_kraft.png
+```
+
+## 4. Bonus — foil swatch strip
 
 ```bash
 python mockup.py foil-swatches --output example/foil_swatches.png

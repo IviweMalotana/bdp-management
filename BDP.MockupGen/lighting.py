@@ -83,12 +83,51 @@ def analyze_bottle_lighting(
     # Surface heuristic: high local contrast / bright highlights -> glossy.
     surface_type = "glossy" if (p95 > 200 and shadow_depth > 0.4) else "matte"
 
+    # --- Richer lighting model ----------------------------------------------
+    # Key light direction: the brightening direction in image space, with a z
+    # component derived from how "frontal" the highlight is (bright, low-spread
+    # highlights read as a more head-on light).
+    dz = float(np.clip(p95 / 255.0, 0.2, 1.0))
+    key_vec = np.array([highlight_direction[0], highlight_direction[1], dz], dtype=np.float32)
+    n = float(np.linalg.norm(key_vec))
+    if n > 1e-6:
+        key_vec = key_vec / n
+    key_light: List[float] = [float(key_vec[0]), float(key_vec[1]), float(key_vec[2])]
+
+    # Key light intensity: scaled brightest-region luminance.
+    key_light_intensity = float(np.clip(p95 / 255.0, 0.0, 1.0))
+
+    # Fill ratio: how lifted the shadows are relative to the highlights.
+    fill_ratio = float(np.clip((p5 + 1.0) / (p95 + 1.0), 0.0, 1.0))
+
+    # Ambient level: overall floor brightness.
+    ambient_level = float(np.clip(p5 / 255.0, 0.0, 1.0))
+
+    # Colour temperature from the base colour's red/blue balance.
+    r, g, b = bottle_base_color
+    if r - b > 18:
+        color_temperature = "warm"
+    elif b - r > 18:
+        color_temperature = "cool"
+    else:
+        color_temperature = "neutral"
+
+    # Surface gloss: glossy surfaces show a wide tonal spread and bright peaks.
+    surface_gloss = float(np.clip(0.5 * shadow_depth + 0.5 * (p95 / 255.0), 0.0, 1.0))
+
     return {
         "average_luminance": average_luminance,
         "highlight_direction": highlight_direction,
         "shadow_depth": shadow_depth,
         "bottle_base_color": bottle_base_color,
         "surface_type": surface_type,
+        # --- new richer keys ---
+        "key_light": key_light,
+        "key_light_intensity": key_light_intensity,
+        "fill_ratio": fill_ratio,
+        "color_temperature": color_temperature,
+        "surface_gloss": surface_gloss,
+        "ambient_level": ambient_level,
     }
 
 

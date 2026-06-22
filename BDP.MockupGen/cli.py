@@ -14,6 +14,7 @@ from method_config import (
     HOT_STAMPING,
     VALID_FOILS,
     VALID_METHODS,
+    VALID_SUBSTRATES,
     get_foil_color,
 )
 
@@ -35,6 +36,8 @@ def _parse_text_overlays(text: Optional[str]) -> Optional[List[Dict[str, Any]]]:
 @click.option("--template", type=click.Path(exists=True), help="Template JSON path.")
 @click.option("--method", type=click.Choice(VALID_METHODS), help="Application method.")
 @click.option("--foil", type=click.Choice(VALID_FOILS), default=None, help="Foil (hot stamping).")
+@click.option("--substrate", type=click.Choice(VALID_SUBSTRATES), default=None,
+              help="Sticker substrate material (default matte_paper).")
 @click.option("--text", "text", default=None, help="Text overlays JSON string or file path.")
 @click.option("--output", type=click.Path(), default="mockup.png", help="Output PNG path.")
 @click.option("--debug", is_flag=True, default=False, help="Dump debug layers.")
@@ -45,6 +48,7 @@ def cli(
     template: Optional[str],
     method: Optional[str],
     foil: Optional[str],
+    substrate: Optional[str],
     text: Optional[str],
     output: str,
     debug: bool,
@@ -66,6 +70,7 @@ def cli(
         text_overlays=overlays,
         output_path=output,
         debug_mode=debug,
+        substrate=substrate,
     )
     click.echo(f"Wrote {out}")
 
@@ -135,6 +140,52 @@ def foil_swatches(output: str, width: int, height: int) -> None:
     strip = np.hstack(swatches)
     cv2.imwrite(output, cv2.cvtColor(strip, cv2.COLOR_RGB2BGR))
     click.echo(f"Wrote {output} ({len(VALID_FOILS)} foils)")
+
+
+@cli.command("supplier-pack")
+@click.option("--mark", type=click.Path(exists=True), required=True, help="Brand mark / logo image path.")
+@click.option("--template", type=click.Path(exists=True), required=True, help="Template JSON path.")
+@click.option("--method", type=click.Choice(VALID_METHODS), required=True, help="Application method.")
+@click.option("--foil", type=click.Choice(VALID_FOILS), default=None, help="Foil (hot stamping).")
+@click.option("--text", "text", default=None, help="Text overlays JSON string or file path.")
+@click.option("--label-width-mm", type=float, required=True, help="Label width in mm (trim).")
+@click.option("--label-height-mm", type=float, required=True, help="Label height in mm (trim).")
+@click.option("--dpi", type=int, default=300, help="Print resolution (default 300).")
+@click.option("--bleed-mm", type=float, default=3.0, help="Bleed on all sides in mm (default 3).")
+@click.option("--out-dir", type=click.Path(), default="supplier_pack", help="Output directory.")
+def supplier_pack(
+    mark: str,
+    template: str,
+    method: str,
+    foil: Optional[str],
+    text: Optional[str],
+    label_width_mm: float,
+    label_height_mm: float,
+    dpi: int,
+    bleed_mm: float,
+    out_dir: str,
+) -> None:
+    """Generate a factory supplier handoff pack (flat artwork + spec sheet + placement)."""
+    from supplier_pack import generate_supplier_pack
+
+    overlays = _parse_text_overlays(text)
+    result = generate_supplier_pack(
+        brand_mark_path=mark,
+        template_path=template,
+        application_method=method,
+        foil_type=foil,
+        text_overlays=overlays,
+        label_width_mm=label_width_mm,
+        label_height_mm=label_height_mm,
+        dpi=dpi,
+        bleed_mm=bleed_mm,
+        output_dir=out_dir,
+    )
+    click.echo("Supplier pack written:")
+    click.echo(f"  artwork : {result['artwork_print_ready']}")
+    click.echo(f"  spec    : {result['spec_sheet_pdf']}")
+    click.echo(f"  spec    : {result['placement_json']}")
+    click.echo(f"  size    : {result['artwork_size_px']} px @ {result['dpi']} dpi")
 
 
 def main() -> None:

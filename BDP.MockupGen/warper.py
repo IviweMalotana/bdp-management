@@ -115,6 +115,128 @@ def cylindrical_warp(
     return warped
 
 
+# ---------------------------------------------------------------------------
+# Bottle-type driven cylindrical intensity
+# ---------------------------------------------------------------------------
+#: Default cylindrical warp intensity per ``bottle_type``.
+CYLINDRICAL_INTENSITY: Dict[str, float] = {
+    "cylindrical": 0.16,
+    "oval": 0.10,
+    "square": 0.0,
+    "flat": 0.0,
+}
+
+
+def intensity_for_bottle_type(bottle_type: str | None) -> float:
+    """Return the cylindrical warp intensity to use for ``bottle_type``.
+
+    Cylindrical bottles bulge most (~0.16), oval less (~0.10) and square/flat
+    bottles not at all (0.0). Unknown types fall back to the cylindrical value.
+    """
+    if not bottle_type:
+        return CYLINDRICAL_INTENSITY["cylindrical"]
+    return CYLINDRICAL_INTENSITY.get(str(bottle_type).lower(), CYLINDRICAL_INTENSITY["cylindrical"])
+
+
+def compute_depth_map(template: Dict[str, Any]) -> np.ndarray:
+    """Estimate a relative depth map for the label region of ``template``.
+
+    The depth encodes how far each pixel of the label recedes from the viewer
+    as the surface wraps around the vessel. For a cylinder the centre column
+    (``center_curve`` x) bulges toward the viewer (depth ~1.0) and the left/right
+    edges recede (depth ->0). The intensity of the curvature is derived from the
+    ``bottle_type`` (see :func:`intensity_for_bottle_type`). Pixels outside the
+    label region are 0.
+
+    Args:
+        template: parsed template dict.
+
+    Returns:
+        HxW float32 array, relative depth in 0..1 (1 = closest to viewer).
+    """
+    w, h = template["image_dimensions"]
+    corners = template["label_corners"]
+    xs = np.array([corners[k][0] for k in ("tl", "tr", "br", "bl")], dtype=np.float32)
+    left = float(xs.min())
+    right = float(xs.max())
+    half = max((right - left) / 2.0, 1.0)
+    cx = float(template["center_curve"][0])
+
+    intensity = intensity_for_bottle_type(template.get("bottle_type"))
+
+    map_x = np.arange(w, dtype=np.float32)[None, :].repeat(h, axis=0)
+    norm = np.clip((map_x - cx) / half, -1.0, 1.0)
+    # cos profile -> 1 at centre, 0 at the edges. Scaled by curvature intensity.
+    profile = np.cos(norm * (np.pi / 2.0))
+    flat = max(0.0, 1.0 - intensity / 0.16)  # square bottles stay ~flat
+    depth = flat + (1.0 - flat) * profile
+
+    # Mask to the label region.
+    mask = _label_mask(template)
+    depth = depth.astype(np.float32) * (mask > 0)
+    return np.clip(depth, 0.0, 1.0).astype(np.float32)
+
+
+def compute_normal_map(template: Dict[str, Any]) -> np.ndarray:
+    """Estimate per-pixel surface normals for the label region of ``template``.
+
+    Normals are derived from the curvature implied by the label corners and the
+    centre curve: across the width the surface turns away from the viewer like a
+    cylinder, while a gentle vertical component follows the top/bottom taper of
+    the corners. The result is a tangent-space-ish normal map suitable for
+    driving specular and holographic shading in the renderers.
+
+    Args:
+        template: parsed template dict.
+
+    Returns:
+        HxWx3 float32 array of unit normals. The background (outside the label)
+        is the flat normal ``[0, 0, 1]``.
+    """
+    w, h = template["image_dimensions"]
+    corners = template["label_corners"]
+    xs = np.array([corners[k][0] for k in ("tl", "tr", "br", "bl")], dtype=np.float32)
+    ys = np.array([corners[k][1] for k in ("tl", "tr", "br", "bl")], dtype=np.float32)
+    left, right = float(xs.min()), float(xs.max())
+    top, bottom = float(ys.min()), float(ys.max())
+    half_w = max((right - left) / 2.0, 1.0)
+    half_h = max((bottom - top) / 2.0, 1.0)
+    cx = float(template["center_curve"][0])
+    cyv = float(template["center_curve"][1])
+
+    intensity = intensity_for_bottle_type(template.get("bottle_type"))
+
+    grid_x = np.arange(w, dtype=np.float32)[None, :].repeat(h, axis=0)
+    grid_y = np.arange(h, dtype=np.float32)[:, None].repeat(w, axis=1)
+
+    # Horizontal turn of the surface (cylinder): nx proportional to sin(angle).
+    nx = np.sin(np.clip((grid_x - cx) / half_w, -1.0, 1.0) * (np.pi / 2.0)) * intensity * 6.0
+    # Slight vertical curvature toward the centre row (much gentler).
+    ny = np.sin(np.clip((grid_y - cyv) / half_h, -1.0, 1.0) * (np.pi / 2.0)) * intensity * 1.5
+    nz = np.ones_like(nx)
+
+    normals = np.stack([nx, ny, nz], axis=-1).astype(np.float32)
+    norm = np.linalg.norm(normals, axis=-1, keepdims=True)
+    norm = np.where(norm < 1e-6, 1.0, norm)
+    normals = normals / norm
+
+    mask = (_label_mask(template) > 0)[..., None]
+    flat = np.zeros_like(normals)
+    flat[..., 2] = 1.0
+    normals = np.where(mask, normals, flat)
+    return normals.astype(np.float32)
+
+
+def _label_mask(template: Dict[str, Any]) -> np.ndarray:
+    """Filled uint8 polygon mask of the label region."""
+    w, h = template["image_dimensions"]
+    mask = np.zeros((h, w), np.uint8)
+    c = template["label_corners"]
+    quad = np.array([c["tl"], c["tr"], c["br"], c["bl"]], dtype=np.int32)
+    cv2.fillConvexPoly(mask, quad, 255)
+    return mask
+
+
 def generate_uv_map(template: Dict[str, Any]) -> np.ndarray:
     """Generate a normalised UV map for the label region of ``template``.
 

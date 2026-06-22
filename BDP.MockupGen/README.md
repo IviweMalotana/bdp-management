@@ -57,6 +57,30 @@ python mockup.py --bottle b.png --logo l.png --template t.json \
 
 Foils: `gold`, `silver`, `copper`, `rose_gold`, `holographic`, `matte_gold`, `matte_silver`.
 
+#### Sticker substrates
+
+Stickers can be printed on different materials via `--substrate` (default
+`matte_paper`):
+
+```bash
+python mockup.py --bottle b.png --logo l.png --template t.json \
+  --method sticker --substrate textured_linen --output sticker.png
+```
+
+Substrates: `matte_paper`, `gloss_vinyl`, `textured_linen`, `kraft`. Each has its
+own directional/anisotropic grain, sheen and colour tint.
+
+> **Studio rendering:** the pipeline now estimates a per-pixel surface normal map
+> and depth map from the template (`warper.compute_normal_map` /
+> `compute_depth_map`, intensity auto-derived from `bottle_type`:
+> cylindrical ≈ 0.16, oval ≈ 0.10, square = 0.0). These drive physically-plausible
+> shading: silk-screen ink translucency + light-driven emboss + true halftone dot
+> grid; hot-stamp specular from `dot(normal, light)` with a sharp falloff, a
+> blurred environment reflection and a normal-driven holographic shift; sticker
+> directional substrate grain and a depth-aware contact shadow. `analyze_bottle_lighting`
+> additionally returns `key_light` (3D), `key_light_intensity`, `fill_ratio`,
+> `color_temperature`, `surface_gloss` and `ambient_level`.
+
 ### Text overlays
 
 Pass `--text` either a JSON string or a path to a JSON file:
@@ -87,6 +111,39 @@ python mockup.py foil-swatches --output swatches.png   # preview all foils
 
 Smart method suggestion is available programmatically via
 `method_config.suggest_method(logo_colors, bottle_material)`.
+
+---
+
+## Supplier Handoff Pack
+
+The pretty mockup is for the customer; the **supplier pack** is what goes to the
+factory. It produces flat, correctly-sized PRODUCTION artwork to impose the design
+onto bottles — separate from the warped preview.
+
+```bash
+python mockup.py supplier-pack \
+  --mark example/logo.png \
+  --template templates/SAMPLE-001.json \
+  --method hot_stamping --foil gold \
+  --text example/texts.json \
+  --label-width-mm 60 --label-height-mm 90 \
+  --dpi 300 --bleed-mm 3 \
+  --out-dir example/supplier_pack
+```
+
+Outputs in `--out-dir`:
+
+| File | What it is |
+|------|------------|
+| `artwork_print_ready.png` | The **flat** label artwork (logo + text) composited at the correct physical size (`label_width_mm × label_height_mm` at `--dpi`) plus `--bleed-mm` bleed on all four sides. **Not** warped onto the bottle. Transparent background for stickers (die-cut), white for silk-screen / hot-stamping. |
+| `spec_sheet.pdf` | One-page A4 spec sheet (rendered with Pillow, saved as PDF — no reportlab): SKU, method, foil, label size in mm, bleed, dpi, dominant ink/foil hex colours, an artwork thumbnail, and placement coordinates (label corners + curve) in **px and mm**. |
+| `placement.json` | Machine-readable placement spec: `sku`, `method`, `foil`, `label_mm`, `bleed_mm`, `dpi`, `label_corners` (px + mm), `curve_center` (px + mm), and sampled `colours`. |
+
+Physical sizing: `pixels = mm / 25.4 × dpi`, with bleed added on all four sides.
+Dominant colours are sampled from the flat artwork with a numpy histogram and
+reported as hex (useful for ink / foil matching).
+
+Programmatic use: `supplier_pack.generate_supplier_pack(...)`.
 
 ---
 

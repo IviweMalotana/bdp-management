@@ -26,7 +26,10 @@ from renderers import render_hotstamp, render_silkscreen, render_sticker
 from template_creator import load_template
 from text_renderer import render_text
 from warper import (
+    compute_depth_map,
+    compute_normal_map,
     cylindrical_warp,
+    intensity_for_bottle_type,
     perspective_warp,
     source_quad_from_image,
     target_quad_from_template,
@@ -73,7 +76,7 @@ def _warp_layer_to_bottle(
         warped,
         template["label_corners"],
         template["center_curve"],
-        intensity=0.15,
+        intensity=intensity_for_bottle_type(template.get("bottle_type")),
     )
     return warped
 
@@ -85,18 +88,25 @@ def _route_renderer(
     lighting_profile: Dict[str, Any],
     config: Dict[str, Any],
     foil_type: Optional[str],
+    normal_map: Optional[np.ndarray] = None,
+    depth_map: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Dispatch a warped layer to the appropriate method renderer."""
     if method == STICKER:
-        return render_sticker(warped_rgba, template, lighting_profile, config)
+        return render_sticker(
+            warped_rgba, template, lighting_profile, config,
+            normal_map=normal_map, depth_map=depth_map,
+        )
     if method == SILK_SCREEN:
         return render_silkscreen(
             warped_rgba, template, lighting_profile, config,
             lighting_profile["bottle_base_color"],
+            normal_map=normal_map, depth_map=depth_map,
         )
     if method == HOT_STAMPING:
         return render_hotstamp(
-            warped_rgba, template, lighting_profile, config, foil_type or "gold"
+            warped_rgba, template, lighting_profile, config, foil_type or "gold",
+            normal_map=normal_map, depth_map=depth_map,
         )
     raise ValueError(f"Unknown method {method!r}.")
 
@@ -110,6 +120,7 @@ def generate_mockup(
     text_overlays: Optional[Sequence[Dict[str, Any]]] = None,
     output_path: str = "mockup.png",
     debug_mode: bool = False,
+    substrate: Optional[str] = None,
 ) -> str:
     """Generate a bottle-label mockup and save it to ``output_path``.
 
@@ -127,7 +138,9 @@ def generate_mockup(
         The output path.
     """
     validate_method_foil(application_method, foil_type)
-    config = get_method_config(application_method)
+    config = dict(get_method_config(application_method))
+    if substrate is not None and application_method == STICKER:
+        config["substrate"] = substrate
     template = load_template(template_path)
 
     bottle = _read_image(bottle_image, cv2.IMREAD_COLOR)  # BGR
@@ -143,6 +156,10 @@ def generate_mockup(
     mask = _label_region_mask(template)
     lighting_profile = analyze_bottle_lighting(bottle, mask)
 
+    # --- Geometry maps (shared by logo + text layers) -----------------------
+    normal_map = compute_normal_map(template)
+    depth_map = compute_depth_map(template)
+
     debug_dir = None
     if debug_mode:
         debug_dir = os.path.splitext(output_path)[0] + "_debug"
@@ -154,7 +171,8 @@ def generate_mockup(
         cv2.imwrite(os.path.join(debug_dir, "01_warped_logo.png"), _rgba_to_bgra(warped_logo))
 
     logo_layer = _route_renderer(
-        application_method, warped_logo, template, lighting_profile, config, foil_type
+        application_method, warped_logo, template, lighting_profile, config, foil_type,
+        normal_map=normal_map, depth_map=depth_map,
     )
     if debug_mode and debug_dir:
         cv2.imwrite(os.path.join(debug_dir, "02_logo_layer.png"), _rgba_to_bgra(logo_layer))
@@ -171,7 +189,8 @@ def generate_mockup(
         )
         warped_text = _warp_layer_to_bottle(flat_text, template)
         text_layer = _route_renderer(
-            application_method, warped_text, template, lighting_profile, config, foil_type
+            application_method, warped_text, template, lighting_profile, config, foil_type,
+            normal_map=normal_map, depth_map=depth_map,
         )
         if debug_mode and debug_dir:
             cv2.imwrite(
