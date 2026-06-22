@@ -20,23 +20,23 @@ const heroSlides = [
 const segments = [
   {
     image: "/images/segment-skincare.jpg",
-    title: "starting your\nskincare brand",
-    body: "From 10 units. Try before you scale. No massive upfront investment.",
-    cta: "Browse →",
+    title: "everyone wants\n1000 units",
+    body: "You're testing an idea, not betting the house. Order 10 and see if it sells before you commit to a pallet.",
+    cta: "Start small →",
     href: "/shop",
   },
   {
     image: "/images/segment-hotel.jpg",
-    title: "hotels &\nspas",
-    body: "Recurring orders. Invoiced. Branded with your property identity.",
-    cta: "Learn more →",
+    title: "reordering\nis a chore",
+    body: "Running a hotel or spa? Stop emailing for quotes every quarter. Set it once, get the same thing on repeat, invoiced.",
+    cta: "Set up repeat orders →",
     href: "/for-business",
   },
   {
     image: "/images/segment-scale.jpg",
-    title: "scaling\nyour brand",
-    body: "500–5000 units. Shopify-ready export. Volume pricing that works.",
-    cta: "Browse →",
+    title: "outgrowing\nyour supplier",
+    body: "Selling fast and need 5000 units that won't break the bank? Volume pricing and Shopify-ready exports, no drama.",
+    cta: "Scale up →",
     href: "/shop",
   },
 ];
@@ -93,15 +93,15 @@ function HeroSection() {
       <div className="max-w-7xl mx-auto w-full grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
         <div>
           <h1 className="hero-emboss text-6xl md:text-8xl leading-none mb-8">
-            your packaging.
+            not ready for
             <br />
-            your brand.
+            1000 units? good.
           </h1>
           <p
             className="text-lg mb-10 max-w-md"
             style={{ color: "#B8B0A4", lineHeight: 1.7 }}
           >
-            Bottles, jars and droppers from 10 units to 10,000. Start your skincare line without the massive upfront spend. SA-based and brand-ready.
+            Most suppliers won't talk to you under 500 units. We start at 10. Bottles, jars and droppers to launch your skincare line without gambling your savings on stock you haven't sold yet.
           </p>
           <div className="flex flex-wrap gap-4">
             <Link
@@ -434,10 +434,10 @@ function PricingSection() {
     <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#E8DDD0" }}>
       <div className="max-w-3xl mx-auto text-center">
         <h2 className="pricing-fade text-4xl md:text-5xl mb-6" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1A1A18" }}>
-          the more you order, the less you pay.
+          tired of "request a quote"?
         </h2>
         <p className="pricing-fade text-sm mb-8" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
-          Buy more, pay less. Simple. Slide the quantity up on any product and watch the price drop in real time. No quotes, no waiting.
+          No back-and-forth, no waiting on a sales rep. Slide the quantity up on any product and watch your price drop in real time. The more you order, the less you pay. You see it before you commit.
         </p>
         <Link href="/shop" className="pricing-fade inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
           See pricing tiers →
