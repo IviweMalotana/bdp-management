@@ -164,53 +164,96 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapFallbackToFile("index.html");
 
-// Apply migrations + seed in all environments
+// Apply migrations in all environments. A startup-time failure here must never
+// take the whole host down before the healthcheck can respond.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        db.Database.Migrate();
+
+        // Defensive, idempotent schema guard: ensure the Supplier columns exist
+        // even if migration history has drifted (a missing Designer once stopped
+        // AddSupplierFields from being registered/applied, crashing startup with
+        // "column s.LeadTimeDays does not exist"). Safe to run every boot.
+        db.Database.ExecuteSqlRaw(@"
+            ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""Website"" text;
+            ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""LeadTimeDays"" integer NOT NULL DEFAULT 0;
+            ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""MinOrderQuantity"" integer NOT NULL DEFAULT 0;
+            ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""Notes"" text;");
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Startup migration/schema-guard failed — continuing so the healthcheck can respond");
+    }
 }
 
 
 if (app.Environment.IsDevelopment() || Environment.GetEnvironmentVariable("SEED_DATA") == "true")
 {
     using var scope = app.Services.CreateScope();
-    var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    var users  = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
-    var roles  = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    await BDP.API.Data.BDPDataSeeder.SeedAsync(db, users, roles);
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db     = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var users  = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var roles  = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+        await BDP.API.Data.BDPDataSeeder.SeedAsync(db, users, roles);
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Data seeding failed — continuing so the API stays up");
+    }
 }
 
 // Always update customisation pricing — runs on every deploy regardless of SEED_DATA
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    const decimal cnyRate = 2.60m;
-    var customSettings = new[]
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
     {
-        new { Type = "SilkScreen",   CostCNY = 3.4814m, FlatPrice = (decimal?)null,  MOQ = 2500 },
-        new { Type = "HotStamping",  CostCNY = 3.5844m, FlatPrice = (decimal?)null,  MOQ = 2500 },
-        new { Type = "ColourChange", CostCNY = 0m,      FlatPrice = (decimal?)1.25m, MOQ = 2500 },
-    };
-    foreach (var s in customSettings)
-    {
-        var existing = await db.CustomisationSettings.FirstOrDefaultAsync(x => x.Type == s.Type);
-        if (existing != null)
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        const decimal cnyRate = 2.60m;
+        var customSettings = new[]
         {
-            existing.CostPerUnitCNY = s.CostCNY;
-            existing.DefaultMinimumQuantity = s.MOQ;
-            existing.PricePerUnitZAR = s.FlatPrice
-                ?? Math.Round(s.CostCNY * cnyRate * 1.22m, 4);
+            new { Type = "SilkScreen",   CostCNY = 3.4814m, FlatPrice = (decimal?)null,  MOQ = 2500 },
+            new { Type = "HotStamping",  CostCNY = 3.5844m, FlatPrice = (decimal?)null,  MOQ = 2500 },
+            new { Type = "ColourChange", CostCNY = 0m,      FlatPrice = (decimal?)1.25m, MOQ = 2500 },
+        };
+        foreach (var s in customSettings)
+        {
+            var existing = await db.CustomisationSettings.FirstOrDefaultAsync(x => x.Type == s.Type);
+            if (existing != null)
+            {
+                existing.CostPerUnitCNY = s.CostCNY;
+                existing.DefaultMinimumQuantity = s.MOQ;
+                existing.PricePerUnitZAR = s.FlatPrice
+                    ?? Math.Round(s.CostCNY * cnyRate * 1.22m, 4);
+            }
         }
+        await db.SaveChangesAsync();
     }
-    await db.SaveChangesAsync();
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Customisation settings refresh failed — continuing");
+    }
 }
 
 // Always seed/refresh real per-supplier customisation costs (idempotent)
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    await BDP.API.Data.CustomisationCostSeeder.SeedAsync(db);
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await BDP.API.Data.CustomisationCostSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Customisation cost seeding failed — continuing");
+    }
 }
 
 // Fire-and-forget currency rate refresh on startup (non-blocking)
