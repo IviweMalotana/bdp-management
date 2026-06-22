@@ -173,6 +173,9 @@ export const customisation = {
   getAll: () =>
     http.get<CustomisationOption[]>('/customisation').then((r) => r.data),
 
+  getAllWithProfit: () =>
+    http.get<import('../types').CustomisationProfitOption[]>('/customisation/all').then((r) => r.data),
+
   getBySupplier: (supplierId: number) =>
     http.get<CustomisationOption[]>(`/customisation/supplier/${supplierId}`).then((r) => r.data),
 

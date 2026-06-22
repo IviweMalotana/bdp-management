@@ -37,6 +37,7 @@ import CataloguePage from './pages/catalogue/CataloguePage'
 import CustomisationSettings from './pages/settings/CustomisationSettings'
 import YunExpressTestPage from './pages/YunExpressTestPage'
 import EmailTestPage from './pages/EmailTestPage'
+import CustomisationProfitPage from './pages/CustomisationProfitPage'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="/shipments"         element={<ShipmentsPage />} />
             <Route path="/settings/shipping" element={<ShippingSettingsPage />} />
             <Route path="/settings/customisation" element={<CustomisationSettings />} />
+            <Route path="/customisation-profit" element={<CustomisationProfitPage />} />
             <Route path="/shipping-rates"    element={<ShippingRatesPage />} />
 
             {/* B2B — Clients */}
