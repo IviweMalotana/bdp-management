@@ -169,7 +169,7 @@ export default function CreateOrder() {
         })),
       }
       const created = await ordersApi.create(body)
-      navigate(`/orders/${created.id}`)
+      navigate(`/b2b-orders/${created.id}`)
     } catch (e: any) {
       setError(e?.response?.data?.message ?? 'Failed to create order')
     } finally {
@@ -183,7 +183,7 @@ export default function CreateOrder() {
     <div className="max-w-3xl space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <button onClick={() => navigate('/orders')} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800">
+        <button onClick={() => navigate('/b2b-orders')} className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800">
           <ArrowLeft size={18} />
         </button>
         <h1 className="text-2xl font-bold text-white">Create Order</h1>

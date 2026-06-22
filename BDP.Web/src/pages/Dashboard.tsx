@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { dashboard, clients as clientsApi, invoices as invoicesApi, recurringOrders as recurringApi } from '../services/api'
 import type { DashboardSummary, Invoice, RecurringOrder } from '../types'
-import { Package, ShoppingCart, Users, TrendingUp, AlertTriangle, BarChart2, Building2, FileText, RefreshCw } from 'lucide-react'
+import { Package, ShoppingCart, Users, TrendingUp, BarChart2, Building2, FileText, RefreshCw } from 'lucide-react'
 
 const STATUS_COLOURS: Record<string, string> = {
   Pending:          'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
@@ -68,25 +68,13 @@ export default function Dashboard() {
         <p className="text-sm text-gray-400 mt-0.5">Overview of BDP operations</p>
       </div>
 
-      {/* Low stock alert */}
-      {summary.lowStockCount > 0 && (
-        <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/30 rounded-xl px-4 py-3">
-          <AlertTriangle size={16} className="text-amber-400 flex-shrink-0" />
-          <p className="text-sm text-amber-300">
-            <span className="font-semibold">{summary.lowStockCount} product{summary.lowStockCount !== 1 ? 's' : ''}</span> with zero Cape Town stock.{' '}
-            <Link to="/inventory" className="underline hover:text-amber-200 transition-colors">View inventory</Link>
-          </p>
-        </div>
-      )}
-
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <StatCard icon={Package}       label="Active Products"  value={summary.totalProducts}       colour="bg-indigo-500/20 text-indigo-400" />
         <StatCard icon={ShoppingCart}  label="Active Orders"    value={summary.totalActiveOrders}   colour="bg-blue-500/20 text-blue-400" />
         <StatCard icon={Users}         label="Customers"        value={summary.totalCustomers}      colour="bg-green-500/20 text-green-400" />
         <StatCard icon={TrendingUp}    label="Revenue (Month)"  value={formatZAR(summary.revenueThisMonth)} colour="bg-emerald-500/20 text-emerald-400" />
         <StatCard icon={BarChart2}     label="Orders (Month)"   value={summary.ordersThisMonth}     colour="bg-purple-500/20 text-purple-400" />
-        <StatCard icon={AlertTriangle} label="Low Stock (CPT)"  value={summary.lowStockCount}       colour="bg-red-500/20 text-red-400" />
       </div>
 
       {/* B2B quick stats */}

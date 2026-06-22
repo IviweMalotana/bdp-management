@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import gsap from "gsap";
@@ -49,6 +49,18 @@ const portfolioImages = [
   { src: "/images/lifestyle-3.jpg", alt: "Packaging flat lay" },
   { src: "/images/hero-product-3.jpg", alt: "Black matte luxury bottle" },
 ];
+
+const reviews = [
+  { author: "Yvette Deshawn", location: "USA", rating: 5, date: "Jun 2025", body: "Very nice jars and I want to order more—I wanted a jar that would stand out and this one really works!" },
+  { author: "Sarah Peter", location: "USA", rating: 5, date: "Jun 2025", body: "This is my second order of these bottles, they are so cute I needed them in all of the available colors. The price is great and the customer service that Ivy provided is top notch." },
+  { author: "Sarah Peter", location: "USA", rating: 5, date: "Jun 2025", body: "These are adorable little bottles that added a nice touch to the shelves of my perfume collection!! Ivy in customer service provided excellent communication and went above and beyond to make sure I was satisfied." },
+  { author: "Michelle", location: "USA", rating: 5, date: "Jun 2025", body: "I received my samples and I'm very pleased! I will be placing another order soon." },
+  { author: "Chinweoke Nnanna", location: "USA", rating: 5, date: "Jul 2025", body: "This is a cute bottle, and just right for my needs." },
+  { author: "Sarah Peter", location: "USA", rating: 5, date: "Jun 2025", body: "Great product with fast shipping, thank you!" },
+  { author: "Shona Ross", location: "UK", rating: 4, date: "Jul 2025", body: "Looks so lovely on my dressing table!" },
+];
+
+const reviewAverage = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
 
 /* ────────────────────── Hero Section ────────────────────── */
 
@@ -232,6 +244,10 @@ function SegmentsSection() {
 
 function FeaturedSection({ products }: { products: any[] }) {
   const ref = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+  const hoverRef = useRef(false);
 
   useEffect(() => {
     if (!ref.current) return;
@@ -246,6 +262,65 @@ function FeaturedSection({ products }: { products: any[] }) {
     });
   }, []);
 
+  const updateArrows = () => {
+    const el = trackRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 4);
+  };
+
+  useEffect(() => {
+    const el = trackRef.current;
+    if (!el) return;
+    updateArrows();
+    el.addEventListener("scroll", updateArrows, { passive: true });
+    window.addEventListener("resize", updateArrows);
+    return () => {
+      el.removeEventListener("scroll", updateArrows);
+      window.removeEventListener("resize", updateArrows);
+    };
+  }, [products]);
+
+  const step = (dir: 1 | -1) => {
+    const el = trackRef.current;
+    if (!el) return;
+    const card = el.querySelector<HTMLElement>(".product-fade");
+    const gap = 24;
+    const amount = card ? card.offsetWidth + gap : el.clientWidth * 0.8;
+    el.scrollBy({ left: dir * amount, behavior: "smooth" });
+  };
+
+  // Auto-advance, looping back to the start at the end. Pauses on hover.
+  useEffect(() => {
+    if (products.length === 0) return;
+    const id = setInterval(() => {
+      const el = trackRef.current;
+      if (!el || hoverRef.current) return;
+      const atEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 4;
+      if (atEnd) {
+        el.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        step(1);
+      }
+    }, 4000);
+    return () => clearInterval(id);
+  }, [products]);
+
+  const arrowStyle = (enabled: boolean): CSSProperties => ({
+    width: 44,
+    height: 44,
+    borderRadius: "50%",
+    border: "1px solid rgba(184,169,154,0.5)",
+    background: "#FFFFFF",
+    color: "#1A1A18",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: enabled ? "pointer" : "not-allowed",
+    opacity: enabled ? 1 : 0.35,
+    transition: "opacity 0.2s ease",
+  });
+
   return (
     <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#F5F0E8" }}>
       <div className="max-w-7xl mx-auto">
@@ -256,165 +331,90 @@ function FeaturedSection({ products }: { products: any[] }) {
           >
             featured packaging
           </h2>
-          <Link href="/shop" className="text-sm hidden md:block hover:opacity-70 transition-opacity" style={{ color: "#B8B0A4" }}>
-            View all →
-          </Link>
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-2">
+              <button aria-label="Previous" onClick={() => step(-1)} disabled={!canScrollLeft} style={arrowStyle(canScrollLeft)}>←</button>
+              <button aria-label="Next" onClick={() => step(1)} disabled={!canScrollRight} style={arrowStyle(canScrollRight)}>→</button>
+            </div>
+            <Link href="/shop" className="text-sm hover:opacity-70 transition-opacity" style={{ color: "#B8B0A4" }}>
+              View all →
+            </Link>
+          </div>
         </div>
         {products.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div
+            ref={trackRef}
+            onMouseEnter={() => { hoverRef.current = true; }}
+            onMouseLeave={() => { hoverRef.current = false; }}
+            className="featured-carousel flex gap-6 overflow-x-auto pb-2"
+            style={{ scrollSnapType: "x mandatory", scrollbarWidth: "none" }}
+          >
             {products.map((p: any) => (
-              <div key={p.slug} className="product-fade">
+              <div
+                key={p.slug}
+                className="product-fade shrink-0"
+                style={{ scrollSnapAlign: "start" }}
+              >
                 <ProductCard {...p} />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[1, 2, 3, 4].map((i) => (
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
               <div key={i} className="aspect-square animate-pulse" style={{ backgroundColor: "#E8DDD0", borderRadius: "2px" }} />
             ))}
           </div>
         )}
       </div>
+      <style jsx>{`
+        .featured-carousel::-webkit-scrollbar {
+          display: none;
+        }
+        /* Mobile: show 1.5 cards so the next one peeks, signalling scrollability */
+        .featured-carousel > .product-fade {
+          width: calc((100% - 12px) / 1.5);
+        }
+        /* Desktop: 3-up with a peek of the 4th, so there is always overflow to scroll */
+        @media (min-width: 768px) {
+          .featured-carousel > .product-fade {
+            width: calc((100% - 72px) / 3.25);
+          }
+        }
+      `}</style>
     </section>
   );
 }
 
-/* ────────────────────── Horizontal Scroll Portfolio ────────────────────── */
+/* ────────────────────── Lifestyle Grid ────────────────────── */
 
 function PortfolioSection() {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const processRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!wrapperRef.current || !processRef.current) return;
-    const wrapper = wrapperRef.current;
-    const process = processRef.current;
-    const items = process.querySelectorAll<HTMLDivElement>(".portfolio-item");
-    const inners = process.querySelectorAll<HTMLDivElement>(".portfolio-item__inner");
-
-    const getMeasurements = () => ({
-      wrapperWidth: wrapper.getBoundingClientRect().width,
-      processWidth: process.getBoundingClientRect().width,
+    if (!ref.current) return;
+    gsap.from(ref.current.querySelectorAll(".grid-img"), {
+      y: 30, opacity: 0, duration: 0.7, stagger: 0.12, ease: "power2.out",
+      scrollTrigger: { trigger: ref.current, start: "top 75%" },
     });
-
-    let measurements = getMeasurements();
-
-    const setupAnimation = () => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: wrapper,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.4,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      tl.to(process, {
-        x: () => -(measurements.processWidth - measurements.wrapperWidth),
-        ease: "power1.inOut",
-      }, 0);
-
-      timelineRef.current = tl;
-
-      inners.forEach((inner, i) => {
-        const rect = items[i].getBoundingClientRect();
-        const isLeft = rect.left + rect.width / 2 < measurements.wrapperWidth / 2;
-        const fromX = isLeft ? "-100%" : "100%";
-        const rotateY = isLeft ? 60 : -60;
-
-        gsap.from(inner, {
-          x: fromX,
-          rotateY: rotateY,
-          opacity: 0.5,
-          duration: 1,
-          ease: "power2.inOut",
-          scrollTrigger: {
-            trigger: items[i],
-            start: "left right",
-            endTrigger: process,
-            end: "left left",
-            containerAnimation: tl,
-            toggleActions: "play none none reverse",
-          },
-        });
-      });
-    };
-
-    const images = process.querySelectorAll<HTMLImageElement>("img");
-    let loaded = 0;
-    const onImgLoad = () => {
-      loaded++;
-      if (loaded >= images.length) {
-        measurements = getMeasurements();
-        setupAnimation();
-      }
-    };
-
-    images.forEach((img) => {
-      if (img.complete) {
-        loaded++;
-      } else {
-        img.addEventListener("load", onImgLoad);
-      }
-    });
-    if (loaded >= images.length) {
-      measurements = getMeasurements();
-      setupAnimation();
-    }
-
-    const onResize = () => {
-      measurements = getMeasurements();
-      if (timelineRef.current) {
-        timelineRef.current.scrollTrigger?.refresh();
-      }
-    };
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      if (timelineRef.current) timelineRef.current.kill();
-      ScrollTrigger.getAll().forEach((st) => {
-        if (st.vars.containerAnimation === timelineRef.current) st.kill();
-      });
-    };
   }, []);
 
   return (
-    <section className="portfolio-section">
-      <div ref={wrapperRef} className="portfolio-wrapper">
-        <div className="text-center mb-6 absolute top-6 left-0 right-0">
-          <span className="label-caps" style={{ color: "#B8B0A4" }}>
-            In production
-          </span>
+    <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#EDE6DA" }}>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-end justify-between mb-10">
+          <span className="label-caps" style={{ color: "#B8B0A4" }}>in production</span>
         </div>
-        <div
-          ref={processRef}
-          className="portfolio-process"
-          style={{ width: "300%", willChange: "transform" }}
-        >
-          {portfolioImages.map((img, i) => (
-            <div
-              key={i}
-              className="portfolio-item"
-              style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
-            >
-              <div
-                className="portfolio-item__inner"
-                style={{ transformStyle: "preserve-3d", willChange: "transform" }}
-              >
-                <div className="portfolio-item__img">
-                  <Image
-                    src={img.src}
-                    alt={img.alt}
-                    width={420}
-                    height={525}
-                    className="w-full h-full object-cover object-center block"
-                  />
-                </div>
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {portfolioImages.slice(0, 4).map((img, i) => (
+            <div key={i} className="grid-img aspect-square overflow-hidden" style={{ borderRadius: "2px" }}>
+              <Image
+                src={img.src}
+                alt={img.alt}
+                width={420}
+                height={420}
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+              />
             </div>
           ))}
         </div>
@@ -514,6 +514,76 @@ function BusinessCTA() {
   );
 }
 
+/* ────────────────────── Reviews ────────────────────── */
+
+function Stars({ rating, size = 16 }: { rating: number; size?: number }) {
+  return (
+    <span style={{ display: "inline-flex", gap: 2, color: "#C4A882", fontSize: size, lineHeight: 1 }} aria-label={`${rating} out of 5 stars`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} style={{ opacity: i <= rating ? 1 : 0.25 }}>★</span>
+      ))}
+    </span>
+  );
+}
+
+function ReviewsSection() {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    gsap.from(ref.current.querySelectorAll(".review-fade"), {
+      y: 30, opacity: 0, duration: 0.6, stagger: 0.1, ease: "power2.out",
+      scrollTrigger: { trigger: ref.current, start: "top 75%" },
+    });
+  }, []);
+
+  return (
+    <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#F5F0E8" }}>
+      <div className="max-w-7xl mx-auto">
+        <div className="text-center mb-12">
+          <span className="label-caps block mb-4" style={{ color: "#B8B0A4" }}>
+            loved on Etsy
+          </span>
+          <h2 className="text-4xl md:text-5xl mb-5" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1A1A18" }}>
+            what our customers say
+          </h2>
+          <div className="flex items-center justify-center gap-3">
+            <Stars rating={Math.round(reviewAverage)} size={20} />
+            <span className="text-sm" style={{ color: "#1A1A18", fontWeight: 500 }}>
+              {reviewAverage.toFixed(1)} out of 5
+            </span>
+            <span className="text-sm" style={{ color: "#B8B0A4" }}>
+              · {reviews.length} reviews
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {reviews.map((r, i) => (
+            <div
+              key={i}
+              className="review-fade flex flex-col"
+              style={{ background: "#EDE6DA", border: "0.67px solid rgba(184,169,154,0.3)", borderRadius: "2px", padding: "24px" }}
+            >
+              <Stars rating={r.rating} />
+              <p className="mt-4 mb-6 text-sm flex-1" style={{ color: "#1A1A18", lineHeight: 1.7 }}>
+                “{r.body}”
+              </p>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium" style={{ color: "#1A1A18" }}>
+                  {r.author}
+                  <span style={{ color: "#B8B0A4", fontWeight: 400 }}> · {r.location}</span>
+                </span>
+                <span className="text-xs" style={{ color: "#B8B0A4" }}>{r.date}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ────────────────────── Page ────────────────────── */
 
 export default function HomeClient({ products }: { products: any[] }) {
@@ -524,6 +594,7 @@ export default function HomeClient({ products }: { products: any[] }) {
       <FeaturedSection products={products} />
       <PortfolioSection />
       <PricingSection />
+      <ReviewsSection />
       <CustomisationSection />
       <BusinessCTA />
     </>

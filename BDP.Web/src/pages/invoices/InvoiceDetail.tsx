@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Download, Send, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Download, Send, ExternalLink, CheckCircle } from 'lucide-react'
 import type { Invoice, Order } from '../../types'
 import { invoices as invoicesApi, orders as ordersApi } from '../../services/api'
 import InvoiceStatusBadge from '../../components/InvoiceStatusBadge'
@@ -15,6 +15,7 @@ export default function InvoiceDetail() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
+  const [marking, setMarking] = useState(false)
 
   useEffect(() => {
     invoicesApi.getById(Number(id))
@@ -36,6 +37,20 @@ export default function InvoiceDetail() {
       setSendError(e?.response?.data?.message ?? 'Failed to send invoice')
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleMarkPaid = async () => {
+    if (!invoice) return
+    if (!confirm('Mark this invoice as paid?')) return
+    setMarking(true); setSendError('')
+    try {
+      const updated = await invoicesApi.markPaid(invoice.id)
+      setInvoice(updated)
+    } catch (e: any) {
+      setSendError(e?.response?.data?.message ?? 'Failed to mark invoice as paid')
+    } finally {
+      setMarking(false)
     }
   }
 
@@ -70,6 +85,16 @@ export default function InvoiceDetail() {
             >
               <Send size={14} />
               {sending ? 'Sending…' : 'Send Invoice'}
+            </button>
+          )}
+          {invoice.status !== 'Paid' && invoice.status !== 'Draft' && (
+            <button
+              onClick={handleMarkPaid}
+              disabled={marking}
+              className="flex items-center gap-2 px-4 py-2 bg-green-700 hover:bg-green-600 disabled:opacity-50 text-white rounded-lg text-sm font-medium"
+            >
+              <CheckCircle size={14} />
+              {marking ? 'Marking…' : 'Mark Paid'}
             </button>
           )}
           {invoice.pdfUrl && (

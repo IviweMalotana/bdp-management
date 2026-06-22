@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, Pause, Play, X, Zap } from 'lucide-react'
+import { ArrowLeft, Pause, Play, X, Zap, Pencil } from 'lucide-react'
 import type { RecurringOrder, Order } from '../../types'
 import { recurringOrders as recurringApi, orders as ordersApi } from '../../services/api'
 
@@ -68,6 +68,14 @@ export default function RecurringOrderDetail() {
           </div>
         </div>
         <div className="flex gap-2">
+          {order.status !== 'Cancelled' && (
+            <button
+              onClick={() => navigate(`/recurring-orders/${order.id}/edit`)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-gray-800 border border-gray-700 hover:bg-gray-700 text-gray-200 rounded-lg text-sm"
+            >
+              <Pencil size={14} /> Edit
+            </button>
+          )}
           {order.status === 'Active' && (
             <button
               onClick={() => handleAction('pause')}
@@ -174,7 +182,7 @@ export default function RecurringOrderDetail() {
                   </td>
                   <td className="px-4 py-3 text-gray-300">{fmt(o.totalZAR ?? 0)}</td>
                   <td className="px-4 py-3">
-                    <button onClick={() => navigate(`/orders/${o.id}`)} className="text-xs text-indigo-400 hover:text-indigo-300">View →</button>
+                    <button onClick={() => navigate(`/b2b-orders/${o.id}`)} className="text-xs text-indigo-400 hover:text-indigo-300">View →</button>
                   </td>
                 </tr>
               ))}

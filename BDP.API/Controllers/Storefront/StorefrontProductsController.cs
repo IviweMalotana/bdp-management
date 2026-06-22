@@ -107,8 +107,13 @@ public class StorefrontProductsController : ControllerBase
                     moq = setting.DefaultMinimumQuantity;
                 }
 
+                var optionId = supplierHasAnyOptions
+                    ? supplierOptions.FirstOrDefault(co => co.Type == setting.Type)?.Id
+                    : (int?)null;
+
                 return new
                 {
+                    id = optionId,
                     type = setting.Type,
                     pricePerUnitZAR = setting.PricePerUnitZAR,   // sale price at MOQ anchor
                     costPerUnitZAR,                               // your cost (for client-side interpolation)

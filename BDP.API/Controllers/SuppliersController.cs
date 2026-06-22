@@ -59,8 +59,12 @@ public class SuppliersController : ControllerBase
             Address = dto.Address,
             ContactEmail = dto.ContactEmail,
             ContactPhone = dto.ContactPhone,
+            Website = dto.Website,
+            LeadTimeDays = dto.LeadTimeDays,
+            MinOrderQuantity = dto.MinOrderQuantity,
+            Notes = dto.Notes,
             SuppliesBottles = dto.SuppliesBottles,
-            SuppliesCustomisation = dto.SuppliesCustomisation,
+            SuppliesCustomisation = dto.SuppliesCustomisation || dto.OffersCustomisation,
             IsActive = dto.IsActive,
             CreatedAt = DateTime.UtcNow
         };
@@ -86,8 +90,12 @@ public class SuppliersController : ControllerBase
         supplier.Address = dto.Address;
         supplier.ContactEmail = dto.ContactEmail;
         supplier.ContactPhone = dto.ContactPhone;
+        supplier.Website = dto.Website;
+        supplier.LeadTimeDays = dto.LeadTimeDays;
+        supplier.MinOrderQuantity = dto.MinOrderQuantity;
+        supplier.Notes = dto.Notes;
         supplier.SuppliesBottles = dto.SuppliesBottles;
-        supplier.SuppliesCustomisation = dto.SuppliesCustomisation;
+        supplier.SuppliesCustomisation = dto.SuppliesCustomisation || dto.OffersCustomisation;
         supplier.IsActive = dto.IsActive;
 
         await _context.SaveChangesAsync();
@@ -123,8 +131,13 @@ public class SuppliersController : ControllerBase
         Address = s.Address,
         ContactEmail = s.ContactEmail,
         ContactPhone = s.ContactPhone,
+        Website = s.Website,
+        LeadTimeDays = s.LeadTimeDays,
+        MinOrderQuantity = s.MinOrderQuantity,
+        Notes = s.Notes,
         SuppliesBottles = s.SuppliesBottles,
         SuppliesCustomisation = s.SuppliesCustomisation,
+        OffersCustomisation = s.SuppliesCustomisation,
         IsActive = s.IsActive,
         CreatedAt = s.CreatedAt,
         ProductCount = s.Products?.Count ?? 0,
@@ -139,8 +152,13 @@ public class SuppliersController : ControllerBase
         Address = s.Address,
         ContactEmail = s.ContactEmail,
         ContactPhone = s.ContactPhone,
+        Website = s.Website,
+        LeadTimeDays = s.LeadTimeDays,
+        MinOrderQuantity = s.MinOrderQuantity,
+        Notes = s.Notes,
         SuppliesBottles = s.SuppliesBottles,
         SuppliesCustomisation = s.SuppliesCustomisation,
+        OffersCustomisation = s.SuppliesCustomisation,
         IsActive = s.IsActive,
         CreatedAt = s.CreatedAt,
         ProductCount = s.Products?.Count ?? 0,

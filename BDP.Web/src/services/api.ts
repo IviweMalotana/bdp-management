@@ -3,7 +3,6 @@ import type {
   LoginRequest, LoginResponse, User,
   Product, ProductVariant, ProductImage, PagedResult,
   PricingCalculationResult, AIContentResult,
-  InventoryItem, InventorySummary,
   Supplier, CustomisationOption,
   Customer, CustomerDetail,
   Client, ClientSummary, ClientDetail,
@@ -134,14 +133,6 @@ export interface ProductsPage {
   items: any[] // We can tighten this later
 }
 
-export interface GenerateImagesResult {
-  totalProcessed: number
-  generated: number
-  skipped: number
-  errors: string[]
-  message: string
-}
-
 // ── Catalogue (Admin) ────────────────────────────────────────────────────────
 export const catalogue = {
   importCsv: (file: File) => {
@@ -155,32 +146,8 @@ export const catalogue = {
   getProducts: (params?: { page?: number; pageSize?: number; search?: string }) =>
     http.get<ProductsPage>('/admin/catalogue/products', { params }).then((r) => r.data),
 
-  generateAiImages: (payload?: { productIds?: number[]; onlyMissing?: boolean }) =>
-    http.post<GenerateImagesResult>('/admin/catalogue/generate-images', payload ?? {}).then((r) => r.data),
-
   wipeAll: () =>
     http.post<{ success: boolean; message: string }>('/admin/catalogue/wipe-all').then((r) => r.data),
-}
-
-// ── Inventory ─────────────────────────────────────────────────────────────────
-export const inventory = {
-  getAll: (params?: { location?: string; productId?: number; isStocked?: boolean }) =>
-    http.get<InventoryItem[]>('/inventory', { params }).then((r) => r.data),
-
-  getByProduct: (productId: number) =>
-    http.get<InventoryItem[]>(`/inventory/${productId}`).then((r) => r.data),
-
-  update: (id: number, data: Partial<InventoryItem>) =>
-    http.put<InventoryItem>(`/inventory/${id}`, data).then((r) => r.data),
-
-  bulkUpdate: (items: object[]) =>
-    http.post('/inventory/bulk-update', { items }).then((r) => r.data),
-
-  getSummary: () =>
-    http.get<InventorySummary[]>('/inventory/summary').then((r) => r.data),
-
-  getLowStock: () =>
-    http.get<InventoryItem[]>('/inventory/low-stock').then((r) => r.data),
 }
 
 // ── Suppliers ─────────────────────────────────────────────────────────────────
@@ -301,6 +268,9 @@ export const invoices = {
 
   send: (id: number) =>
     http.post<Invoice>(`/invoices/${id}/send`).then((r) => r.data),
+
+  markPaid: (id: number) =>
+    http.patch<Invoice>(`/invoices/${id}/mark-paid`).then((r) => r.data),
 }
 
 // ── Recurring Orders ──────────────────────────────────────────────────────────

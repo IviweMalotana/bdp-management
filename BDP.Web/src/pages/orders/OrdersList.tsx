@@ -56,7 +56,7 @@ export default function OrdersList() {
           <p className="text-sm text-gray-400 mt-0.5">{total} total orders</p>
         </div>
         <button
-          onClick={() => navigate('/orders/new')}
+          onClick={() => navigate('/b2b-orders/new')}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium"
         >
           <Plus size={16} /> Create Order
@@ -122,7 +122,7 @@ export default function OrdersList() {
                   </td>
                 </tr>
               ) : data.map((o) => (
-                <tr key={o.id} className="hover:bg-gray-800/50 transition-colors cursor-pointer" onClick={() => navigate(`/orders/${o.id}`)}>
+                <tr key={o.id} className="hover:bg-gray-800/50 transition-colors cursor-pointer" onClick={() => navigate(`/b2b-orders/${o.id}`)}>
                   <td className="px-4 py-3 font-mono text-indigo-300">{o.orderNumber}</td>
                   <td className="px-4 py-3 text-white">{o.clientName ?? o.customerName}</td>
                   <td className="px-4 py-3 text-gray-400">{new Date(o.orderDate).toLocaleDateString()}</td>
@@ -139,7 +139,7 @@ export default function OrdersList() {
                   </td>
                   <td className="px-4 py-3">
                     <button
-                      onClick={(e) => { e.stopPropagation(); navigate(`/orders/${o.id}`) }}
+                      onClick={(e) => { e.stopPropagation(); navigate(`/b2b-orders/${o.id}`) }}
                       className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg"
                     >
                       <Eye size={15} />

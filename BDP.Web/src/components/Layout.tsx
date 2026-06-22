@@ -3,7 +3,6 @@ import { useAuthStore } from '../store/authStore'
 import {
   LayoutDashboard,
   Package,
-  Boxes,
   Users,
   ShoppingCart,
   Factory,
@@ -27,7 +26,6 @@ const NAV = [
   { to: '/products',          label: 'All Products',    icon: Package },
   { to: '/catalogue',         label: 'Import & Pricing', icon: BookOpen },
   { to: '/collections',       label: 'Collections',     icon: Layers },
-  { to: '/inventory',         label: 'Inventory',       icon: Boxes },
   { to: '/suppliers',         label: 'Suppliers',       icon: Factory },
   { to: '/shipments',         label: 'Shipments',       icon: Ship },
   { divider: true,            label: 'B2B' },
