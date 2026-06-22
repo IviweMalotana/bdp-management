@@ -208,9 +208,6 @@ function SegmentsSection() {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.02]"
               />
             </div>
-            <span className="label-caps block mb-3" style={{ color: "#B8B0A4" }}>
-              product imagery
-            </span>
             <h2
               className="text-3xl leading-tight mb-4 whitespace-pre-line"
               style={{
@@ -441,7 +438,7 @@ function PricingSection() {
           the more you order, the less you pay.
         </h2>
         <p className="pricing-fade text-sm mb-8" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
-          Our tiered pricing rewards volume. See how it works on any product page — adjust your quantity and watch the price update live.
+          Buy more, pay less. Simple. Slide the quantity up on any product and watch the price drop in real time — no quotes, no waiting.
         </p>
         <Link href="/shop" className="pricing-fade inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
           See pricing tiers →
