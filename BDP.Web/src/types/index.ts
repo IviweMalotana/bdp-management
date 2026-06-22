@@ -86,6 +86,14 @@ export interface VariantPricingTier {
   costPerUnitZAR: number
   salePriceZAR: number
   sku: string
+  // Admin profitability breakdown (computed server-side)
+  salePerUnitZAR: number
+  actualCostPerUnitZAR: number
+  profitPerUnitZAR: number
+  totalCostZAR: number
+  totalSaleZAR: number
+  totalProfitZAR: number
+  marginPercent: number
 }
 
 export interface ProductVariant {
@@ -98,6 +106,8 @@ export interface ProductVariant {
   sku: string
   isActive: boolean
   name?: string
+  unitPriceCNY?: number
+  actualCostPerUnitZAR?: number
   pricingTiers: VariantPricingTier[]
 }
 

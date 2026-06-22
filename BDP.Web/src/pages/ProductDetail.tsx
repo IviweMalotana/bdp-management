@@ -154,7 +154,7 @@ export default function ProductDetail() {
         <div className="flex border-b border-gray-800 overflow-x-auto">
           {([
             { key: 'variants',       label: `Variants (${product.variants?.length ?? 0})` },
-            { key: 'pricing',        label: `Pricing Tiers (${product.pricingTiers?.length ?? 0})` },
+            { key: 'pricing',        label: `Cost & Profit (${product.variants?.reduce((n, v) => n + (v.pricingTiers?.length ?? 0), 0) ?? 0})` },
             { key: 'customisation',  label: `Pricing & Customisation (${product.productPricingTiers?.length ?? 0})` },
           ] as { key: Tab; label: string }[]).map(({ key, label }) => (
             <button
@@ -285,37 +285,55 @@ export default function ProductDetail() {
           </div>
         )}
 
-        {/* Pricing Tiers tab */}
+        {/* Cost & Profit tab */}
         {tab === 'pricing' && (
-          (product.pricingTiers?.length ?? 0) === 0 ? (
-            <p className="px-5 py-8 text-sm text-gray-500 text-center">No pricing tiers configured.{isAdmin && ' Click Edit to add tiers after saving.'}</p>
+          (product.variants?.reduce((n, v) => n + (v.pricingTiers?.length ?? 0), 0) ?? 0) === 0 ? (
+            <p className="px-5 py-8 text-sm text-gray-500 text-center">No pricing tiers configured.{isAdmin && ' Run a catalogue import to generate them.'}</p>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-gray-800">
-                    {['SKU', 'Qty', 'Sale/Unit', 'Total Sale', 'Cost', 'Profit', 'Margin', 'Delivery', 'Silk Screen', 'Hot Stamp'].map((h) => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-800">
-                  {(product.pricingTiers ?? []).map((t) => (
-                    <tr key={t.id} className="hover:bg-gray-800/50">
-                      <td className="px-4 py-2.5 font-mono text-xs text-gray-300">{t.sku}</td>
-                      <td className="px-4 py-2.5 text-gray-300">{t.quantity.toLocaleString()}</td>
-                      <td className="px-4 py-2.5 text-gray-300">R{t.salePricePerUnit.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-gray-300">R{t.totalSalePrice.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-gray-300">R{t.totalCostPrice.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-green-400">R{t.totalProfit.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-gray-300">{t.marginPercent.toFixed(1)}%</td>
-                      <td className="px-4 py-2.5 text-gray-300">R{t.deliveryCostZAR.toFixed(2)}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{t.logoSilkScreen != null ? `R${t.logoSilkScreen}` : '—'}</td>
-                      <td className="px-4 py-2.5 text-gray-400">{t.logoHotStamping != null ? `R${t.logoHotStamping}` : '—'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="px-5 py-4 space-y-8">
+              {(product.variants ?? []).filter(v => (v.pricingTiers?.length ?? 0) > 0).map((v) => {
+                const tiers = [...(v.pricingTiers ?? [])].sort((a, b) => a.quantity - b.quantity)
+                const fmt = (n: number) => `R${n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                const variantLabel = [v.size, v.bottleColour, v.texture].filter(Boolean).join(' · ') || v.sku
+                return (
+                  <div key={v.id}>
+                    <div className="flex items-baseline justify-between mb-2">
+                      <h3 className="text-sm font-semibold text-white">{variantLabel}</h3>
+                      {v.actualCostPerUnitZAR != null && (
+                        <span className="text-xs text-gray-500">
+                          Actual cost: <span className="text-gray-300">{fmt(v.actualCostPerUnitZAR)}/unit</span>
+                          {v.unitPriceCNY != null && <span className="text-gray-600"> · ¥{v.unitPriceCNY}/unit landed</span>}
+                        </span>
+                      )}
+                    </div>
+                    <div className="overflow-x-auto border border-gray-800 rounded-lg">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-800 bg-gray-800/40">
+                            {['Qty', 'Cost/Unit', 'Sale/Unit', 'Profit/Unit', 'Total Cost', 'Total Sale', 'Total Profit', 'Margin'].map((h) => (
+                              <th key={h} className="px-4 py-2.5 text-right first:text-left text-xs font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-800">
+                          {tiers.map((t) => (
+                            <tr key={t.id} className="hover:bg-gray-800/50">
+                              <td className="px-4 py-2.5 font-semibold text-white">{t.quantity.toLocaleString()}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-400">{fmt(t.actualCostPerUnitZAR)}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-200">{fmt(t.salePerUnitZAR)}</td>
+                              <td className="px-4 py-2.5 text-right text-green-400">{fmt(t.profitPerUnitZAR)}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-400">{fmt(t.totalCostZAR)}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-200">{fmt(t.totalSaleZAR)}</td>
+                              <td className="px-4 py-2.5 text-right text-green-400 font-medium">{fmt(t.totalProfitZAR)}</td>
+                              <td className="px-4 py-2.5 text-right text-gray-300">{t.marginPercent.toFixed(1)}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )
         )}
