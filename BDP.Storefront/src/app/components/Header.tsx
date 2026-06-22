@@ -5,27 +5,24 @@ import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useCurrencyStore } from "@/store/currencyStore";
 
-interface Collection {
-  id: number;
-  name: string;
-  slug: string;
-}
-
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5252";
 
 export default function Header() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [shopOpen, setShopOpen] = useState(false);
-  const [collections, setCollections] = useState<Collection[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const shopRef = useRef<HTMLDivElement>(null);
   const items = useCartStore((s) => s.items);
+  const openCart = useCartStore((s) => s.openDrawer);
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
   const { jwt, firstName } = useAuthStore();
 
   useEffect(() => {
-    fetch(`${API}/api/storefront/collections`)
+    fetch(`${API}/api/storefront/categories`)
       .then((r) => r.json())
-      .then((data: Collection[]) => setCollections(data))
+      .then((data: { category: string }[]) => {
+        if (Array.isArray(data)) setCategories(data.map((c) => c.category));
+      })
       .catch(() => {});
   }, []);
 
@@ -106,31 +103,22 @@ export default function Header() {
                 >
                   All Packaging
                 </Link>
-                {collections.length > 0 && (
+                {categories.length > 0 && (
                   <>
                     <div className="my-1.5 border-t" style={{ borderColor: "#C9B8A8" }} />
-                    {collections.map((c) => (
+                    {categories.map((c) => (
                       <Link
-                        key={c.id}
-                        href={`/collections/${c.slug}`}
+                        key={c}
+                        href={`/shop?category=${encodeURIComponent(c)}`}
                         onClick={() => setShopOpen(false)}
                         className="block px-4 py-2 text-sm hover:bg-[#E8DDD0] transition-colors"
                         style={{ color: "#1C1A17" }}
                       >
-                        {c.name}
+                        {c}
                       </Link>
                     ))}
-                    <div className="my-1.5 border-t" style={{ borderColor: "#C9B8A8" }} />
                   </>
                 )}
-                <Link
-                  href="/collections"
-                  onClick={() => setShopOpen(false)}
-                  className="block px-4 py-2 text-sm hover:bg-[#E8DDD0] transition-colors"
-                  style={{ color: "#4A4540" }}
-                >
-                  All Collections →
-                </Link>
               </div>
             )}
           </div>
@@ -153,7 +141,7 @@ export default function Header() {
           <Link href={accountHref} className="hidden md:block text-sm" style={{ color: "#4A4540" }}>
             {accountLabel}
           </Link>
-          <Link href="/cart" className="relative" aria-label="Cart">
+          <button onClick={openCart} className="relative" aria-label="Open cart">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C1A17" strokeWidth="1.5">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
               <line x1="3" y1="6" x2="21" y2="6" />
@@ -167,7 +155,7 @@ export default function Header() {
                 {itemCount}
               </span>
             )}
-          </Link>
+          </button>
           {/* Hamburger — mobile */}
           <button
             className="md:hidden"
@@ -209,27 +197,19 @@ export default function Header() {
             >
               Shop
             </Link>
-            {collections.length > 0 && (
+            {categories.length > 0 && (
               <div className="pl-4 space-y-2 border-l" style={{ borderColor: "#C9B8A8" }}>
-                {collections.map((c) => (
+                {categories.map((c) => (
                   <Link
-                    key={c.id}
-                    href={`/collections/${c.slug}`}
-                    className="block text-sm"
+                    key={c}
+                    href={`/shop?category=${encodeURIComponent(c)}`}
+                    className="block text-sm py-1"
                     style={{ color: "#4A4540" }}
                     onClick={() => setDrawerOpen(false)}
                   >
-                    {c.name}
+                    {c}
                   </Link>
                 ))}
-                <Link
-                  href="/collections"
-                  className="block text-sm"
-                  style={{ color: "#4A4540" }}
-                  onClick={() => setDrawerOpen(false)}
-                >
-                  All Collections →
-                </Link>
               </div>
             )}
             {staticNavLinks.map((l) => (

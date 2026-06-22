@@ -62,9 +62,12 @@ const reviewAverage = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.le
 
 /* ────────────────────── Hero Section ────────────────────── */
 
-function HeroSection() {
+function HeroSection({ products }: { products: any[] }) {
   const [currentSlide, setCurrentSlide] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Deep-link each hero slide to a real product when available.
+  const heroLink = (i: number) => (products[i]?.slug ? `/product/${products[i].slug}` : "/shop");
+  const heroLabel = (i: number) => products[i]?.name ?? heroSlides[i].code;
 
   useEffect(() => {
     intervalRef.current = setInterval(() => {
@@ -129,8 +132,9 @@ function HeroSection() {
           </div>
         </div>
 
-        <div
-          className="relative aspect-[4/5] max-w-[520px] mx-auto md:mx-0 md:ml-auto w-full overflow-hidden"
+        <Link
+          href={heroLink(currentSlide)}
+          className="relative aspect-[4/5] max-w-[520px] mx-auto md:mx-0 md:ml-auto w-full overflow-hidden block"
           style={{
             borderRadius: "2px",
             boxShadow: "0 4px 20px rgba(28, 26, 23, 0.08)",
@@ -142,7 +146,7 @@ function HeroSection() {
             <Image
               key={slide.code}
               src={slide.src}
-              alt={slide.code}
+              alt={heroLabel(i)}
               fill
               className={`object-cover transition-opacity duration-700 ${
                 i === currentSlide ? "opacity-100" : "opacity-0"
@@ -160,9 +164,9 @@ function HeroSection() {
               borderRadius: "2px",
             }}
           >
-            {heroSlides[currentSlide].code}
+            {heroLabel(currentSlide)}
           </span>
-        </div>
+        </Link>
       </div>
     </section>
   );
@@ -583,7 +587,7 @@ function ReviewsSection() {
 export default function HomeClient({ products }: { products: any[] }) {
   return (
     <>
-      <HeroSection />
+      <HeroSection products={products} />
       <SegmentsSection />
       <FeaturedSection products={products} />
       <PortfolioSection />

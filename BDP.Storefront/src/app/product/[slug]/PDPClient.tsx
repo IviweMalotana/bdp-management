@@ -367,11 +367,13 @@ export default function PDPClient({ product }: { product: Product }) {
   const [added, setAdded] = useState(false);
   const [moqError, setMoqError] = useState("");
 
-  const { setCart, getSessionToken } = useCartStore();
+  const { setCart, getSessionToken, openDrawer } = useCartStore();
   const { jwt } = useAuthStore();
 
   const tiers = selectedVariant.pricingTiers ?? [];
   const moq = Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY);
+  const maxTierQty = tiers.reduce((m, t) => Math.max(m, t.quantity), 0);
+  const sliderMax = Math.max(maxTierQty, moq * 50);
 
   // Sliding-scale unit price interpolated between surrounding anchor tiers
   const unitPrice = interpolateTierPrice(tiers, quantity);
@@ -425,6 +427,7 @@ export default function PDPClient({ product }: { product: Product }) {
       const result = await addToCart(token, selectedVariant.id, quantity, customisationId, jwt ?? undefined);
       setCart(result as Parameters<typeof setCart>[0]);
       setAdded(true);
+      openDrawer();
       setTimeout(() => setAdded(false), 2000);
     } catch {
       alert("Failed to add to cart. Please try again.");
@@ -437,7 +440,7 @@ export default function PDPClient({ product }: { product: Product }) {
   const useCatalogueSel = isCatalogueBased(product.variants);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10 md:py-16">
+    <div className="max-w-7xl mx-auto px-4 py-10 md:py-16 pb-28 md:pb-16">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12">
         {/* Image gallery */}
         <div>
@@ -525,6 +528,56 @@ export default function PDPClient({ product }: { product: Product }) {
               <QuantityInput value={quantity} min={moq} onChange={handleQuantityChange} />
             </div>
             {moqError && <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{moqError}</p>}
+
+            {/* Quantity slider — drag to see the unit price drop in real time */}
+            {sliderMax > moq && (
+              <div className="mt-4">
+                <input
+                  type="range"
+                  min={moq}
+                  max={sliderMax}
+                  step={moq}
+                  value={Math.min(quantity, sliderMax)}
+                  onChange={(e) => handleQuantityChange(parseInt(e.target.value, 10))}
+                  className="w-full"
+                  style={{ accentColor: "#C4A882" }}
+                  aria-label="Quantity slider"
+                />
+                <div className="flex justify-between text-[11px] mt-1" style={{ color: "#C9B8A8" }}>
+                  <span>{moq}</span>
+                  <span>{sliderMax.toLocaleString()}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Tier breakpoints — shows the volume discount */}
+            {tiers.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-2">
+                {[...tiers].sort((a, b) => a.quantity - b.quantity).map((t) => {
+                  const active = quantity >= t.quantity;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => handleQuantityChange(Math.max(t.quantity, moq))}
+                      className="px-3 py-1.5 text-left border transition-colors"
+                      style={{
+                        borderColor: active ? "#1C1A17" : "#C9B8A8",
+                        backgroundColor: active ? "#E8DDD0" : "transparent",
+                        borderRadius: "2px",
+                      }}
+                    >
+                      <span className="block text-xs font-medium" style={{ color: "#1C1A17" }}>
+                        {t.quantity.toLocaleString()}+
+                      </span>
+                      <span className="block text-[11px]" style={{ color: "#4A4540" }}>
+                        {formatPrice(t.salePriceZAR / t.quantity)}/unit
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Unit price */}
@@ -691,6 +744,51 @@ export default function PDPClient({ product }: { product: Product }) {
             </details>
           )}
         </div>
+      </div>
+
+      {/* Sticky mobile add-to-cart bar */}
+      <div
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center gap-3 px-4 py-3 border-t"
+        style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8" }}
+      >
+        <div className="flex flex-col shrink-0">
+          <span className="text-[11px]" style={{ color: "#9E8F83" }}>
+            {formatPrice(unitPrice)}/unit
+          </span>
+          <span className="text-sm font-medium" style={{ color: "#1C1A17" }}>
+            {formatPrice(grandTotal)}
+          </span>
+        </div>
+        <div className="flex items-center border shrink-0" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(Math.max(moq, quantity - moq))}
+            className="w-8 h-9 flex items-center justify-center text-base"
+            style={{ color: "#1C1A17" }}
+            aria-label="Decrease quantity"
+          >
+            −
+          </button>
+          <span className="w-10 text-center text-sm" style={{ color: "#1C1A17" }}>{quantity}</span>
+          <button
+            type="button"
+            onClick={() => handleQuantityChange(quantity + moq)}
+            className="w-8 h-9 flex items-center justify-center text-base"
+            style={{ color: "#1C1A17" }}
+            aria-label="Increase quantity"
+          >
+            +
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={handleAddToCart}
+          disabled={adding || quantity < moq}
+          className="flex-1 py-3 text-sm font-medium transition-opacity disabled:opacity-50"
+          style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
+        >
+          {added ? "Added ✓" : adding ? "Adding…" : "Add"}
+        </button>
       </div>
     </div>
   );

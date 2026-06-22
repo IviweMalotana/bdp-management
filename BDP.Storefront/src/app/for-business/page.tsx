@@ -156,7 +156,7 @@ export default function ForBusinessPage() {
       {/* Hero */}
       <section
         ref={heroRef}
-        className="py-24 md:py-32 px-4"
+        className="py-16 md:py-20 px-4"
         style={{ backgroundColor: "#1C1A17" }}
       >
         <div className="max-w-4xl mx-auto">

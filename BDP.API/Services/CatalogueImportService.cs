@@ -59,7 +59,6 @@ public class CatalogueImportService
         // ── Load settings for pricing ─────────────────────────────────────────
         var settings = await _db.ShippingSettings.FindAsync(1);
         decimal bufferCNY = settings?.BufferCNY ?? 3.00m;
-        decimal profitCNY = settings?.ProfitCNY ?? 1.00m;
         decimal cnyToZar  = settings?.CnyToZarRate ?? 2.40m;
 
         // ── Collect all SKUs/supplier item numbers present in the sheet ────────
@@ -211,7 +210,15 @@ public class CatalogueImportService
                     _db.ProductPricingTiers.RemoveRange(existingTiers);
                     await _db.SaveChangesAsync();
 
-                    var basePricePerUnit = (unitPrice + bufferCNY + profitCNY) * cnyToZar;
+                    // Sale price = landed cost + a percentage markup. Using a percentage
+                    // (rather than the old flat ProfitCNY) keeps the starting margin healthy
+                    // and — because the markup exceeds the maximum 25% volume discount —
+                    // guarantees no tier is ever sold below cost.
+                    // 0.70 → ~41% gross margin at qty 10 (R1.88 jar starts ≈ R19.91/unit),
+                    // tapering to ~22% at the 5000 tier.
+                    const decimal markupRate = 0.70m;
+                    var landedCostPerUnit = (unitPrice + bufferCNY) * cnyToZar;
+                    var basePricePerUnit = landedCostPerUnit * (1 + markupRate);
                     var quantities = new[] { 10, 50, 100, 250, 500, 1000, 2500, 5000 };
                     // Volume discount: % off the base unit price at each quantity anchor.
                     // Larger orders get a lower per-unit price.

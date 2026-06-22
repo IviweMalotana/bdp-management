@@ -1,5 +1,6 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import ProductCard from "../components/ProductCard";
 
 interface Product {
@@ -15,11 +16,16 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5252";
 const PAGE_SIZE = 18;
 
 export default function ShopClient() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
   const [items, setItems] = useState<Product[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
-  const [category, setCategory] = useState("");
-  const [search, setSearch] = useState("");
+  // Seed initial filter state from the URL so dropdown/footer links land pre-filtered.
+  const [category, setCategory] = useState(searchParams.get("category") ?? "");
+  const [search, setSearch] = useState(searchParams.get("search") ?? "");
+  const [searchInput, setSearchInput] = useState(searchParams.get("search") ?? "");
   const [sort, setSort] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,6 +43,26 @@ export default function ShopClient() {
       .catch(() => {});
   }, []);
 
+  // Debounce the search box (~300ms) so it doesn't refetch every keystroke.
+  useEffect(() => {
+    const t = setTimeout(() => setSearch(searchInput), 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
+
+  // Keep the URL shareable (shallow, no reload) when category/search change.
+  const didMount = useRef(false);
+  useEffect(() => {
+    if (!didMount.current) {
+      didMount.current = true;
+      return;
+    }
+    const params = new URLSearchParams();
+    if (category) params.set("category", category);
+    if (search) params.set("search", search);
+    const qs = params.toString();
+    router.replace(qs ? `/shop?${qs}` : "/shop", { scroll: false });
+  }, [category, search, router]);
+
   // Fetch first page whenever filters change
   const fetchPage = useCallback(
     (pageNum: number, append: boolean) => {
@@ -49,7 +75,6 @@ export default function ShopClient() {
       });
       if (category) params.set("category", category);
       if (search) params.set("search", search);
-      if (sort) params.set("sort", sort);
 
       fetch(`${API}/api/storefront/products?${params}`)
         .then((r) => r.json())
@@ -70,20 +95,30 @@ export default function ShopClient() {
           else setLoading(false);
         });
     },
-    [category, search, sort]
+    [category, search]
   );
 
   // Reset and reload when filters change
   useEffect(() => {
     setPage(1);
     fetchPage(1, false);
-  }, [category, search, sort, fetchPage]);
+  }, [category, search, fetchPage]);
 
   function handleLoadMore() {
     const nextPage = page + 1;
     setPage(nextPage);
     fetchPage(nextPage, true);
   }
+
+  // Client-side sort over the loaded items (API ignores `sort`).
+  const sortedItems = useMemo(() => {
+    if (!sort) return items;
+    const copy = [...items];
+    if (sort === "price_asc") copy.sort((a, b) => a.basePrice - b.basePrice);
+    else if (sort === "price_desc") copy.sort((a, b) => b.basePrice - a.basePrice);
+    else if (sort === "name_asc") copy.sort((a, b) => a.name.localeCompare(b.name));
+    return copy;
+  }, [items, sort]);
 
   const allLoaded = items.length >= total && !loading;
 
@@ -153,8 +188,8 @@ export default function ShopClient() {
           <input
             type="text"
             placeholder="Search…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             style={{
               background: "#F5F0E8",
               border: "0.67px solid rgb(184,169,154)",
@@ -253,7 +288,7 @@ export default function ShopClient() {
             <div style={{ textAlign: "center", paddingTop: "80px" }}>
               <p style={{ color: "#B8A99A", fontFamily: "Inter, sans-serif" }}>No products found.</p>
               <button
-                onClick={() => { setCategory(""); setSearch(""); }}
+                onClick={() => { setCategory(""); setSearch(""); setSearchInput(""); }}
                 style={{
                   marginTop: "16px",
                   fontFamily: "Inter, sans-serif",
@@ -277,7 +312,7 @@ export default function ShopClient() {
                   gap: "24px",
                 }}
               >
-                {items.map((p) => (
+                {sortedItems.map((p) => (
                   <ProductCard key={p.slug} {...p} />
                 ))}
               </div>
