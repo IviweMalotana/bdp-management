@@ -6,7 +6,10 @@ import type { CustomisationProfitOption } from '../types'
 const fmt = (n: number) => `R${n.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
 const typeLabel = (t: string) =>
-  t === 'SilkScreen' ? 'Silk Screen' : t === 'HotStamping' ? 'Hot Stamping' : t
+  t === 'SilkScreen' ? 'Silk Screen'
+    : t === 'HotStamping' ? 'Hot Stamping'
+    : t === 'ColourChange' ? 'Colour Change'
+    : t
 
 export default function CustomisationProfitPage() {
   const [options, setOptions] = useState<CustomisationProfitOption[]>([])

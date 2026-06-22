@@ -66,7 +66,48 @@ public class CustomisationController : ControllerBase
             .ThenBy(co => co.MinimumQuantity)
             .ToListAsync();
 
-        return Ok(options.Select(co => MapToDto(co, co.Supplier?.Name ?? string.Empty)));
+        // Customer-facing sale price per finish is fixed in CustomisationSettings.
+        // Profit = that defined sale − the actual supplier cost (by qty/supplier).
+        var settings = await _context.CustomisationSettings.ToListAsync();
+        decimal SaleFor(string type) =>
+            settings.FirstOrDefault(s => s.Type == type)?.PricePerUnitZAR ?? 0m;
+
+        var result = options
+            .Select(co => MapToDto(co, co.Supplier?.Name ?? string.Empty, SaleFor(co.Type)))
+            .ToList();
+
+        // Colour change: free to produce, but charged to the customer. No supplier
+        // cost tiers — surface it as a single all-profit line.
+        var colourSale = SaleFor("ColourChange");
+        if (colourSale > 0)
+        {
+            result.Add(new CustomisationOptionDto
+            {
+                Id = 0,
+                SupplierId = 0,
+                SupplierName = "Any supplier",
+                Type = "ColourChange",
+                MinimumQuantity = settings.FirstOrDefault(s => s.Type == "ColourChange")?.DefaultMinimumQuantity,
+                PricingTiers = new()
+                {
+                    new CustomisationPricingTierDto
+                    {
+                        Quantity = 1,
+                        CostPerUnitZAR = 0m,
+                        SalePerUnitZAR = colourSale,
+                        SalePriceZAR = colourSale,
+                        ProfitPerUnitZAR = colourSale,
+                        TotalCostZAR = 0m,
+                        TotalSaleZAR = colourSale,
+                        TotalProfitZAR = colourSale,
+                        MarginPercent = 100m,
+                        SalePriceDerived = false,
+                    }
+                }
+            });
+        }
+
+        return Ok(result);
     }
 
     // POST /api/customisation
@@ -133,17 +174,32 @@ public class CustomisationController : ControllerBase
         return NoContent();
     }
 
-    // Customisation is priced as a 70% markup on the true supplier cost when no
-    // explicit sale price is stored — matching the product pricing model.
+    // Fallback only: if no defined sale price exists, derive at 70% markup.
     private const decimal CustomisationMarkupRate = 0.70m;
 
-    private static CustomisationPricingTierDto BuildTierDto(CustomisationPricingTier t)
+    // definedSalePerUnit: the fixed customer-facing sale price for this finish
+    // (from CustomisationSettings). 0 → fall back to the tier's own price or a
+    // derived markup.
+    private static CustomisationPricingTierDto BuildTierDto(CustomisationPricingTier t, decimal definedSalePerUnit)
     {
         var cost = t.CostPerUnitZAR;   // true supplier cost per unit
-        var derived = t.SalePriceZAR <= 0m;
-        var salePerUnit = derived
-            ? Math.Round(cost * (1 + CustomisationMarkupRate), 2)
-            : Math.Round(t.SalePriceZAR, 2);
+        bool derived;
+        decimal salePerUnit;
+        if (definedSalePerUnit > 0m)
+        {
+            salePerUnit = Math.Round(definedSalePerUnit, 2);
+            derived = false;
+        }
+        else if (t.SalePriceZAR > 0m)
+        {
+            salePerUnit = Math.Round(t.SalePriceZAR, 2);
+            derived = false;
+        }
+        else
+        {
+            salePerUnit = Math.Round(cost * (1 + CustomisationMarkupRate), 2);
+            derived = true;
+        }
 
         var profitPerUnit = Math.Round(salePerUnit - cost, 4);
         var totalCost = Math.Round(cost * t.Quantity, 2);
@@ -170,7 +226,7 @@ public class CustomisationController : ControllerBase
         };
     }
 
-    private static CustomisationOptionDto MapToDto(CustomisationOption co, string supplierName) => new()
+    private static CustomisationOptionDto MapToDto(CustomisationOption co, string supplierName, decimal definedSalePerUnit = 0m) => new()
     {
         Id = co.Id,
         SupplierId = co.SupplierId,
@@ -178,6 +234,6 @@ public class CustomisationController : ControllerBase
         Type = co.Type,
         Link1688 = co.Link1688,
         MinimumQuantity = co.MinimumQuantity,
-        PricingTiers = co.PricingTiers?.OrderBy(t => t.Quantity).Select(BuildTierDto).ToList() ?? new(),
+        PricingTiers = co.PricingTiers?.OrderBy(t => t.Quantity).Select(t => BuildTierDto(t, definedSalePerUnit)).ToList() ?? new(),
     };
 }
