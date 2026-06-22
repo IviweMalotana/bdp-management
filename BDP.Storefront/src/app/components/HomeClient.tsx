@@ -386,141 +386,35 @@ function FeaturedSection({ products }: { products: any[] }) {
   );
 }
 
-/* ────────────────────── Horizontal Scroll Portfolio ────────────────────── */
+/* ────────────────────── Lifestyle Grid ────────────────────── */
 
 function PortfolioSection() {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-  const processRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<gsap.core.Timeline | null>(null);
+  const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!wrapperRef.current || !processRef.current) return;
-    const wrapper = wrapperRef.current;
-    const process = processRef.current;
-    const items = process.querySelectorAll<HTMLDivElement>(".portfolio-item");
-    const inners = process.querySelectorAll<HTMLDivElement>(".portfolio-item__inner");
-
-    const getMeasurements = () => ({
-      wrapperWidth: wrapper.getBoundingClientRect().width,
-      processWidth: process.getBoundingClientRect().width,
+    if (!ref.current) return;
+    gsap.from(ref.current.querySelectorAll(".grid-img"), {
+      y: 30, opacity: 0, duration: 0.7, stagger: 0.12, ease: "power2.out",
+      scrollTrigger: { trigger: ref.current, start: "top 75%" },
     });
-
-    let measurements = getMeasurements();
-
-    const setupAnimation = () => {
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: wrapper,
-          start: "top top",
-          end: "bottom bottom",
-          scrub: 0.4,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      tl.to(process, {
-        x: () => -(measurements.processWidth - measurements.wrapperWidth),
-        ease: "power1.inOut",
-      }, 0);
-
-      timelineRef.current = tl;
-
-      inners.forEach((inner, i) => {
-        const rect = items[i].getBoundingClientRect();
-        const isLeft = rect.left + rect.width / 2 < measurements.wrapperWidth / 2;
-        const fromX = isLeft ? "-100%" : "100%";
-        const rotateY = isLeft ? 60 : -60;
-
-        gsap.from(inner, {
-          x: fromX,
-          rotateY: rotateY,
-          opacity: 0.5,
-          duration: 1,
-          ease: "power2.inOut",
-          scrollTrigger: {
-            trigger: items[i],
-            start: "left right",
-            endTrigger: process,
-            end: "left left",
-            containerAnimation: tl,
-            toggleActions: "play none none reverse",
-          },
-        });
-      });
-    };
-
-    const images = process.querySelectorAll<HTMLImageElement>("img");
-    let loaded = 0;
-    const onImgLoad = () => {
-      loaded++;
-      if (loaded >= images.length) {
-        measurements = getMeasurements();
-        setupAnimation();
-      }
-    };
-
-    images.forEach((img) => {
-      if (img.complete) {
-        loaded++;
-      } else {
-        img.addEventListener("load", onImgLoad);
-      }
-    });
-    if (loaded >= images.length) {
-      measurements = getMeasurements();
-      setupAnimation();
-    }
-
-    const onResize = () => {
-      measurements = getMeasurements();
-      if (timelineRef.current) {
-        timelineRef.current.scrollTrigger?.refresh();
-      }
-    };
-    window.addEventListener("resize", onResize);
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      if (timelineRef.current) timelineRef.current.kill();
-      ScrollTrigger.getAll().forEach((st) => {
-        if (st.vars.containerAnimation === timelineRef.current) st.kill();
-      });
-    };
   }, []);
 
   return (
-    <section className="portfolio-section">
-      <div ref={wrapperRef} className="portfolio-wrapper">
-        <div className="text-center mb-6 absolute top-6 left-0 right-0">
-          <span className="label-caps" style={{ color: "#B8B0A4" }}>
-            In production
-          </span>
+    <section ref={ref} className="py-20 md:py-28 px-4" style={{ backgroundColor: "#EDE6DA" }}>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex items-end justify-between mb-10">
+          <span className="label-caps" style={{ color: "#B8B0A4" }}>in production</span>
         </div>
-        <div
-          ref={processRef}
-          className="portfolio-process"
-          style={{ width: "300%", willChange: "transform" }}
-        >
-          {portfolioImages.map((img, i) => (
-            <div
-              key={i}
-              className="portfolio-item"
-              style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
-            >
-              <div
-                className="portfolio-item__inner"
-                style={{ transformStyle: "preserve-3d", willChange: "transform" }}
-              >
-                <div className="portfolio-item__img">
-                  <Image
-                    src={img.src}
-                    alt={img.alt}
-                    width={420}
-                    height={525}
-                    className="w-full h-full object-cover object-center block"
-                  />
-                </div>
-              </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {portfolioImages.slice(0, 4).map((img, i) => (
+            <div key={i} className="grid-img aspect-square overflow-hidden" style={{ borderRadius: "2px" }}>
+              <Image
+                src={img.src}
+                alt={img.alt}
+                width={420}
+                height={420}
+                className="w-full h-full object-cover transition-transform duration-500 hover:scale-[1.03]"
+              />
             </div>
           ))}
         </div>
