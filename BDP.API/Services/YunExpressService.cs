@@ -39,24 +39,33 @@ public class YunExpressService
 
     // ── SOAP helper ────────────────────────────────────────────────────────────
 
-    private async Task<JsonElement?> CallSoapAsync(string service, object paramsObj)
+    // Builds the SOAP envelope we send to YunExpress. Exposed so a dry-run can
+    // preview the exact payload (with credentials redacted) without transmitting.
+    private string BuildSoapEnvelope(string service, object paramsObj, bool redactCredentials = false)
     {
-        try
-        {
-            var paramsJson = JsonSerializer.Serialize(paramsObj);
-            var escapedParams = SecurityElement.Escape(paramsJson) ?? paramsJson;
+        var paramsJson = JsonSerializer.Serialize(paramsObj);
+        var escapedParams = SecurityElement.Escape(paramsJson) ?? paramsJson;
+        var token = redactCredentials ? "***" : (AppToken ?? "");
+        var key = redactCredentials ? "***" : (AppKey ?? "");
 
-            var soapEnvelope = $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+        return $@"<?xml version=""1.0"" encoding=""UTF-8""?>
 <SOAP-ENV:Envelope xmlns:SOAP-ENV=""http://schemas.xmlsoap.org/soap/envelope/"" xmlns:ns1=""http://www.example.org/Ec/"">
   <SOAP-ENV:Body>
     <ns1:callService>
       <paramsJson>{escapedParams}</paramsJson>
-      <appToken>{SecurityElement.Escape(AppToken ?? "")}</appToken>
-      <appKey>{SecurityElement.Escape(AppKey ?? "")}</appKey>
+      <appToken>{SecurityElement.Escape(token)}</appToken>
+      <appKey>{SecurityElement.Escape(key)}</appKey>
       <service>{SecurityElement.Escape(service)}</service>
     </ns1:callService>
   </SOAP-ENV:Body>
 </SOAP-ENV:Envelope>";
+    }
+
+    private async Task<JsonElement?> CallSoapAsync(string service, object paramsObj)
+    {
+        try
+        {
+            var soapEnvelope = BuildSoapEnvelope(service, paramsObj);
 
             var client = _http.CreateClient();
             var content = new StringContent(soapEnvelope, Encoding.UTF8, "text/xml");
@@ -312,46 +321,61 @@ public class YunExpressService
         string? ErrorMessage
     );
 
+    // Builds the createOrder params object. Shared by the live call and the dry-run
+    // preview so what you test is exactly what gets sent.
+    private object BuildCreateOrderParams(CreateOrderRequest req)
+    {
+        // Province falls back to city when not supplied; postcode must be sent or
+        // YunExpress rejects / mis-routes the shipment.
+        var province = !string.IsNullOrWhiteSpace(req.RecipientProvince)
+            ? req.RecipientProvince
+            : req.RecipientCity;
+
+        return new
+        {
+            platform = "OTHER",
+            shipping_method = req.ProductCode,
+            reference_no = req.OrderReference,
+            country_code = req.CountryCode,
+            province,
+            city = req.RecipientCity,
+            district = "",
+            address1 = req.RecipientAddress,
+            zip_code = req.RecipientPostcode,
+            postcode = req.RecipientPostcode,
+            name = req.RecipientName,
+            phone = "",
+            cell_phone = req.RecipientPhone,
+            email = "",
+            order_business_type = "b2c",
+            products = new[]
+            {
+                new
+                {
+                    product_sku = "PKG",
+                    product_title = "Cosmetic Packaging",
+                    product_title_en = "Cosmetic Packaging",
+                    product_quantity = req.Pieces,
+                    product_declared_value = req.DeclaredValueUSD,
+                    product_weight = req.WeightKg
+                }
+            }
+        };
+    }
+
+    /// <summary>
+    /// Builds the exact SOAP envelope a createOrder call would transmit, without
+    /// sending it. Credentials are redacted. Use this to validate the request
+    /// mapping (province, postcode, weights) before firing a real shipment.
+    /// </summary>
+    public string PreviewCreateOrderPayload(CreateOrderRequest req)
+        => BuildSoapEnvelope("createOrder", BuildCreateOrderParams(req), redactCredentials: true);
+
     public async Task<CreateOrderResult> CreateOrderAsync(CreateOrderRequest req)
     {
         try
         {
-            // Province falls back to city when not supplied; postcode must be sent or
-            // YunExpress rejects / mis-routes the shipment.
-            var province = !string.IsNullOrWhiteSpace(req.RecipientProvince)
-                ? req.RecipientProvince
-                : req.RecipientCity;
-
-            var result = await CallSoapAsync("createOrder", new
-            {
-                platform = "OTHER",
-                shipping_method = req.ProductCode,
-                reference_no = req.OrderReference,
-                country_code = req.CountryCode,
-                province,
-                city = req.RecipientCity,
-                district = "",
-                address1 = req.RecipientAddress,
-                zip_code = req.RecipientPostcode,
-                postcode = req.RecipientPostcode,
-                name = req.RecipientName,
-                phone = "",
-                cell_phone = req.RecipientPhone,
-                email = "",
-                order_business_type = "b2c",
-                products = new[]
-                {
-                    new
-                    {
-                        product_sku = "PKG",
-                        product_title = "Cosmetic Packaging",
-                        product_title_en = "Cosmetic Packaging",
-                        product_quantity = req.Pieces,
-                        product_declared_value = req.DeclaredValueUSD,
-                        product_weight = req.WeightKg
-                    }
-                }
-            });
+            var result = await CallSoapAsync("createOrder", BuildCreateOrderParams(req));
 
             if (result == null)
                 return new CreateOrderResult(false, null, null, null, "YunExpress SOAP call failed");
