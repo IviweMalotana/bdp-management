@@ -256,6 +256,21 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Always seed email templates if table is empty (idempotent)
+using (var scope = app.Services.CreateScope())
+{
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await BDP.API.Data.EmailTemplateSeeder.SeedAsync(db);
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Email template seeding failed — continuing");
+    }
+}
+
 // Fire-and-forget currency rate refresh on startup (non-blocking)
 _ = Task.Run(async () =>
 {

@@ -403,4 +403,19 @@ export const dashboard = {
     http.get<DashboardSummary>('/dashboard/summary').then((r) => r.data),
 }
 
+// ── Email Templates ───────────────────────────────────────────────────────────
+export const emailTemplatesApi = {
+  list: () =>
+    http.get<import('../types').EmailTemplateSummary[]>('/email-templates').then((r) => r.data),
+
+  get: (key: string) =>
+    http.get<import('../types').EmailTemplate>(`/email-templates/${key}`).then((r) => r.data),
+
+  update: (key: string, data: { subject: string; htmlBody: string }) =>
+    http.put<import('../types').EmailTemplate>(`/email-templates/${key}`, data).then((r) => r.data),
+
+  reset: (key: string) =>
+    http.post<import('../types').EmailTemplate>(`/email-templates/${key}/reset`).then((r) => r.data),
+}
+
 export default http

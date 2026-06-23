@@ -12,17 +12,15 @@ public class InvoiceService
     private readonly AppDbContext _context;
     private readonly PaystackService _paystack;
     private readonly EmailService _email;
-    private readonly IWebHostEnvironment _env;
     private readonly ILogger<InvoiceService> _logger;
 
     public InvoiceService(
         AppDbContext context, PaystackService paystack, EmailService email,
-        IWebHostEnvironment env, ILogger<InvoiceService> logger)
+        ILogger<InvoiceService> logger)
     {
         _context = context;
         _paystack = paystack;
         _email = email;
-        _env = env;
         _logger = logger;
     }
 
@@ -52,15 +50,17 @@ public class InvoiceService
             Status = "Draft"
         };
 
-        var pdfBytes = GeneratePdf(invoice, order);
-        var pdfDir = Path.Combine(_env.WebRootPath, "invoices");
-        Directory.CreateDirectory(pdfDir);
-        var fileName = $"{invoiceNumber}.pdf";
-        await File.WriteAllBytesAsync(Path.Combine(pdfDir, fileName), pdfBytes);
-        invoice.PdfUrl = $"/invoices/{fileName}";
+        // Don't write to disk — PDFs are regenerated on demand to survive redeploys.
+        // PdfUrl is set to a stable API route so existing links keep working.
+        invoice.PdfUrl = $"/api/invoices/{0}/pdf";  // placeholder; updated after save
 
         _context.Invoices.Add(invoice);
         await _context.SaveChangesAsync();
+
+        // Now we have an Id — update PdfUrl with the real route
+        invoice.PdfUrl = $"/api/invoices/{invoice.Id}/pdf";
+        await _context.SaveChangesAsync();
+
         return invoice;
     }
 
@@ -73,10 +73,8 @@ public class InvoiceService
             .FirstOrDefaultAsync(i => i.Id == invoiceId)
             ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
 
-        var pdfPath = Path.Combine(_env.WebRootPath, invoice.PdfUrl!.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
-        byte[] pdfBytes = File.Exists(pdfPath)
-            ? await File.ReadAllBytesAsync(pdfPath)
-            : GeneratePdf(invoice, invoice.Order);
+        // Regenerate PDF in-memory — no filesystem storage required.
+        byte[] pdfBytes = GeneratePdf(invoice, invoice.Order);
 
         // Create Paystack payment request
         try
@@ -106,6 +104,22 @@ public class InvoiceService
         invoice.Status = "Sent";
         invoice.SentAt = DateTime.UtcNow;
         await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Generates PDF bytes on demand for a given invoice without writing to disk.
+    /// </summary>
+    public async Task<byte[]> GeneratePdfBytesAsync(int invoiceId)
+    {
+        var invoice = await _context.Invoices
+            .Include(i => i.Order).ThenInclude(o => o.Items)
+                .ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product)
+            .Include(i => i.Order).ThenInclude(o => o.Client)
+            .Include(i => i.Client)
+            .FirstOrDefaultAsync(i => i.Id == invoiceId)
+            ?? throw new KeyNotFoundException($"Invoice {invoiceId} not found");
+
+        return GeneratePdf(invoice, invoice.Order);
     }
 
     private byte[] GeneratePdf(Invoice invoice, Order order)

@@ -1,3 +1,17 @@
+// ── Email Templates ───────────────────────────────────────────────────────────
+export interface EmailTemplateSummary {
+  id: number
+  key: string
+  name: string
+  description: string
+  subject: string
+  updatedAt: string
+}
+
+export interface EmailTemplate extends EmailTemplateSummary {
+  htmlBody: string
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export interface User {
   id: string

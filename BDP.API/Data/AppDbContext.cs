@@ -36,6 +36,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<CartItemArtwork> CartItemArtworks => Set<CartItemArtwork>();
     public DbSet<OrderItemArtwork> OrderItemArtworks => Set<OrderItemArtwork>();
     public DbSet<CurrencyRate> CurrencyRates => Set<CurrencyRate>();
+    public DbSet<EmailTemplate> EmailTemplates => Set<EmailTemplate>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

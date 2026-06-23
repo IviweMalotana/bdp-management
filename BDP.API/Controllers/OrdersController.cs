@@ -134,11 +134,16 @@ public class OrdersController : ControllerBase
         };
 
         decimal subtotal = 0;
-        decimal shippingTotal = 0;
+        int totalWeightGrams = 0;
+
+        // First pass: validate items and accumulate subtotal + weight
+        var resolvedItems = new List<(CreateOrderItemDto dto, decimal lineTotal)>();
         foreach (var item in dto.Items)
         {
-            var variantExists = await _context.ProductVariants.AnyAsync(pv => pv.Id == item.ProductVariantId);
-            if (!variantExists)
+            var variant = await _context.ProductVariants
+                .Include(pv => pv.Product)
+                .FirstOrDefaultAsync(pv => pv.Id == item.ProductVariantId);
+            if (variant == null)
                 return BadRequest(new { message = $"ProductVariant {item.ProductVariantId} not found." });
 
             // Validate customisation minimum quantity
@@ -151,8 +156,31 @@ public class OrdersController : ControllerBase
 
             var lineTotal = item.UnitPriceZAR * item.Quantity + item.CustomisationCostZAR;
             subtotal += lineTotal;
-            shippingTotal += item.ShippingCostZAR;
+            totalWeightGrams += (int)Math.Ceiling((variant.Product?.WeightKg ?? 0m) * 1000m * item.Quantity);
+            resolvedItems.Add((item, lineTotal));
+        }
 
+        // Compute shipping via YunExpress
+        var shippingSettings = await _context.ShippingSettings.FindAsync(1);
+        var markupPct = shippingSettings?.ShippingMarkupPercent ?? 40m;
+        decimal actualShipping = 0;
+        decimal shippingTotal = 0;
+        if (totalWeightGrams > 0)
+        {
+            var rates = await _yunExpress.GetRatesAsync("ZA", totalWeightGrams);
+            var cheapest = rates
+                .Where(r => !r.CustomsIncluded)
+                .OrderBy(r => r.PriceZAR)
+                .FirstOrDefault();
+            if (cheapest != null)
+            {
+                actualShipping = cheapest.PriceZAR;
+                shippingTotal = Math.Round(cheapest.PriceZAR * (1 + markupPct / 100m), 2);
+            }
+        }
+
+        foreach (var (item, lineTotal) in resolvedItems)
+        {
             order.Items.Add(new OrderItem
             {
                 ProductVariantId = item.ProductVariantId,
@@ -163,12 +191,13 @@ public class OrdersController : ControllerBase
                 UnitPriceZAR = item.UnitPriceZAR,
                 LineTotal = lineTotal,
                 CustomisationCostZAR = item.CustomisationCostZAR,
-                ShippingCostZAR = item.ShippingCostZAR,
+                ShippingCostZAR = 0,  // shipping is tracked at order level
             });
         }
 
         order.SubtotalZAR = subtotal;
         order.ShippingCostZAR = shippingTotal;
+        order.ActualShippingCostZAR = actualShipping;
         order.TotalZAR = subtotal + shippingTotal;
 
         _context.Orders.Add(order);

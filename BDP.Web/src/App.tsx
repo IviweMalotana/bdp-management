@@ -34,6 +34,7 @@ import CollectionForm from './pages/collections/CollectionForm'
 import PendingApplications from './pages/b2b/PendingApplications'
 import CataloguePage from './pages/catalogue/CataloguePage'
 import CustomisationSettings from './pages/settings/CustomisationSettings'
+import EmailTemplatesPage from './pages/settings/EmailTemplatesPage'
 import YunExpressTestPage from './pages/YunExpressTestPage'
 import EmailTestPage from './pages/EmailTestPage'
 import CustomisationProfitPage from './pages/CustomisationProfitPage'
@@ -82,6 +83,7 @@ export default function App() {
             <Route path="/shipments"         element={<ShipmentsPage />} />
             <Route path="/settings/shipping" element={<ShippingSettingsPage />} />
             <Route path="/settings/customisation" element={<CustomisationSettings />} />
+            <Route path="/settings/emails" element={<EmailTemplatesPage />} />
             <Route path="/customisation-profit" element={<CustomisationProfitPage />} />
 
             {/* B2B — Clients */}

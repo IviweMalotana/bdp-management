@@ -97,6 +97,24 @@ public class InvoicesController : ControllerBase
         return Ok(MapToDto(invoice));
     }
 
+    // GET /api/invoices/{id}/pdf
+    [HttpGet("{id:int}/pdf")]
+    public async Task<IActionResult> DownloadPdf(int id)
+    {
+        var invoice = await _context.Invoices.FindAsync(id);
+        if (invoice == null) return NotFound(new { message = $"Invoice {id} not found." });
+
+        try
+        {
+            var pdfBytes = await _invoiceService.GeneratePdfBytesAsync(id);
+            return File(pdfBytes, "application/pdf", $"invoice-{invoice.InvoiceNumber}.pdf");
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { message = $"Failed to generate PDF: {ex.Message}" });
+        }
+    }
+
     private static InvoiceDto MapToDto(Invoice i) => new()
     {
         Id = i.Id,

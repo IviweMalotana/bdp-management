@@ -1,5 +1,7 @@
+using BDP.API.Data;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
 using MimeKit;
 
 namespace BDP.API.Services;
@@ -19,6 +21,21 @@ public class EmailService
         !string.IsNullOrEmpty(_config["Email:SmtpHost"] ?? _config["Email__SmtpHost"]);
 
     public string FromAddress => _config["Email:FromAddress"] ?? "noreply@bdp.co.za";
+
+    /// <summary>
+    /// Loads a template from DB; falls back to the hardcoded seeder default if not found.
+    /// Returns null if the key is completely unknown.
+    /// </summary>
+    public async Task<(string Subject, string HtmlBody)?> GetTemplateAsync(AppDbContext db, string key)
+    {
+        var t = await db.EmailTemplates.FirstOrDefaultAsync(x => x.Key == key);
+        if (t != null) return (t.Subject, t.HtmlBody);
+
+        var fallback = EmailTemplateSeeder.GetDefault(key);
+        if (string.IsNullOrEmpty(fallback)) return null;
+
+        return (key, fallback); // subject fallback is just the key; callers should use their own subject
+    }
 
     public async Task SendAsync(string toEmail, string toName, string subject, string htmlBody,
         (byte[] data, string fileName, string contentType)? attachment = null)
