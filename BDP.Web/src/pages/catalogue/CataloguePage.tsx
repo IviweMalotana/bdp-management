@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { Upload, Loader2, Check, AlertCircle, Search, ChevronLeft, ChevronRight, BookOpen } from 'lucide-react'
 import { shipping as shippingApi } from '../../services/api'
 import { useAuthStore } from '../../store/authStore'
-import type { ShippingSettings } from '../../types'
 
 const API_BASE = (import.meta.env.VITE_API_URL || '/api') as string
 
@@ -53,9 +52,7 @@ interface ProductsPage {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const inp = 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500'
-const lbl = 'block text-xs font-medium text-gray-400 mb-1'
-const btn = (variant: 'primary' | 'secondary') =>
+const btn =(variant: 'primary' | 'secondary') =>
   variant === 'primary'
     ? 'flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors'
     : 'flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors'
@@ -73,12 +70,7 @@ export default function CataloguePage() {
   const [importError, setImportError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // ── Section 2: Pricing Settings ────────────────────────────────────────────
-  const [settings, setSettings] = useState<ShippingSettings | null>(null)
-  const [settingsLoading, setSettingsLoading] = useState(true)
-  const [settingsSaving, setSettingsSaving] = useState(false)
-  const [settingsSuccess, setSettingsSuccess] = useState(false)
-  const [settingsError, setSettingsError] = useState<string | null>(null)
+  // ── Pricing formula values (fixed; loaded read-only for the Sale ZAR preview) ─
   const [pricingForm, setPricingForm] = useState({ bufferCNY: '', profitCNY: '', cnyToZarRate: '' })
 
   // ── Section 3: Products table ──────────────────────────────────────────────
@@ -90,18 +82,17 @@ export default function CataloguePage() {
 
   // ── AI Image Generation (NEW) ──────────────────────────────────────────────
 
-  // ── Load settings ──────────────────────────────────────────────────────────
+  // ── Load the fixed pricing-formula values (used only for the Sale ZAR preview)
   useEffect(() => {
     shippingApi.getSettings()
       .then((s) => {
-        setSettings(s)
         setPricingForm({
           bufferCNY:    String(s.bufferCNY ?? 3),
           profitCNY:    String(s.profitCNY ?? 1),
           cnyToZarRate: String(s.cnyToZarRate),
         })
       })
-      .finally(() => setSettingsLoading(false))
+      .catch(() => { /* preview falls back to defaults */ })
   }, [])
 
   // ── Load products table ────────────────────────────────────────────────────
@@ -197,29 +188,6 @@ export default function CataloguePage() {
     e.target.value = ''
   }
 
-  // ── Save Pricing Settings ──────────────────────────────────────────────────
-  const handleSaveSettings = async () => {
-    setSettingsSaving(true)
-    setSettingsError(null)
-    setSettingsSuccess(false)
-    try {
-      const updated = await shippingApi.updateSettings({
-        cnyPerCbm:    settings?.cnyPerCbm ?? 2000,
-        cnyPerKg:     settings?.cnyPerKg ?? 10,
-        cnyToZarRate: parseFloat(pricingForm.cnyToZarRate),
-        bufferCNY:    parseFloat(pricingForm.bufferCNY),
-        profitCNY:    parseFloat(pricingForm.profitCNY),
-      })
-      setSettings(updated)
-      setSettingsSuccess(true)
-      setTimeout(() => setSettingsSuccess(false), 3000)
-    } catch {
-      setSettingsError('Failed to save settings.')
-    } finally {
-      setSettingsSaving(false)
-    }
-  }
-
   // ── Search ─────────────────────────────────────────────────────────────────
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -237,7 +205,7 @@ export default function CataloguePage() {
           <BookOpen size={20} className="text-indigo-400" />
           Catalogue
         </h1>
-        <p className="text-sm text-gray-400 mt-0.5">Import the product catalogue CSV, configure pricing, and browse all SKUs.</p>
+        <p className="text-sm text-gray-400 mt-0.5">Import the product catalogue CSV and browse all SKUs. Sale prices are derived automatically from the fixed pricing formula.</p>
       </div>
 
       {/* ── Section 1: Import CSV ─────────────────────────────────────────── */}
@@ -323,69 +291,7 @@ export default function CataloguePage() {
         )}
       </div>
 
-      {/* ── Section 2: Pricing Settings ───────────────────────────────────── */}
-      <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
-        <p className="text-sm font-semibold text-white">Pricing Settings</p>
-        <p className="text-xs text-gray-500">
-          Formula: <span className="font-mono text-gray-400">(Unit Cost CNY + Buffer + Profit) × CNY→ZAR</span>
-        </p>
-
-        {settingsLoading ? (
-          <Loader2 size={20} className="animate-spin text-indigo-500" />
-        ) : (
-          <>
-            {settingsError && (
-              <div className="flex items-center gap-2 bg-red-900/30 border border-red-700 rounded-lg px-3 py-2 text-red-300 text-sm">
-                <AlertCircle size={14} /> {settingsError}
-              </div>
-            )}
-            {settingsSuccess && (
-              <div className="flex items-center gap-2 bg-green-900/30 border border-green-700 rounded-lg px-3 py-2 text-green-300 text-sm">
-                <Check size={14} /> Settings saved.
-              </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className={lbl}>Buffer (CNY) — shipping &amp; fees per unit</label>
-                <input
-                  type="number" step="0.01" className={inp}
-                  value={pricingForm.bufferCNY}
-                  onChange={(e) => setPricingForm({ ...pricingForm, bufferCNY: e.target.value })}
-                  disabled={!isAdmin}
-                />
-              </div>
-              <div>
-                <label className={lbl}>Profit (CNY) — margin per unit</label>
-                <input
-                  type="number" step="0.01" className={inp}
-                  value={pricingForm.profitCNY}
-                  onChange={(e) => setPricingForm({ ...pricingForm, profitCNY: e.target.value })}
-                  disabled={!isAdmin}
-                />
-              </div>
-              <div>
-                <label className={lbl}>CNY → ZAR Rate</label>
-                <input
-                  type="number" step="0.0001" className={inp}
-                  value={pricingForm.cnyToZarRate}
-                  onChange={(e) => setPricingForm({ ...pricingForm, cnyToZarRate: e.target.value })}
-                  disabled={!isAdmin}
-                />
-              </div>
-            </div>
-            {isAdmin && (
-              <div className="flex justify-end">
-                <button onClick={handleSaveSettings} disabled={settingsSaving} className={btn('primary')}>
-                  {settingsSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  Save
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* ── Section 3: Products Table ─────────────────────────────────────── */}
+      {/* ── Section 2: Products Table ─────────────────────────────────────── */}
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 space-y-4">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">

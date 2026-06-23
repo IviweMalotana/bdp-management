@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { shippingRates as api } from '../services/api'
 import type { ShippingRate, ShippingCalcResult } from '../types'
 import { useAuthStore } from '../store/authStore'
-import { Plus, Pencil, Trash2, Calculator, ChevronDown, ChevronRight, CheckCircle, XCircle } from 'lucide-react'
+import { Plus, Pencil, Trash2, Calculator, ChevronDown, ChevronRight, CheckCircle, XCircle, TrendingUp } from 'lucide-react'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const SHIPPING_TYPES = ['AirDDP', 'AirDDU', 'SeaDDP', 'SeaDDU'] as const
@@ -67,6 +67,18 @@ export default function ShippingRatesPage() {
   const [calcError, setCalcError] = useState<string | null>(null)
   const [calcLoading, setCalcLoading] = useState(false)
 
+  // ── Margin & Profit calculator (client-side, instant) ───────────────────────
+  const [marginOpen, setMarginOpen] = useState(false)
+  const [mCountry, setMCountry] = useState('')
+  const [mQty, setMQty] = useState('100')
+  const [mActualKg, setMActualKg] = useState('0.08')   // real per-unit weight → YOUR cost
+  const [mBillingKg, setMBillingKg] = useState('0.4')  // fixed billing weight → what the CUSTOMER pays
+  const [mVolCbm, setMVolCbm] = useState('0.0001')     // per-unit volume (CBM)
+  const [mProductCost, setMProductCost] = useState('11.23') // landed cost / unit (R)
+  const [mProductSale, setMProductSale] = useState('13.63') // sale price / unit (R)
+  const [mPaystackPct, setMPaystackPct] = useState('2.9')
+  const [mPaystackFixed, setMPaystackFixed] = useState('1')
+
   // ── Load ────────────────────────────────────────────────────────────────────
   const loadRates = useCallback(async () => {
     try {
@@ -88,6 +100,48 @@ export default function ShippingRatesPage() {
     return acc
   }, {})
   const countries = Object.keys(grouped).sort()
+
+  // ── Margin calc helpers ─────────────────────────────────────────────────────
+  // Shipping cost for a whole consignment at a given total weight/volume.
+  // Customs (duty + VAT) is EXCLUDED on purpose — the customer clears their own.
+  function shipZAR(r: ShippingRate, totalKg: number, totalCbm: number): number {
+    const baseCNY = totalKg * r.ratePerKg + totalCbm * r.ratePerCbm
+    const withFuel = baseCNY * (1 + r.fuelSurchargePercent / 100)
+    const raw = withFuel * r.exchangeRateCNYToZAR + r.handlingFeeZAR
+    return Math.max(raw, r.minimumChargeZAR)
+  }
+
+  const mNum = {
+    qty: parseFloat(mQty) || 0,
+    actualKg: parseFloat(mActualKg) || 0,
+    billingKg: parseFloat(mBillingKg) || 0,
+    volCbm: parseFloat(mVolCbm) || 0,
+    cost: parseFloat(mProductCost) || 0,
+    sale: parseFloat(mProductSale) || 0,
+    psPct: parseFloat(mPaystackPct) || 0,
+    psFixed: parseFloat(mPaystackFixed) || 0,
+  }
+
+  // One computed row per shipping option for the chosen country.
+  const ORDER = ['SeaDDP', 'SeaDDU', 'AirDDP', 'AirDDU'] as const
+  const marginRows = (grouped[mCountry] ?? [])
+    .slice()
+    .sort((a, b) => ORDER.indexOf(a.shippingType as typeof ORDER[number]) - ORDER.indexOf(b.shippingType as typeof ORDER[number]))
+    .map((r) => {
+      const { qty, actualKg, billingKg, volCbm, cost, sale, psPct, psFixed } = mNum
+      const shipCost   = shipZAR(r, actualKg * qty, volCbm * qty)   // real weight → what YOU pay
+      const shipCharged = shipZAR(r, billingKg * qty, volCbm * qty)  // billing weight → what the CUSTOMER pays
+      const shipMargin = shipCharged - shipCost
+      const productCostTotal = cost * qty
+      const productSaleTotal = sale * qty
+      const totalCost = productCostTotal + shipCost
+      const totalSale = productSaleTotal + shipCharged
+      const grossProfit = totalSale - totalCost
+      const paystack = totalSale * (psPct / 100) + psFixed
+      const netProfit = grossProfit - paystack
+      const netMargin = totalSale > 0 ? (netProfit / totalSale) * 100 : 0
+      return { r, shipCost, shipCharged, shipMargin, totalCost, totalSale, grossProfit, paystack, netProfit, netMargin }
+    })
 
   // ── Modal helpers ───────────────────────────────────────────────────────────
   function openAdd(country?: string) {
@@ -202,6 +256,13 @@ export default function ShippingRatesPage() {
         </div>
         <div className="flex gap-3">
           <button
+            onClick={() => { setMarginOpen((o) => !o); if (!mCountry && countries.length) setMCountry(countries[0]) }}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-sm transition-colors"
+          >
+            <TrendingUp className="w-4 h-4" />
+            Margin & Profit
+          </button>
+          <button
             onClick={() => { setCalcOpen((o) => !o); setCalcResult(null); setCalcError(null) }}
             className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm transition-colors"
           >
@@ -219,6 +280,93 @@ export default function ShippingRatesPage() {
           )}
         </div>
       </div>
+
+      {/* Margin & Profit Panel — all 4 shipping options compared, customs excluded */}
+      {marginOpen && (
+        <div className="bg-gray-800 border border-emerald-800/60 rounded-xl p-5 space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-400" />
+              Margin &amp; Profit — Sea vs Air, DDP vs DDU
+            </h2>
+            <p className="text-xs text-gray-500 max-w-md text-right">
+              Your <span className="text-gray-300">cost</span> uses the real weight; the <span className="text-gray-300">customer is charged</span> on the fixed billing weight. Customs excluded — buyer clears their own.
+            </p>
+          </div>
+
+          {/* Inputs */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div>
+              <label className="block text-xs text-gray-400 mb-1">Country</label>
+              <select value={mCountry} onChange={(e) => setMCountry(e.target.value)}
+                className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500">
+                <option value="">Select…</option>
+                {countries.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            {([
+              ['Quantity', mQty, setMQty, '1'],
+              ['Real kg / unit (cost)', mActualKg, setMActualKg, '0.001'],
+              ['Billing kg / unit (charge)', mBillingKg, setMBillingKg, '0.01'],
+              ['Volume CBM / unit', mVolCbm, setMVolCbm, '0.0001'],
+              ['Product cost / unit (R)', mProductCost, setMProductCost, '0.01'],
+              ['Product sale / unit (R)', mProductSale, setMProductSale, '0.01'],
+              ['Paystack %', mPaystackPct, setMPaystackPct, '0.1'],
+              ['Paystack fixed (R)', mPaystackFixed, setMPaystackFixed, '0.5'],
+            ] as [string, string, (v: string) => void, string][]).map(([label, val, setter, step]) => (
+              <div key={label}>
+                <label className="block text-xs text-gray-400 mb-1">{label}</label>
+                <input type="number" value={val} step={step} min={0}
+                  onChange={(e) => setter(e.target.value)}
+                  className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500" />
+              </div>
+            ))}
+          </div>
+
+          {/* Results */}
+          {!mCountry ? (
+            <p className="text-sm text-gray-500">Pick a country to compare its shipping options.</p>
+          ) : marginRows.length === 0 ? (
+            <p className="text-sm text-yellow-400">No shipping rates configured for {mCountry}. Add rates above first.</p>
+          ) : (
+            <div className="overflow-x-auto border border-gray-700 rounded-lg">
+              <table className="w-full text-sm whitespace-nowrap">
+                <thead>
+                  <tr className="bg-gray-900/60 border-b border-gray-700 text-xs text-gray-400">
+                    {['Option', 'Days', 'Ship cost', 'Ship charged', 'Ship margin', 'Total cost', 'Total sale', 'Gross profit', 'Paystack', 'Net profit', 'Net %'].map((h) => (
+                      <th key={h} className="px-3 py-2.5 text-right first:text-left font-medium">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700/60">
+                  {marginRows.map(({ r, shipCost, shipCharged, shipMargin, totalCost, totalSale, grossProfit, paystack, netProfit, netMargin }) => (
+                    <tr key={r.id} className="hover:bg-gray-700/20">
+                      <td className="px-3 py-2.5">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${TYPE_COLOURS[r.shippingType] ?? 'bg-gray-700 text-gray-300'}`}>
+                          {TYPE_LABELS[r.shippingType] ?? r.shippingType}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2.5 text-right text-gray-400">{r.estimatedTransitDays}d</td>
+                      <td className="px-3 py-2.5 text-right text-gray-300">R{shipCost.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-300">R{shipCharged.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-emerald-400">R{shipMargin.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-400">R{totalCost.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-200">R{totalSale.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-200">R{grossProfit.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-red-300">−R{paystack.toFixed(2)}</td>
+                      <td className={`px-3 py-2.5 text-right font-semibold ${netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>R{netProfit.toFixed(2)}</td>
+                      <td className="px-3 py-2.5 text-right text-gray-300">{netMargin.toFixed(1)}%</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <p className="text-xs text-gray-600">
+            Ship margin = charged (billing kg) − cost (real kg). Net profit = total sale − total cost − Paystack. Duties/VAT excluded (buyer pays on arrival).
+          </p>
+        </div>
+      )}
 
       {/* Calculator Panel */}
       {calcOpen && (
