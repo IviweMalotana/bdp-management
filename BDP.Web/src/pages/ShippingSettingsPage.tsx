@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { shipping as settingsApi } from '../services/api'
-import type { ShippingSettings } from '../types'
-import { Settings, Loader2, Check, AlertCircle, RefreshCw } from 'lucide-react'
+import type { ShippingSettings, ShippingQuoteOption } from '../types'
+import { Settings, Loader2, Check, AlertCircle, RefreshCw, TrendingUp } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 
 export default function ShippingSettingsPage() {
@@ -13,6 +13,64 @@ export default function ShippingSettingsPage() {
   const [success, setSuccess] = useState(false)
 
   const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '' })
+
+  // ── Margin & Profit (live YunExpress rates, same source as checkout) ─────────
+  const [mCountry, setMCountry]   = useState('ZA')
+  const [mQty, setMQty]           = useState('100')
+  const [mRealKg, setMRealKg]     = useState('0.08')   // true weight/unit → YOUR cost
+  const [mBillingKg, setMBillingKg] = useState('0.4')  // billed weight/unit → CUSTOMER charge (checkout uses 0.4)
+  const [mCost, setMCost]         = useState('11.23')  // landed product cost/unit (R)
+  const [mSale, setMSale]         = useState('13.63')  // product sale/unit (R)
+  const [mPsPct, setMPsPct]       = useState('2.9')
+  const [mPsFixed, setMPsFixed]   = useState('1')
+  const [chargedOpts, setChargedOpts] = useState<ShippingQuoteOption[]>([])
+  const [costOpts, setCostOpts]   = useState<ShippingQuoteOption[]>([])
+  const [mLoading, setMLoading]   = useState(false)
+  const [mErr, setMErr]           = useState<string | null>(null)
+
+  const mNum = {
+    qty: parseFloat(mQty) || 0,
+    realKg: parseFloat(mRealKg) || 0,
+    billingKg: parseFloat(mBillingKg) || 0,
+    cost: parseFloat(mCost) || 0,
+    sale: parseFloat(mSale) || 0,
+    psPct: parseFloat(mPsPct) || 0,
+    psFixed: parseFloat(mPsFixed) || 0,
+  }
+
+  // Fetch live rates at both weights whenever the shipment inputs change.
+  useEffect(() => {
+    const { qty, realKg, billingKg } = mNum
+    if (qty <= 0 || realKg <= 0 || billingKg <= 0 || !mCountry.trim()) return
+    let cancelled = false
+    setMLoading(true); setMErr(null)
+    Promise.all([
+      settingsApi.options(mCountry.trim().toUpperCase(), billingKg * qty * 1000),
+      settingsApi.options(mCountry.trim().toUpperCase(), realKg * qty * 1000),
+    ])
+      .then(([charged, cost]) => { if (!cancelled) { setChargedOpts(charged); setCostOpts(cost) } })
+      .catch(() => { if (!cancelled) setMErr('Could not load live shipping rates for that country.') })
+      .finally(() => { if (!cancelled) setMLoading(false) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mCountry, mQty, mRealKg, mBillingKg])
+
+  // One row per option the CUSTOMER would be offered (priced at billing weight),
+  // costed against the same option at the REAL weight. Customs excluded (buyer pays).
+  const marginRows = chargedOpts.map((c) => {
+    const cost = costOpts.find((x) => x.code === c.code)
+    const shipCharged = c.priceZAR
+    const shipCost = cost?.priceZAR ?? null
+    const shipMargin = shipCost != null ? shipCharged - shipCost : null
+    const { qty, cost: cPer, sale: sPer, psPct, psFixed } = mNum
+    const totalSale = sPer * qty + shipCharged
+    const totalCost = shipCost != null ? cPer * qty + shipCost : null
+    const grossProfit = totalCost != null ? totalSale - totalCost : null
+    const paystack = totalSale * (psPct / 100) + psFixed
+    const netProfit = grossProfit != null ? grossProfit - paystack : null
+    const netMargin = netProfit != null && totalSale > 0 ? (netProfit / totalSale) * 100 : null
+    return { c, shipCost, shipCharged, shipMargin, totalCost, totalSale, grossProfit, paystack, netProfit, netMargin }
+  })
 
   // Live preview
   const cnyPerCbm = parseFloat(form.cnyPerCbm) || 0
@@ -178,6 +236,83 @@ export default function ShippingSettingsPage() {
               Last saved: ¥{settings.cnyPerCbm}/CBM · ¥{settings.cnyPerKg}/kg · ×{settings.cnyToZarRate} ZAR
             </p>
           )}
+
+          {/* ── Margin & Profit — live YunExpress rates, all real shipping options ── */}
+          <div className="bg-gray-900 border border-emerald-800/50 rounded-xl p-6 space-y-4">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <p className="text-sm font-semibold text-white flex items-center gap-2">
+                <TrendingUp size={16} className="text-emerald-400" />
+                Margin &amp; Profit — live shipping options (YunExpress)
+              </p>
+              <p className="text-xs text-gray-500 max-w-md text-right">
+                Same rates the storefront charges. <span className="text-gray-300">Cost</span> = rate at the real weight; <span className="text-gray-300">charged</span> = rate at the billing weight (checkout uses 0.4 kg/unit). Customs excluded — buyer clears their own.
+              </p>
+            </div>
+
+            {/* Inputs */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {([
+                ['Country (ISO)', mCountry, setMCountry, 'text', undefined],
+                ['Quantity', mQty, setMQty, 'number', '1'],
+                ['Real kg / unit (cost)', mRealKg, setMRealKg, 'number', '0.001'],
+                ['Billing kg / unit (charge)', mBillingKg, setMBillingKg, 'number', '0.01'],
+                ['Product cost / unit (R)', mCost, setMCost, 'number', '0.01'],
+                ['Product sale / unit (R)', mSale, setMSale, 'number', '0.01'],
+                ['Paystack %', mPsPct, setMPsPct, 'number', '0.1'],
+                ['Paystack fixed (R)', mPsFixed, setMPsFixed, 'number', '0.5'],
+              ] as [string, string, (v: string) => void, string, string | undefined][]).map(([label, val, setter, type, step]) => (
+                <div key={label}>
+                  <label className={lbl}>{label}</label>
+                  <input type={type} step={step} min={type === 'number' ? 0 : undefined} value={val}
+                    onChange={(e) => setter(e.target.value)} className={inp} />
+                </div>
+              ))}
+            </div>
+
+            {mErr && <p className="text-red-400 text-sm">{mErr}</p>}
+            {mLoading && <p className="text-gray-500 text-sm flex items-center gap-2"><Loader2 size={14} className="animate-spin" /> Fetching live rates…</p>}
+
+            {!mLoading && !mErr && marginRows.length === 0 && (
+              <p className="text-sm text-gray-500">No shipping options returned for {mCountry.toUpperCase()} at this weight.</p>
+            )}
+
+            {marginRows.length > 0 && (
+              <div className="overflow-x-auto border border-gray-800 rounded-lg">
+                <table className="w-full text-sm whitespace-nowrap">
+                  <thead>
+                    <tr className="bg-gray-800/50 border-b border-gray-800 text-xs text-gray-400">
+                      {['Option', 'Transit', 'Ship cost', 'Ship charged', 'Ship margin', 'Total cost', 'Total sale', 'Gross profit', 'Paystack', 'Net profit', 'Net %'].map((h) => (
+                        <th key={h} className="px-3 py-2.5 text-right first:text-left font-medium">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {marginRows.map(({ c, shipCost, shipCharged, shipMargin, totalCost, totalSale, grossProfit, paystack, netProfit, netMargin }) => (
+                      <tr key={c.code} className="hover:bg-gray-800/40">
+                        <td className="px-3 py-2.5">
+                          <span className="text-gray-200">{c.name}</span>
+                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded ${c.icon === 'sea' ? 'bg-teal-900/40 text-teal-300' : 'bg-blue-900/40 text-blue-300'}`}>{c.icon}</span>
+                        </td>
+                        <td className="px-3 py-2.5 text-right text-gray-400">{c.transitDaysMin}–{c.transitDaysMax}d</td>
+                        <td className="px-3 py-2.5 text-right text-gray-300">{shipCost != null ? `R${shipCost.toFixed(2)}` : '—'}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-300">R{shipCharged.toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-right text-emerald-400">{shipMargin != null ? `R${shipMargin.toFixed(2)}` : '—'}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-400">{totalCost != null ? `R${totalCost.toFixed(2)}` : '—'}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-200">R{totalSale.toFixed(2)}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-200">{grossProfit != null ? `R${grossProfit.toFixed(2)}` : '—'}</td>
+                        <td className="px-3 py-2.5 text-right text-red-300">−R{paystack.toFixed(2)}</td>
+                        <td className={`px-3 py-2.5 text-right font-semibold ${netProfit == null ? 'text-gray-500' : netProfit >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>{netProfit != null ? `R${netProfit.toFixed(2)}` : '—'}</td>
+                        <td className="px-3 py-2.5 text-right text-gray-300">{netMargin != null ? `${netMargin.toFixed(1)}%` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="text-xs text-gray-600">
+              Rows are the options a customer would actually be offered for {mCountry.toUpperCase()} at the billing weight. A “—” cost means that option isn’t quoted at the real weight (e.g. sea needs ≥5 kg). Net = total sale − total cost − Paystack.
+            </p>
+          </div>
         </>
       )}
     </div>

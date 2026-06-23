@@ -512,44 +512,17 @@ export interface ShippingSettings {
   notes?: string
 }
 
-// ── Shipping Rates ────────────────────────────────────────────────────────────
-export interface ShippingRate {
-  id: number
-  country: string
-  shippingType: string           // AirDDP | AirDDU | SeaDDP | SeaDDU
-  ratePerKg: number
-  ratePerCbm: number
-  fuelSurchargePercent: number
-  dutyRatePercent: number
-  vatRatePercent: number
-  handlingFeeZAR: number
-  minimumChargeZAR: number
-  exchangeRateCNYToZAR: number
-  estimatedTransitDays: number
-  isActive: boolean
-  notes: string | null
-  updatedAt: string
-}
-
-export interface ShippingCalcRequest {
-  country: string
-  shippingType: string
-  weightKg: number
-  volumeCBM: number
-}
-
-export interface ShippingCalcResult {
-  country: string
-  shippingType: string
-  weightKg: number
-  volumeCBM: number
-  baseCostCNY: number
-  withSurchargeCNY: number
-  withDutiesCNY: number
-  rawZAR: number
-  totalZAR: number
-  minimumApplied: boolean
-  estimatedTransitDays: number
+// ── Shipping options (live, from YunExpress via the storefront quote endpoint) ──
+export interface ShippingQuoteOption {
+  code: string
+  name: string
+  description: string
+  transitDaysMin: number
+  transitDaysMax: number
+  priceZAR: number
+  customsIncluded: boolean
+  carrier: string
+  icon: string                   // "air" | "sea"
 }
 
 export interface Shipment {
