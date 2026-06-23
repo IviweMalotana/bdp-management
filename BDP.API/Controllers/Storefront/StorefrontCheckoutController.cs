@@ -17,19 +17,22 @@ public class StorefrontCheckoutController : ControllerBase
     private readonly PaystackService _paystack;
     private readonly IConfiguration _config;
     private readonly PricingService _pricing;
+    private readonly YunExpressService _yunExpress;
 
     public StorefrontCheckoutController(
         AppDbContext db,
         ShippingCalculatorService shipping,
         PaystackService paystack,
         IConfiguration config,
-        PricingService pricing)
+        PricingService pricing,
+        YunExpressService yunExpress)
     {
         _db = db;
         _shipping = shipping;
         _paystack = paystack;
         _config = config;
         _pricing = pricing;
+        _yunExpress = yunExpress;
     }
 
     public record ShippingQuoteAddress(string City, string Province, string PostalCode);
@@ -160,6 +163,12 @@ public class StorefrontCheckoutController : ControllerBase
             ? req.ShippingPriceZAR.Value
             : await _shipping.CalculateAsync(totalWeight, totalVolume, cart.Items.Sum(i => i.Quantity));
 
+        // What the shipment actually costs us: re-quote the SAME service at the real
+        // product weight (totalWeight). The customer is charged at the inflated billing
+        // weight; this gap is shipping margin. 0 if real weight is unknown/zero.
+        var actualShippingZAR = await ComputeActualShippingCostZAR(
+            req.ShippingAddress.Country, totalWeight, req.ShippingServiceCode);
+
         var totalZAR = subtotal + shippingZAR;
 
         var orderNumber = $"SF-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..6].ToUpper()}";
@@ -173,6 +182,7 @@ public class StorefrontCheckoutController : ControllerBase
             FulfilmentStatus = "Placed",
             SubtotalZAR = subtotal,
             ShippingCostZAR = shippingZAR,
+            ActualShippingCostZAR = actualShippingZAR,
             TotalZAR = totalZAR,
             IsPaid = false,
             PaymentMethod = req.PaymentMethod,
@@ -221,6 +231,32 @@ public class StorefrontCheckoutController : ControllerBase
             paystackPublicKey = _config["Paystack:PublicKey"],
             amountZAR = totalZAR
         });
+    }
+
+    // Our true shipping cost: the SAME service code re-quoted at the real product
+    // weight. The customer is charged at the inflated billing weight; the difference
+    // is shipping margin. Returns 0 when the real weight is unknown or the carrier
+    // can't be reached, so a failure here never blocks checkout.
+    private async Task<decimal> ComputeActualShippingCostZAR(string country, decimal realWeightKg, string? serviceCode)
+    {
+        if (realWeightKg <= 0) return 0m;
+
+        try
+        {
+            var grams = (int)Math.Max(1, Math.Round(realWeightKg * 1000));
+            var rates = await _yunExpress.GetRatesAsync(country, grams);
+            if (rates.Count == 0) return 0m;
+
+            // Prefer the exact service the customer chose; otherwise the cheapest quote.
+            var match = !string.IsNullOrWhiteSpace(serviceCode)
+                ? rates.FirstOrDefault(r => r.Code == serviceCode)
+                : null;
+            return (match ?? rates.OrderBy(r => r.PriceZAR).First()).PriceZAR;
+        }
+        catch
+        {
+            return 0m;
+        }
     }
 
     [HttpPost("verify/{reference}")]

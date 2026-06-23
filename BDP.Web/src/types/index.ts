@@ -319,6 +319,7 @@ export interface Order {
   deliveredDate: string | null
   subtotalZAR: number
   shippingCostZAR: number
+  actualShippingCostZAR: number
   totalZAR: number
   isPaid: boolean
   paidAt: string | null

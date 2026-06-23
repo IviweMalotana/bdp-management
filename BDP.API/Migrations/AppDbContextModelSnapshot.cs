@@ -661,6 +661,10 @@ namespace BDP.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("ActualShippingCostZAR")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
                     b.Property<string>("BillingAddressJson")
                         .HasColumnType("text");
 

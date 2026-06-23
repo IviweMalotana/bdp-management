@@ -628,6 +628,7 @@ public class OrdersController : ControllerBase
         DeliveredDate = o.DeliveredDate,
         SubtotalZAR = o.SubtotalZAR,
         ShippingCostZAR = o.ShippingCostZAR,
+        ActualShippingCostZAR = o.ActualShippingCostZAR,
         TotalZAR = o.TotalZAR,
         IsPaid = o.IsPaid,
         PaidAt = o.PaidAt,

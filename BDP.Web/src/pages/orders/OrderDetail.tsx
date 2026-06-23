@@ -518,7 +518,13 @@ export default function OrderDetail() {
         {/* Totals */}
         <div className="px-4 py-4 border-t border-gray-800 space-y-1.5 text-sm max-w-xs ml-auto">
           <div className="flex justify-between text-gray-400"><span>Subtotal</span><span>{fmt(order.subtotalZAR ?? 0)}</span></div>
-          <div className="flex justify-between text-gray-400"><span>Shipping</span><span>{fmt(order.shippingCostZAR ?? 0)}</span></div>
+          <div className="flex justify-between text-gray-400"><span>Shipping (charged)</span><span>{fmt(order.shippingCostZAR ?? 0)}</span></div>
+          {(order.actualShippingCostZAR ?? 0) > 0 && (
+            <>
+              <div className="flex justify-between text-gray-500"><span>Shipping (actual cost)</span><span>−{fmt(order.actualShippingCostZAR)}</span></div>
+              <div className="flex justify-between text-emerald-400"><span>Shipping margin</span><span>{fmt((order.shippingCostZAR ?? 0) - order.actualShippingCostZAR)}</span></div>
+            </>
+          )}
           <div className="flex justify-between text-white font-bold text-base pt-1.5 border-t border-gray-700"><span>Total</span><span>{fmt(total)}</span></div>
         </div>
       </div>
