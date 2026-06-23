@@ -186,9 +186,8 @@ public class YunExpressService
 
         if (!zoneRates.TryGetValue(zone, out var r)) r = zoneRates["REST"];
 
-        // Air options: YunExpress air typically handles up to 30kg (75 units at 400g each)
-        // Above that, only sea freight is practical
-        const int AirMaxGrams = 30_000;
+        // Air options: offered up to 50kg. Above that, only sea freight is practical.
+        const int AirMaxGrams = 50_000;
 
         if (weightGrams <= AirMaxGrams)
         {
@@ -217,8 +216,8 @@ public class YunExpressService
             });
         }
 
-        // Sea only practical for 5kg+ shipments
-        if (weightGrams >= 5000)
+        // Sea offered for 3kg+ shipments
+        if (weightGrams >= 3000)
         {
             options.Add(new ShippingOption
             {
