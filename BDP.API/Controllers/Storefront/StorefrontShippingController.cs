@@ -20,9 +20,9 @@ public class StorefrontShippingController : ControllerBase
         [FromQuery] int weightGrams = 0,
         [FromQuery] int units = 0)
     {
-        // If weightGrams not supplied, calculate from units at 400g each
+        // If weightGrams not supplied, calculate from units at 250g billing weight each
         if (weightGrams <= 0 && units > 0)
-            weightGrams = units * 400;
+            weightGrams = units * 250;
 
         if (weightGrams <= 0)
             return BadRequest(new { message = "Provide weightGrams or units." });
