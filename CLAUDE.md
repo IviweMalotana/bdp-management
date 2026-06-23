@@ -115,18 +115,6 @@ In the admin portal (`BDP.Web`), the order detail page shows a visual clickable 
 
 ---
 
-## Processing Time
-
-Wherever order processing time is advertised in the storefront, it must say:
-
-> **Orders dispatched within 2–3 business days**
-
-This is displayed:
-- On every product page (below the Add to Cart button)
-- On the checkout page (below the shipping options)
-
----
-
 ## Local Development
 
 ```bash

@@ -711,10 +711,6 @@ export default function PDPClient({ product }: { product: Product }) {
           >
             {added ? "Added to cart ✓" : adding ? "Adding…" : "Add to Cart"}
           </button>
-          <p className="text-xs text-center mt-2" style={{ color: "#9E8F83" }}>
-            Orders dispatched within 2–3 business days
-          </p>
-
           {/* Specs accordion */}
           {(product.lengthCm > 0 || selectedVariant.bodyMaterial || selectedVariant.closureType || selectedVariant.accessoriesIncluded) && (
             <details className="mt-6 border-t" style={{ borderColor: "#C9B8A8" }}>
