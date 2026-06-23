@@ -12,13 +12,13 @@ export default function ShippingSettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '' })
+  const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '', shippingMarkupPercent: '40' })
 
   // ── Margin & Profit (live YunExpress rates, same source as checkout) ─────────
   const [mCountry, setMCountry]   = useState('ZA')
   const [mQty, setMQty]           = useState('100')
   const [mRealKg, setMRealKg]     = useState('0.08')   // true weight/unit → YOUR cost
-  const [mBillingKg, setMBillingKg] = useState('0.4')  // billed weight/unit → CUSTOMER charge (checkout uses 0.4)
+  const [mBillingKg, setMBillingKg] = useState('0.25')  // billed weight/unit → CUSTOMER charge (checkout uses 0.25)
   const [mCost, setMCost]         = useState('11.23')  // landed product cost/unit (R)
   const [mSale, setMSale]         = useState('13.63')  // product sale/unit (R)
   const [mPsPct, setMPsPct]       = useState('2.9')
@@ -78,7 +78,7 @@ export default function ShippingSettingsPage() {
   const cnyToZar  = parseFloat(form.cnyToZarRate) || 0
 
   // Billable weight per unit is fixed — see ShippingCalculator.FixedUnitWeightKg on the API.
-  const FIXED_UNIT_KG = 0.4
+  const FIXED_UNIT_KG = 0.25
 
   const previewExamples = [
     { label: 'Serum 30ml',   cbm: 0.000000192, kg: FIXED_UNIT_KG },
@@ -96,9 +96,10 @@ export default function ShippingSettingsPage() {
       .then((s) => {
         setSettings(s)
         setForm({
-          cnyPerCbm:    String(s.cnyPerCbm),
-          cnyPerKg:     String(s.cnyPerKg),
-          cnyToZarRate: String(s.cnyToZarRate),
+          cnyPerCbm:              String(s.cnyPerCbm),
+          cnyPerKg:               String(s.cnyPerKg),
+          cnyToZarRate:           String(s.cnyToZarRate),
+          shippingMarkupPercent:  String(s.shippingMarkupPercent ?? 40),
         })
       })
       .finally(() => setLoading(false))
@@ -108,9 +109,10 @@ export default function ShippingSettingsPage() {
     setSaving(true); setError(null); setSuccess(false)
     try {
       const updated = await settingsApi.updateSettings({
-        cnyPerCbm:    parseFloat(form.cnyPerCbm),
-        cnyPerKg:     parseFloat(form.cnyPerKg),
-        cnyToZarRate: parseFloat(form.cnyToZarRate),
+        cnyPerCbm:             parseFloat(form.cnyPerCbm),
+        cnyPerKg:              parseFloat(form.cnyPerKg),
+        cnyToZarRate:          parseFloat(form.cnyToZarRate),
+        shippingMarkupPercent: parseFloat(form.shippingMarkupPercent),
       })
       setSettings(updated)
       setSuccess(true)
@@ -187,6 +189,15 @@ export default function ShippingSettingsPage() {
                   disabled={!isAdmin}
                 />
               </div>
+              <div>
+                <label className={lbl}>Shipping markup % (YunExpress)</label>
+                <input
+                  type="number" step="1" min="0" className={inp}
+                  value={form.shippingMarkupPercent}
+                  onChange={(e) => setForm({ ...form, shippingMarkupPercent: e.target.value })}
+                  disabled={!isAdmin}
+                />
+              </div>
             </div>
 
             {isAdmin && (
@@ -245,7 +256,7 @@ export default function ShippingSettingsPage() {
                 Margin &amp; Profit — live shipping options (YunExpress)
               </p>
               <p className="text-xs text-gray-500 max-w-md text-right">
-                Same rates the storefront charges. <span className="text-gray-300">Cost</span> = rate at the real weight; <span className="text-gray-300">charged</span> = rate at the billing weight (checkout uses 0.4 kg/unit). Customs excluded — buyer clears their own.
+                Same rates the storefront charges. <span className="text-gray-300">Cost</span> = rate at the real weight; <span className="text-gray-300">charged</span> = rate at the billing weight (checkout uses 0.25 kg/unit). Customs excluded — buyer clears their own.
               </p>
             </div>
 
@@ -310,7 +321,7 @@ export default function ShippingSettingsPage() {
               </div>
             )}
             <p className="text-xs text-gray-600">
-              Rows are the options a customer would actually be offered for {mCountry.toUpperCase()} at the billing weight. A “—” cost means that option isn’t quoted at the real weight (e.g. sea needs ≥5 kg). Net = total sale − total cost − Paystack.
+              Rows are the options a customer would actually be offered for {mCountry.toUpperCase()} at the billing weight. A “—” cost means that option isn’t quoted at the real weight (e.g. sea needs ≥3 kg). Net = total sale − total cost − Paystack.
             </p>
           </div>
         </>

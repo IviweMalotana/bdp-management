@@ -63,7 +63,7 @@ public class RecurringOrderService : BackgroundService
         using var scope = _scopeFactory.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
-        var shippingService = scope.ServiceProvider.GetRequiredService<ShippingCalculatorService>();
+        var yunExpress = scope.ServiceProvider.GetRequiredService<YunExpressService>();
 
         // Build the cutoff as a proper UTC instant: end of "today" in SA time,
         // converted to UTC. Comparing the timestamptz column against a UTC value
@@ -88,7 +88,7 @@ public class RecurringOrderService : BackgroundService
         {
             try
             {
-                var order = await GenerateOrderAsync(context, recurring, shippingService, ct);
+                var order = await GenerateOrderAsync(context, recurring, yunExpress, ct);
                 recurring.NextOrderDate = recurring.NextOrderDate.AddDays(recurring.FrequencyDays);
                 await context.SaveChangesAsync(ct);
 
@@ -103,7 +103,7 @@ public class RecurringOrderService : BackgroundService
 
     private async Task<Order> GenerateOrderAsync(
         AppDbContext context, RecurringOrder recurring,
-        ShippingCalculatorService shipping, CancellationToken ct)
+        YunExpressService yunExpress, CancellationToken ct)
     {
         var orderNumber = $"RO-{recurring.Id:D4}-{DateTime.UtcNow:yyyyMMdd}";
         var order = new Order
@@ -117,7 +117,14 @@ public class RecurringOrderService : BackgroundService
         };
 
         decimal subtotal = 0;
-        decimal shippingCost = 0;
+
+        // Load shipping markup setting
+        var shippingSettings = await context.ShippingSettings.FindAsync(1);
+        var markupPct = shippingSettings?.ShippingMarkupPercent ?? 40m;
+
+        // Accumulate total weight across all items for a single YunExpress rate call
+        int totalWeightGrams = 0;
+        var lineItems = new List<(RecurringOrderItem item, ProductVariant variant, ProductPricingTier tier, int weightGrams)>();
 
         foreach (var item in recurring.Items)
         {
@@ -134,15 +141,32 @@ public class RecurringOrderService : BackgroundService
                 continue;
             }
 
+            var itemWeightGrams = (int)Math.Ceiling(product.WeightKg * 1000m * item.Quantity);
+            totalWeightGrams += itemWeightGrams;
+
             var unitPrice = tier.SalePriceZAR;
             var lineTotal = unitPrice * item.Quantity;
-            var itemShipping = await shipping.CalculateAsync(
-                product.WeightKg, ShippingCalculator.ComputeVolumeCBM(product.LengthCm, product.WidthCm, product.HeightCm),
-                item.Quantity);
-
             subtotal += lineTotal;
-            shippingCost += itemShipping;
+            lineItems.Add((item, variant, tier, itemWeightGrams));
+        }
 
+        // Get YunExpress rate for total shipment weight
+        decimal shippingCost = 0;
+        if (totalWeightGrams > 0)
+        {
+            var rates = await yunExpress.GetRatesAsync("ZA", totalWeightGrams);
+            var cheapest = rates
+                .Where(r => !r.CustomsIncluded)  // exclude DDP options
+                .OrderBy(r => r.PriceZAR)
+                .FirstOrDefault();
+            if (cheapest != null)
+                shippingCost = Math.Round(cheapest.PriceZAR * (1 + markupPct / 100m), 2);
+        }
+
+        foreach (var (item, variant, tier, _) in lineItems)
+        {
+            var unitPrice = tier.SalePriceZAR;
+            var lineTotal = unitPrice * item.Quantity;
             order.Items.Add(new OrderItem
             {
                 ProductVariantId = variant.Id,
@@ -151,7 +175,7 @@ public class RecurringOrderService : BackgroundService
                 Quantity = item.Quantity,
                 UnitPriceZAR = unitPrice,
                 LineTotal = lineTotal,
-                ShippingCostZAR = itemShipping
+                ShippingCostZAR = 0  // shipping stored at order level, not per-item
             });
         }
 

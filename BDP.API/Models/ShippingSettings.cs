@@ -8,5 +8,6 @@ public class ShippingSettings
     public decimal CnyToZarRate { get; set; } = 2.40m;
     public decimal BufferCNY { get; set; } = 3.00m;   // shipping + fees buffer per unit
     public decimal ProfitCNY { get; set; } = 1.00m;   // margin per unit
+    public decimal ShippingMarkupPercent { get; set; } = 40m;  // markup applied on top of YunExpress rate
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 }

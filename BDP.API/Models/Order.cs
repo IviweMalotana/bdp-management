@@ -12,6 +12,10 @@ public class Order
     public DateTime? DeliveredDate { get; set; }
     public decimal SubtotalZAR { get; set; }
     public decimal ShippingCostZAR { get; set; }
+    // What the shipment actually costs us, priced at the real product weight (not the
+    // billing weight the customer is charged). ShippingCostZAR − ActualShippingCostZAR
+    // is the shipping margin. 0 when real weight is unknown.
+    public decimal ActualShippingCostZAR { get; set; }
     public decimal TotalZAR { get; set; }
     public bool IsPaid { get; set; }
     public DateTime? PaidAt { get; set; }

@@ -8,6 +8,7 @@ public class ShippingSettingsDto
     public decimal CnyToZarRate { get; set; }
     public decimal BufferCNY { get; set; }
     public decimal ProfitCNY { get; set; }
+    public decimal ShippingMarkupPercent { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
 

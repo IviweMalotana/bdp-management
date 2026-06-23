@@ -1,3 +1,17 @@
+// ── Email Templates ───────────────────────────────────────────────────────────
+export interface EmailTemplateSummary {
+  id: number
+  key: string
+  name: string
+  description: string
+  subject: string
+  updatedAt: string
+}
+
+export interface EmailTemplate extends EmailTemplateSummary {
+  htmlBody: string
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export interface User {
   id: string
@@ -319,6 +333,7 @@ export interface Order {
   deliveredDate: string | null
   subtotalZAR: number
   shippingCostZAR: number
+  actualShippingCostZAR: number
   totalZAR: number
   isPaid: boolean
   paidAt: string | null
@@ -508,6 +523,7 @@ export interface ShippingSettings {
   cnyToZarRate: number
   bufferCNY?: number
   profitCNY?: number
+  shippingMarkupPercent?: number
   updatedAt?: string
   notes?: string
 }

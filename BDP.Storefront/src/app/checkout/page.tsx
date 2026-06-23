@@ -246,6 +246,7 @@ export default function CheckoutPage() {
 
   const subtotal = items.reduce((s, i) => s + i.lineTotalZAR, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  const totalWeightGrams = items.reduce((s, i) => s + (i.weightKg ?? 0.08) * i.quantity * 1000, 0);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -260,7 +261,7 @@ export default function CheckoutPage() {
     setShippingError(null);
     setSelectedOption(null);
     try {
-      const options = await getShippingOptions(apiCountryCode(country), totalUnits);
+      const options = await getShippingOptions(apiCountryCode(country), Math.max(1, Math.round(totalWeightGrams)));
       setShippingOptions(options);
     } catch {
       setShippingError("Could not load shipping options. Please try again.");
@@ -492,10 +493,11 @@ export default function CheckoutPage() {
               ))}
             </div>
           )}
-          <p className="text-xs mt-2" style={{ color: "#9E8F83" }}>
-            Orders are processed and dispatched within 2–3 business days of payment confirmation.
-            {customisedItems.length > 0 && " Customised items add about 1 week of production time before dispatch."}
-          </p>
+          {customisedItems.length > 0 && (
+            <p className="text-xs mt-2" style={{ color: "#9E8F83" }}>
+              Customised items add about 1 week of production time before dispatch.
+            </p>
+          )}
 
           <div className="flex gap-3 pt-2">
             <button

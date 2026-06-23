@@ -44,6 +44,7 @@ const NAV = [
   { to: '/customisation-profit',    label: 'Customisation Profit', icon: Paintbrush },
   { to: '/yunexpress-test',         label: 'YunExpress Test', icon: FlaskConical },
   { to: '/email-test',              label: 'Email Test',      icon: Mail },
+  { to: '/settings/emails',         label: 'Email Templates', icon: Mail },
 ]
 
 const ROLE_COLOURS: Record<string, string> = {

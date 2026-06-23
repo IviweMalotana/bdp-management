@@ -255,8 +255,8 @@ export interface ShippingOption {
   icon: "air" | "sea";
 }
 
-export function getShippingOptions(country: string, units: number): Promise<ShippingOption[]> {
-  return request(`/api/storefront/shipping/options?country=${encodeURIComponent(country)}&units=${units}`);
+export function getShippingOptions(country: string, weightGrams: number): Promise<ShippingOption[]> {
+  return request(`/api/storefront/shipping/options?country=${encodeURIComponent(country)}&weightGrams=${Math.max(1, Math.round(weightGrams))}`);
 }
 
 export async function removeArtwork(

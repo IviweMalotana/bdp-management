@@ -76,7 +76,8 @@ public class StorefrontCartController : ControllerBase
                     item.CustomisationOptionId,
                     item.CustomisationNotes,
                     unitPriceZAR = unitPrice,
-                    lineTotalZAR = unitPrice * item.Quantity
+                    lineTotalZAR = unitPrice * item.Quantity,
+                    weightKg = (double?)item.ProductVariant.Product?.WeightKg
                 };
             })
         };
