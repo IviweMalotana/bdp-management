@@ -90,10 +90,8 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Link
             href="/"
-            className="text-2xl tracking-widest uppercase"
-            style={{ fontFamily: "var(--font-display)", color: "#1C1A17" }}
           >
-            BDP
+            <img src="/logo.svg" alt="BDP" style={{ height: "48px", width: "auto" }} />
           </Link>
           <p className="text-sm mt-2" style={{ color: "#4A4540" }}>Sign in to your account</p>
         </div>

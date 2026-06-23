@@ -61,11 +61,8 @@ export default function Header() {
     >
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4" style={{ height: "72px" }}>
         {/* Logo */}
-        <Link
-          href="/"
-          style={{ fontFamily: '"Playfair Display", Georgia, serif', color: "#1A1A18", fontSize: "24px", fontWeight: 500, letterSpacing: "2.4px", textDecoration: "none" }}
-        >
-          BDP
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <img src="/logo.svg" alt="BDP" height={42} style={{ height: "42px", width: "auto" }} />
         </Link>
 
         {/* Nav — desktop */}
