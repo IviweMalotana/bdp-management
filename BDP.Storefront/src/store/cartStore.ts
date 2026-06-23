@@ -11,6 +11,7 @@ export interface CartItem {
   customisationNotes?: string;
   unitPriceZAR: number;
   lineTotalZAR: number;
+  weightKg?: number;
 }
 
 interface CartState {

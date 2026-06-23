@@ -246,6 +246,7 @@ export default function CheckoutPage() {
 
   const subtotal = items.reduce((s, i) => s + i.lineTotalZAR, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
+  const totalWeightGrams = items.reduce((s, i) => s + (i.weightKg ?? 0.08) * i.quantity * 1000, 0);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -260,7 +261,7 @@ export default function CheckoutPage() {
     setShippingError(null);
     setSelectedOption(null);
     try {
-      const options = await getShippingOptions(apiCountryCode(country), totalUnits);
+      const options = await getShippingOptions(apiCountryCode(country), Math.max(1, Math.round(totalWeightGrams)));
       setShippingOptions(options);
     } catch {
       setShippingError("Could not load shipping options. Please try again.");

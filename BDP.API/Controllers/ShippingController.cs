@@ -55,6 +55,7 @@ public class ShippingController : ControllerBase
             CnyToZarRate = settings.CnyToZarRate,
             BufferCNY = settings.BufferCNY,
             ProfitCNY = settings.ProfitCNY,
+            ShippingMarkupPercent = settings.ShippingMarkupPercent,
             UpdatedAt = settings.UpdatedAt
         });
     }
@@ -70,6 +71,7 @@ public class ShippingController : ControllerBase
         settings.CnyToZarRate = dto.CnyToZarRate;
         settings.BufferCNY = dto.BufferCNY > 0 ? dto.BufferCNY : settings.BufferCNY;
         settings.ProfitCNY = dto.ProfitCNY > 0 ? dto.ProfitCNY : settings.ProfitCNY;
+        settings.ShippingMarkupPercent = dto.ShippingMarkupPercent >= 0 ? dto.ShippingMarkupPercent : settings.ShippingMarkupPercent;
         settings.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -81,6 +83,7 @@ public class ShippingController : ControllerBase
             CnyToZarRate = settings.CnyToZarRate,
             BufferCNY = settings.BufferCNY,
             ProfitCNY = settings.ProfitCNY,
+            ShippingMarkupPercent = settings.ShippingMarkupPercent,
             UpdatedAt = settings.UpdatedAt
         });
     }

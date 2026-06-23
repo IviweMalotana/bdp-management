@@ -509,6 +509,7 @@ export interface ShippingSettings {
   cnyToZarRate: number
   bufferCNY?: number
   profitCNY?: number
+  shippingMarkupPercent?: number
   updatedAt?: string
   notes?: string
 }

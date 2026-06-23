@@ -12,7 +12,7 @@ export default function ShippingSettingsPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
 
-  const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '' })
+  const [form, setForm] = useState({ cnyPerCbm: '', cnyPerKg: '', cnyToZarRate: '', shippingMarkupPercent: '40' })
 
   // ── Margin & Profit (live YunExpress rates, same source as checkout) ─────────
   const [mCountry, setMCountry]   = useState('ZA')
@@ -96,9 +96,10 @@ export default function ShippingSettingsPage() {
       .then((s) => {
         setSettings(s)
         setForm({
-          cnyPerCbm:    String(s.cnyPerCbm),
-          cnyPerKg:     String(s.cnyPerKg),
-          cnyToZarRate: String(s.cnyToZarRate),
+          cnyPerCbm:              String(s.cnyPerCbm),
+          cnyPerKg:               String(s.cnyPerKg),
+          cnyToZarRate:           String(s.cnyToZarRate),
+          shippingMarkupPercent:  String(s.shippingMarkupPercent ?? 40),
         })
       })
       .finally(() => setLoading(false))
@@ -108,9 +109,10 @@ export default function ShippingSettingsPage() {
     setSaving(true); setError(null); setSuccess(false)
     try {
       const updated = await settingsApi.updateSettings({
-        cnyPerCbm:    parseFloat(form.cnyPerCbm),
-        cnyPerKg:     parseFloat(form.cnyPerKg),
-        cnyToZarRate: parseFloat(form.cnyToZarRate),
+        cnyPerCbm:             parseFloat(form.cnyPerCbm),
+        cnyPerKg:              parseFloat(form.cnyPerKg),
+        cnyToZarRate:          parseFloat(form.cnyToZarRate),
+        shippingMarkupPercent: parseFloat(form.shippingMarkupPercent),
       })
       setSettings(updated)
       setSuccess(true)
@@ -184,6 +186,15 @@ export default function ShippingSettingsPage() {
                   type="number" step="0.0001" className={inp}
                   value={form.cnyToZarRate}
                   onChange={(e) => setForm({ ...form, cnyToZarRate: e.target.value })}
+                  disabled={!isAdmin}
+                />
+              </div>
+              <div>
+                <label className={lbl}>Shipping markup % (YunExpress)</label>
+                <input
+                  type="number" step="1" min="0" className={inp}
+                  value={form.shippingMarkupPercent}
+                  onChange={(e) => setForm({ ...form, shippingMarkupPercent: e.target.value })}
                   disabled={!isAdmin}
                 />
               </div>
