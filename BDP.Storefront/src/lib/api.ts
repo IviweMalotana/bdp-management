@@ -259,6 +259,12 @@ export function getShippingOptions(country: string, weightGrams: number): Promis
   return request(`/api/storefront/shipping/options?country=${encodeURIComponent(country)}&weightGrams=${Math.max(1, Math.round(weightGrams))}`);
 }
 
+export function trackOrder(orderNumber: string, email: string) {
+  return request(
+    `/api/storefront/orders/track?ref=${encodeURIComponent(orderNumber)}&email=${encodeURIComponent(email)}`
+  );
+}
+
 export async function removeArtwork(
   cartItemId: number,
   sessionToken: string,

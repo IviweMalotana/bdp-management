@@ -93,11 +93,33 @@ public class InvoiceService
             _logger.LogWarning(ex, "Failed to create Paystack payment request for invoice {Id}", invoiceId);
         }
 
-        var html = BuildInvoiceEmailHtml(invoice);
+        var tmpl = await _email.GetTemplateAsync(_context, "invoice_sent");
+        string subject, html;
+        if (tmpl.HasValue)
+        {
+            subject = tmpl.Value.Subject
+                .Replace("{{InvoiceNumber}}", invoice.InvoiceNumber);
+            html = tmpl.Value.HtmlBody
+                .Replace("{{InvoiceNumber}}", invoice.InvoiceNumber)
+                .Replace("{{ClientName}}", invoice.Client.ContactPersonName)
+                .Replace("{{TotalZAR}}", $"{invoice.TotalZAR:N2}");
+
+            // Append Paystack payment link if available
+            if (!string.IsNullOrEmpty(invoice.PaystackPaymentRequestId))
+                html = html.Replace("</body>",
+                    $"<p style=\"margin:16px 0 0;font-size:13px;color:#4A4540;\">" +
+                    $"<a href=\"https://paystack.com/pay/{invoice.PaystackPaymentRequestId}\">Pay online</a></p></body>");
+        }
+        else
+        {
+            subject = $"Invoice {invoice.InvoiceNumber} — Victor the Label (Pty) Ltd";
+            html = BuildInvoiceEmailHtml(invoice);
+        }
+
         await _email.SendAsync(
             invoice.Client.ContactEmail,
             invoice.Client.ContactPersonName,
-            $"Invoice {invoice.InvoiceNumber} — Victor the Label (Pty) Ltd",
+            subject,
             html,
             (pdfBytes, $"{invoice.InvoiceNumber}.pdf", "application/pdf"));
 

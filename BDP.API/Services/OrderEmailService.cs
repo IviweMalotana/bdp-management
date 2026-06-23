@@ -81,9 +81,34 @@ public class OrderEmailService
                 StorefrontUrl: StorefrontUrl
             );
 
-            await _email.SendAsync(email, recipientName,
-                $"Order confirmed — {order.OrderNumber}",
-                EmailTemplates.OrderConfirmation(data));
+            var tmpl = await _email.GetTemplateAsync(_db, "order_confirmation");
+            string subject, html;
+            if (tmpl.HasValue)
+            {
+                var lineItemsHtml = string.Concat(data.Lines.Select(line =>
+                    $"<p style=\"margin:4px 0;font-size:14px;color:#1C1A17;\">{line.ProductName} (SKU {line.Sku}) &times; {line.Quantity} &mdash; R {line.LineTotal:N2}</p>"));
+
+                subject = tmpl.Value.Subject
+                    .Replace("{{OrderNumber}}", order.OrderNumber);
+                html = tmpl.Value.HtmlBody
+                    .Replace("{{RecipientName}}", recipientName)
+                    .Replace("{{OrderNumber}}", order.OrderNumber)
+                    .Replace("{{OrderDate}}", data.OrderDate)
+                    .Replace("{{LineItems}}", lineItemsHtml)
+                    .Replace("{{SubtotalZAR}}", $"{data.SubtotalZAR:N2}")
+                    .Replace("{{ShippingZAR}}", $"{data.ShippingZAR:N2}")
+                    .Replace("{{TotalZAR}}", $"{data.TotalZAR:N2}")
+                    .Replace("{{ShippingAddress}}", data.ShippingAddress)
+                    .Replace("{{ShippingServiceName}}", data.ShippingServiceName ?? "Standard")
+                    .Replace("{{StorefrontUrl}}", StorefrontUrl);
+            }
+            else
+            {
+                subject = $"Order confirmed — {order.OrderNumber}";
+                html = EmailTemplates.OrderConfirmation(data);
+            }
+
+            await _email.SendAsync(email, recipientName, subject, html);
 
             _logger.LogInformation("Order confirmation sent for {OrderNumber} to {Email}", order.OrderNumber, email);
         }

@@ -619,8 +619,102 @@ public class OrdersController : ControllerBase
             ShippingAddress: order.ShippingAddressJson ?? ""
         );
 
-        await _email.SendAsync(email, recipientName,
-            $"Your BDP order {order.OrderNumber} is on its way", EmailTemplates.OrderShipped(data));
+        var storefrontUrl = Environment.GetEnvironmentVariable("STOREFRONT_URL") ?? "https://bdp-management.vercel.app";
+        var tmpl = await _email.GetTemplateAsync(_context, "order_shipped");
+        string subject, html;
+        if (tmpl.HasValue)
+        {
+            subject = tmpl.Value.Subject
+                .Replace("{{OrderNumber}}", order.OrderNumber);
+            html = tmpl.Value.HtmlBody
+                .Replace("{{RecipientName}}", recipientName)
+                .Replace("{{OrderNumber}}", order.OrderNumber)
+                .Replace("{{TrackingNumber}}", order.TrackingNumber ?? "")
+                .Replace("{{TrackingCarrier}}", order.TrackingCarrier ?? "YunExpress")
+                .Replace("{{ShippingAddress}}", order.ShippingAddressJson ?? "")
+                .Replace("{{ShippingServiceName}}", order.ShippingServiceName ?? "Standard")
+                .Replace("{{StorefrontUrl}}", storefrontUrl);
+        }
+        else
+        {
+            subject = $"Your BDP order {order.OrderNumber} is on its way";
+            html = EmailTemplates.OrderShipped(data);
+        }
+
+        await _email.SendAsync(email, recipientName, subject, html);
+    }
+
+    // GET /api/orders/shipping-margin?from=&to=&page=1&pageSize=50
+    [HttpGet("shipping-margin")]
+    public async Task<IActionResult> GetShippingMargin(
+        [FromQuery] DateTime? from = null,
+        [FromQuery] DateTime? to = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 50)
+    {
+        var query = _context.Orders
+            .Include(o => o.Client)
+            .Include(o => o.Items)
+            .Where(o => o.ActualShippingCostZAR > 0)
+            .AsQueryable();
+
+        if (from.HasValue)
+            query = query.Where(o => o.OrderDate >= from.Value.ToUniversalTime());
+        if (to.HasValue)
+            query = query.Where(o => o.OrderDate <= to.Value.ToUniversalTime());
+
+        // Pull all matching for summary (then page in memory)
+        var allMatching = await query.OrderByDescending(o => o.OrderDate).ToListAsync();
+
+        var totalShippingCharged = allMatching.Sum(o => o.ShippingCostZAR);
+        var totalActualCost = allMatching.Sum(o => o.ActualShippingCostZAR);
+        var totalShippingMargin = totalShippingCharged - totalActualCost;
+        var avgMarginPct = totalShippingCharged > 0
+            ? Math.Round((totalShippingMargin / totalShippingCharged) * 100, 2)
+            : 0m;
+        var totalCount = allMatching.Count;
+
+        var paged = allMatching
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(o =>
+            {
+                var charged = o.ShippingCostZAR;
+                var actual = o.ActualShippingCostZAR;
+                var margin = charged - actual;
+                var marginPct = charged > 0 ? Math.Round((margin / charged) * 100, 2) : 0m;
+                var units = o.Items?.Sum(i => i.Quantity) ?? 0;
+                var clientName = o.Client?.CompanyName ?? o.GuestEmail ?? "Guest";
+                return new
+                {
+                    orderId = o.Id,
+                    orderNumber = o.OrderNumber,
+                    orderDate = o.OrderDate,
+                    clientName,
+                    units,
+                    shippingCharged = charged,
+                    actualShippingCost = actual,
+                    shippingMargin = margin,
+                    shippingMarginPct = marginPct,
+                    shippingServiceName = o.ShippingServiceName,
+                    totalZAR = o.TotalZAR
+                };
+            })
+            .ToList();
+
+        return Ok(new
+        {
+            items = paged,
+            totalCount,
+            summary = new
+            {
+                totalShippingCharged,
+                totalActualCost,
+                totalShippingMargin,
+                avgMarginPct,
+                ordersWithRealCost = totalCount
+            }
+        });
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
