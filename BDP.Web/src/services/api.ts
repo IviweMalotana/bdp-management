@@ -418,4 +418,10 @@ export const emailTemplatesApi = {
     http.post<import('../types').EmailTemplate>(`/email-templates/${key}/reset`).then((r) => r.data),
 }
 
+// ── Shipping Margin ───────────────────────────────────────────────────────────
+export const shippingMarginApi = {
+  get: (params?: { from?: string; to?: string; page?: number; pageSize?: number }) =>
+    http.get<import('../types').ShippingMarginResult>('/orders/shipping-margin', { params }).then(r => r.data),
+}
+
 export default http

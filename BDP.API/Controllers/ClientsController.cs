@@ -18,11 +18,13 @@ public class ClientsController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly PaystackService _paystack;
+    private readonly EmailService _email;
 
-    public ClientsController(AppDbContext context, PaystackService paystack)
+    public ClientsController(AppDbContext context, PaystackService paystack, EmailService email)
     {
         _context = context;
         _paystack = paystack;
+        _email = email;
     }
 
     [HttpGet]
@@ -295,6 +297,37 @@ public class ClientsController : ControllerBase
         user.B2BStatus = "Approved";
 
         await _context.SaveChangesAsync();
+
+        // Send B2B approval email
+        try
+        {
+            var tmpl = await _email.GetTemplateAsync(_context, "b2b_approved");
+            string subject, html;
+            if (tmpl.HasValue)
+            {
+                subject = tmpl.Value.Subject;
+                html = tmpl.Value.HtmlBody
+                    .Replace("{{ContactName}}", client.ContactPersonName)
+                    .Replace("{{CompanyName}}", client.CompanyName);
+            }
+            else
+            {
+                subject = "Your B2B account has been approved — BDP Packaging";
+                html = $"""
+                    <p>Dear {client.ContactPersonName},</p>
+                    <p>Your B2B account application for <strong>{client.CompanyName}</strong> has been approved.</p>
+                    <p>You can now log in and start placing orders.</p>
+                    <p>Regards,<br/>BDP Packaging Co.</p>
+                    """;
+            }
+            await _email.SendAsync(client.ContactEmail, client.ContactPersonName, subject, html);
+        }
+        catch (Exception ex)
+        {
+            // Email failure must not block the approval response
+            _ = ex;
+        }
+
         return Ok(new { message = "Application approved.", clientId = id });
     }
 

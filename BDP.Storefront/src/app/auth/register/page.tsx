@@ -187,8 +187,8 @@ export default function RegisterPage() {
         style={{ backgroundColor: "#FAF8F5", borderColor: "#C9B8A8", borderRadius: "2px" }}
       >
         <div className="text-center mb-8">
-          <Link href="/" className="text-2xl tracking-widest uppercase" style={{ fontFamily: "var(--font-display)", color: "#1C1A17" }}>
-            BDP
+          <Link href="/">
+            <img src="/logo.svg" alt="BDP" style={{ height: "48px", width: "auto" }} />
           </Link>
           <p className="text-sm mt-2" style={{ color: "#4A4540" }}>Create your account</p>
         </div>

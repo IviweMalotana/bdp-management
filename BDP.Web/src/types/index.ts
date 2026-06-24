@@ -541,6 +541,35 @@ export interface ShippingQuoteOption {
   icon: string                   // "air" | "sea"
 }
 
+// ── Shipping Margin ───────────────────────────────────────────────────────────
+export interface ShippingMarginRow {
+  orderId: number
+  orderNumber: string
+  orderDate: string
+  clientName: string
+  units: number
+  shippingCharged: number
+  actualShippingCost: number
+  shippingMargin: number
+  shippingMarginPct: number
+  shippingServiceName: string | null
+  totalZAR: number
+}
+
+export interface ShippingMarginSummary {
+  totalShippingCharged: number
+  totalActualCost: number
+  totalShippingMargin: number
+  avgMarginPct: number
+  ordersWithRealCost: number
+}
+
+export interface ShippingMarginResult {
+  items: ShippingMarginRow[]
+  totalCount: number
+  summary: ShippingMarginSummary
+}
+
 export interface Shipment {
   id: number
   reference: string

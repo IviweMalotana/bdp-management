@@ -92,7 +92,7 @@ public class RecurringOrderService : BackgroundService
                 recurring.NextOrderDate = recurring.NextOrderDate.AddDays(recurring.FrequencyDays);
                 await context.SaveChangesAsync(ct);
 
-                await NotifyClientAsync(emailService, recurring.Client, order, recurring);
+                await NotifyClientAsync(emailService, context, recurring.Client, order, recurring);
             }
             catch (Exception ex)
             {
@@ -187,21 +187,37 @@ public class RecurringOrderService : BackgroundService
         return order;
     }
 
-    private async Task NotifyClientAsync(EmailService email, Client client, Order order, RecurringOrder recurring)
+    private async Task NotifyClientAsync(EmailService email, AppDbContext db, Client client, Order order, RecurringOrder recurring)
     {
-        var html = $"""
-            <p>Dear {client.ContactPersonName},</p>
-            <p>Your recurring order <strong>{recurring.Name}</strong> has been generated.</p>
-            <p>Order Number: <strong>{order.OrderNumber}</strong></p>
-            <p>Total: <strong>R {order.TotalZAR:N2}</strong></p>
-            <p>Our team will be in touch to confirm delivery details.</p>
-            <p>Regards,<br/>Victor the Label (Pty) Ltd</p>
-            """;
+        var tmpl = await email.GetTemplateAsync(db, "recurring_order_generated");
+        string subject, html;
+        if (tmpl.HasValue)
+        {
+            subject = tmpl.Value.Subject
+                .Replace("{{OrderNumber}}", order.OrderNumber);
+            html = tmpl.Value.HtmlBody
+                .Replace("{{RecipientName}}", client.ContactPersonName)
+                .Replace("{{RecurringOrderName}}", recurring.Name)
+                .Replace("{{OrderNumber}}", order.OrderNumber)
+                .Replace("{{TotalZAR}}", $"{order.TotalZAR:N2}");
+        }
+        else
+        {
+            subject = $"Order Generated: {order.OrderNumber}";
+            html = $"""
+                <p>Dear {client.ContactPersonName},</p>
+                <p>Your recurring order <strong>{recurring.Name}</strong> has been generated.</p>
+                <p>Order Number: <strong>{order.OrderNumber}</strong></p>
+                <p>Total: <strong>R {order.TotalZAR:N2}</strong></p>
+                <p>Our team will be in touch to confirm delivery details.</p>
+                <p>Regards,<br/>Victor the Label (Pty) Ltd</p>
+                """;
+        }
 
         await email.SendAsync(
             client.ContactEmail,
             client.ContactPersonName,
-            $"Order Generated: {order.OrderNumber}",
+            subject,
             html);
     }
 }
