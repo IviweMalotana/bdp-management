@@ -21,8 +21,8 @@ const FEATURES = [
   },
   {
     icon: "◈",
-    heading: "Volume pricing",
-    body: "Hotels and group properties unlock deeper discounts. The more you consolidate, the less each unit costs.",
+    heading: "Direct sourcing",
+    body: "We source packaging directly from manufacturers. No middlemen means better unit costs as your volumes grow.",
   },
   {
     icon: "✦",
@@ -342,9 +342,9 @@ export default function ForBusinessPage() {
           </h2>
           <div className="grid grid-cols-3 gap-6 mb-10">
             {[
-              { qty: "50 units", note: "Entry tier" },
-              { qty: "500 units", note: "28% margin" },
-              { qty: "5,000 units", note: "20% margin" },
+              { qty: "50 units", note: "Start small" },
+              { qty: "500 units", note: "Better unit cost" },
+              { qty: "5,000 units", note: "Best unit cost" },
             ].map((row) => (
               <div
                 key={row.qty}

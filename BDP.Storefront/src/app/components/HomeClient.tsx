@@ -35,7 +35,7 @@ const segments = [
   {
     image: "/images/segment-scale.jpg",
     title: "outgrowing\nyour supplier",
-    body: "Selling fast and need 5000 units that won't break the bank? Volume pricing and Shopify-ready exports, no drama.",
+    body: "Need 5 000 units delivered reliably? We source directly, handle large volumes, and offer customisation — all from one account.",
     cta: "Scale up →",
     href: "/shop",
   },
