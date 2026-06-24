@@ -47,7 +47,7 @@ public class StorefrontProductsController : ControllerBase
             return new
             {
                 p.Id,
-                p.Slug,
+                slug = string.IsNullOrEmpty(p.Slug) ? $"{System.Text.RegularExpressions.Regex.Replace(p.Name.ToLowerInvariant(), @"[^a-z0-9]+", "-").Trim('-')}-{p.Id}" : p.Slug,
                 p.Name,
                 p.Category,
                 primaryUrl = p.Images.OrderBy(i => i.Id).FirstOrDefault()?.Url,
@@ -69,6 +69,20 @@ public class StorefrontProductsController : ControllerBase
                 .ThenInclude(v => v.PricingTiers)
             .Include(p => p.Supplier)
             .FirstOrDefaultAsync(p => p.Slug == slug);
+
+        // Fallback: match by "name-id" pattern for products with blank slugs
+        if (product == null && slug.Length > 0)
+        {
+            var dashIdx = slug.LastIndexOf('-');
+            if (dashIdx > 0 && int.TryParse(slug[(dashIdx + 1)..], out var fallbackId))
+            {
+                product = await _db.Products
+                    .Include(p => p.Images)
+                    .Include(p => p.Variants).ThenInclude(v => v.PricingTiers)
+                    .Include(p => p.Supplier)
+                    .FirstOrDefaultAsync(p => p.Id == fallbackId);
+            }
+        }
 
         if (product == null) return NotFound();
 

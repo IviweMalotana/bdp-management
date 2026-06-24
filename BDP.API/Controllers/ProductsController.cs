@@ -140,7 +140,7 @@ public class ProductsController : ControllerBase
             MetaTitle = dto.MetaTitle,
             MetaDescription = dto.MetaDescription,
             MetaKeywords = dto.MetaKeywords,
-            Slug = dto.Slug,
+            Slug = string.IsNullOrWhiteSpace(dto.Slug) ? ToSlug(dto.Name) : dto.Slug,
             SupplierId = dto.SupplierId,
             WeightKg = dto.WeightKg,
             LengthCm = dto.LengthCm,
@@ -183,7 +183,7 @@ public class ProductsController : ControllerBase
         product.MetaTitle = dto.MetaTitle;
         product.MetaDescription = dto.MetaDescription;
         product.MetaKeywords = dto.MetaKeywords;
-        product.Slug = dto.Slug;
+        product.Slug = string.IsNullOrWhiteSpace(dto.Slug) ? ToSlug(dto.Name) : dto.Slug;
         product.SupplierId = dto.SupplierId;
         product.WeightKg = dto.WeightKg;
         product.LengthCm = dto.LengthCm;
@@ -366,7 +366,31 @@ public class ProductsController : ControllerBase
         return File(csvBytes, "text/csv", filename);
     }
 
+    // POST /api/products/repair-slugs  — one-off fix for products with blank slugs
+    [HttpPost("repair-slugs")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RepairSlugs()
+    {
+        var products = await _context.Products
+            .Where(p => p.Slug == null || p.Slug == "")
+            .ToListAsync();
+
+        foreach (var p in products)
+            p.Slug = ToSlug(p.Name) + "-" + p.Id;
+
+        await _context.SaveChangesAsync();
+        return Ok(new { repaired = products.Count });
+    }
+
     // ── Mappers ────────────────────────────────────────────────────────────
+
+    private static string ToSlug(string name)
+    {
+        var slug = name.ToLowerInvariant();
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+        slug = System.Text.RegularExpressions.Regex.Replace(slug, @"\s+", "-");
+        return slug.Trim('-');
+    }
 
     private static ProductDto MapToDto(Product p) => new()
     {

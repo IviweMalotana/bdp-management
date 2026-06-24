@@ -24,7 +24,7 @@ const schema = z.object({
   costWithShippingCNY: z.coerce.number().min(0),
   costPerUnitZAR:      z.coerce.number().min(0),
   supplierId:          z.coerce.number().int().min(1, 'Required'),
-  supplierLink:        z.string().optional(),
+  link1688:            z.string().optional(),
   isActive:            z.boolean().default(true),
   weightKg:            z.coerce.number().min(0).default(0.10),
   lengthCm:            z.coerce.number().min(0).default(4),
@@ -92,7 +92,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
           costCNY: product.costCNY,
           costWithShippingCNY: product.costWithShippingCNY,
           costPerUnitZAR: product.costPerUnitZAR, supplierId: product.supplierId,
-          supplierLink: product.supplierLink ?? '', isActive: product.isActive,
+          link1688: product.link1688 ?? '', isActive: product.isActive,
           weightKg: product.weightKg ?? 0.10,
           lengthCm: product.lengthCm ?? 4,
           widthCm: product.widthCm ?? 4,
@@ -103,7 +103,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
 
   useEffect(() => { suppliersApi.getAll().then(setSupplierList).catch(() => {}) }, [])
 
-  const [n, cat, sz, bc, lc, tx, wKg, lCm, wCm, hCm] = watch(['name', 'category', 'size', 'bottleColour', 'lidColour', 'texture', 'weightKg', 'lengthCm', 'widthCm', 'heightCm'])
+  const [n, cat, sz, bc, lc, tx, wKg, lCm, wCm, hCm] = watch(['name', 'category', 'size', 'bottleColour', 'lidColour', 'texture', 'weightKg', 'lengthCm', 'widthCm', 'heightCm'] as const)
   const skuPreview = buildSKU(n ?? '', cat ?? '', sz ?? '', bc ?? '', lc ?? '', tx ?? '')
   const cbmPreview = ((lCm || 0) * (wCm || 0) * (hCm || 0) / 1_000_000).toFixed(9)
   const shippingPerUnitPreview = (((Number(lCm) * Number(wCm) * Number(hCm) / 1_000_000) * 2000 + (Number(wKg) * 10)) * 2.40).toFixed(2)
@@ -115,7 +115,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
   const onSubmitProduct = async (data: Fields) => {
     setSaving(true); setError(null)
     try {
-      const payload = { ...data, skuBase: skuPreview, supplierLink: data.supplierLink || null }
+      const payload = { ...data, skuBase: skuPreview, link1688: data.link1688 || null }
       const result = isEdit && product
         ? await productApi.update(product.id, payload)
         : await productApi.create(payload)
@@ -226,7 +226,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
         texture: savedProduct.texture, costCNY: savedProduct.costCNY,
         costWithShippingCNY: savedProduct.costWithShippingCNY,
         costPerUnitZAR: savedProduct.costPerUnitZAR,
-        supplierLink: savedProduct.supplierLink,
+        link1688: savedProduct.link1688,
         supplierId: savedProduct.supplierId, isActive: savedProduct.isActive,
         shopifyTitle: aiTitle || null,
         shopifyBodyHtml: aiHtml || null,
@@ -342,7 +342,7 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
               </div>
               <div className="col-span-2">
                 <label className="block text-xs font-medium text-gray-400 mb-1">Supplier Link <span className="text-gray-600">(optional)</span></label>
-                <input {...register('supplierLink')} type="url" className={inputCls()} placeholder="https://…" />
+                <input {...register('link1688')} type="url" className={inputCls()} placeholder="https://…" />
               </div>
 
               {/* Dimensions */}
