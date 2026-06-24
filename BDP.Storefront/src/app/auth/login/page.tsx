@@ -91,7 +91,7 @@ export default function LoginPage() {
           <Link
             href="/"
           >
-            <img src="/logo.svg" alt="BDP" style={{ height: "48px", width: "auto" }} />
+            <img src="/logo.png" alt="BDP" style={{ height: "48px", width: "auto" }} />
           </Link>
           <p className="text-sm mt-2" style={{ color: "#4A4540" }}>Sign in to your account</p>
         </div>

@@ -62,7 +62,7 @@ export default function Header() {
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between gap-4" style={{ height: "72px" }}>
         {/* Logo */}
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
-          <img src="/logo.svg" alt="BDP" height={42} style={{ height: "42px", width: "auto" }} />
+          <img src="/logo.png" alt="BDP" height={42} style={{ height: "42px", width: "auto" }} />
         </Link>
 
         {/* Nav — desktop */}
