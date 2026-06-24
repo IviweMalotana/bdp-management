@@ -271,6 +271,35 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+// Repair any products that were saved with a blank slug (idempotent)
+using (var scope = app.Services.CreateScope())
+{
+    var log = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var blankSlug = await db.Products
+            .Where(p => p.Slug == null || p.Slug == "")
+            .ToListAsync();
+        foreach (var p in blankSlug)
+        {
+            var s = p.Name.ToLowerInvariant();
+            s = System.Text.RegularExpressions.Regex.Replace(s, @"[^a-z0-9\s-]", "");
+            s = System.Text.RegularExpressions.Regex.Replace(s, @"\s+", "-");
+            p.Slug = s.Trim('-') + "-" + p.Id;
+        }
+        if (blankSlug.Any())
+        {
+            await db.SaveChangesAsync();
+            log.LogInformation("Repaired {Count} products with blank slugs", blankSlug.Count);
+        }
+    }
+    catch (Exception ex)
+    {
+        log.LogError(ex, "Slug repair failed — continuing");
+    }
+}
+
 // Fire-and-forget currency rate refresh on startup (non-blocking)
 _ = Task.Run(async () =>
 {
