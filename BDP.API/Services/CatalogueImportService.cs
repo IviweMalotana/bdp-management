@@ -150,13 +150,6 @@ public class CatalogueImportService
                 product.MetaDescription = ProductSeoGenerator.GenerateMetaDescription(firstRow);
                 product.MetaKeywords = ProductSeoGenerator.GenerateMetaKeywords(firstRow);
 
-                // Weight and dimensions: parse from CSV (estimate if blank), apply buffers
-                product.WeightKg = PackagingMeasurements.ResolveWeightKg(firstRow);
-                var (l, w, h) = PackagingMeasurements.ResolveDimsCm(firstRow);
-                product.LengthCm = l;
-                product.WidthCm  = w;
-                product.HeightCm = h;
-
                 await _db.SaveChangesAsync();
 
                 // ── Auto-assign to collection based on product type ───────────
@@ -207,6 +200,13 @@ public class CatalogueImportService
 
                     int.TryParse(row.MOQ, out var moq);
                     variant.SupplierMoq = moq > 0 ? moq : 1;
+
+                    // Weight and dimensions per variant (each SKU is a different size)
+                    variant.WeightKg = PackagingMeasurements.ResolveWeightKg(row);
+                    var (vl, vw, vh) = PackagingMeasurements.ResolveDimsCm(row);
+                    variant.LengthCm = vl;
+                    variant.WidthCm  = vw;
+                    variant.HeightCm = vh;
 
                     await _db.SaveChangesAsync();
 

@@ -184,7 +184,20 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""MinOrderQuantity"" integer NOT NULL DEFAULT 0;
             ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""Notes"" text;
             ALTER TABLE ""ShippingSettings"" ADD COLUMN IF NOT EXISTS ""ShippingMarkupPercent"" numeric(18,4) NOT NULL DEFAULT 40;
-            ALTER TABLE ""ShippingSettings"" ADD COLUMN IF NOT EXISTS ""ActualShippingCostZAR"" numeric(18,4) NOT NULL DEFAULT 0;");
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ActualShippingCostZAR"" numeric(18,4) NOT NULL DEFAULT 0;
+            ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""WeightKg"" numeric(18,4) NOT NULL DEFAULT 0;
+            ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""LengthCm"" numeric(18,4) NOT NULL DEFAULT 0;
+            ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""WidthCm"" numeric(18,4) NOT NULL DEFAULT 0;
+            ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""HeightCm"" numeric(18,4) NOT NULL DEFAULT 0;
+            CREATE TABLE IF NOT EXISTS ""EmailTemplates"" (
+                ""Id"" serial PRIMARY KEY,
+                ""Name"" text NOT NULL,
+                ""Subject"" text NOT NULL,
+                ""HtmlBody"" text NOT NULL,
+                ""IsActive"" boolean NOT NULL DEFAULT true,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
+                ""UpdatedAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );");
     }
     catch (Exception ex)
     {

@@ -32,5 +32,10 @@ public class ProductVariant
     public string? ImageDriveLink { get; set; }
     public string? Source1688Url { get; set; }
 
+    public decimal WeightKg { get; set; }
+    public decimal LengthCm { get; set; }
+    public decimal WidthCm  { get; set; }
+    public decimal HeightCm { get; set; }
+
     public List<ProductPricingTier> PricingTiers { get; set; } = new();
 }
