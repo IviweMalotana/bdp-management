@@ -24,88 +24,189 @@ const TECHNIQUES = [
   },
 ];
 
+type BKey = "dropper" | "pump" | "jar";
+
+const LABEL_AREAS: Record<BKey, [number, number, number, number]> = {
+  dropper: [68, 118, 104, 242],
+  pump:    [60, 120, 120, 244],
+  jar:     [42, 134, 156, 144],
+};
+
+function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r); ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h); ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r); ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [bottleImg, setBottleImg] = useState("/images/hero-product-1.jpg");
-
-  const BOTTLES = [
-    { label: "Dropper", src: "/images/hero-product-1.jpg" },
-    { label: "Dark", src: "/images/hero-product-3.jpg" },
-    { label: "Lifestyle", src: "/images/hero-product-2.jpg" },
-  ];
+  const [bottleKey, setBottleKey] = useState<BKey>("dropper");
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const CW = 240, CH = 420;
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     if (!f) return;
-    const url = URL.createObjectURL(f);
-    setLogoUrl(url);
+    setLogoUrl(URL.createObjectURL(f));
   }
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.clearRect(0, 0, CW, CH);
+
+    function drawBase() {
+      if (bottleKey === "dropper") {
+        rr(ctx!, 68, 108, 104, 258, 10); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
+        ctx!.beginPath(); ctx!.moveTo(110, 80); ctx!.lineTo(68, 108); ctx!.lineTo(172, 108); ctx!.lineTo(130, 80); ctx!.closePath();
+        ctx!.fillStyle = "#BFB5AA"; ctx!.fill();
+        ctx!.fillStyle = "#B3AAA0"; ctx!.fillRect(110, 52, 20, 30);
+        rr(ctx!, 105, 18, 30, 38, 5); ctx!.fillStyle = "#292622"; ctx!.fill();
+        ctx!.beginPath(); ctx!.ellipse(120, 12, 9, 13, 0, 0, Math.PI * 2); ctx!.fillStyle = "#292622"; ctx!.fill();
+      } else if (bottleKey === "pump") {
+        rr(ctx!, 58, 108, 124, 270, 12); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
+        ctx!.beginPath(); ctx!.moveTo(96, 88); ctx!.lineTo(58, 108); ctx!.lineTo(182, 108); ctx!.lineTo(144, 88); ctx!.closePath();
+        ctx!.fillStyle = "#BFB5AA"; ctx!.fill();
+        ctx!.fillStyle = "#B3AAA0"; ctx!.fillRect(111, 44, 18, 48);
+        rr(ctx!, 88, 24, 64, 24, 4); ctx!.fillStyle = "#292622"; ctx!.fill();
+        ctx!.fillStyle = "#292622"; ctx!.fillRect(148, 28, 32, 10);
+      } else {
+        rr(ctx!, 36, 80, 168, 52, 6); ctx!.fillStyle = "#292622"; ctx!.fill();
+        ctx!.fillStyle = "#1A1816"; ctx!.fillRect(36, 124, 168, 8);
+        rr(ctx!, 38, 132, 164, 200, 10); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
+      }
+    }
+
+    function drawHighlights() {
+      ctx!.save();
+      ctx!.globalAlpha = 0.13;
+      ctx!.fillStyle = "#fff";
+      if (bottleKey === "dropper") { rr(ctx!, 78, 115, 12, 238, 6); ctx!.fill(); }
+      else if (bottleKey === "pump") { rr(ctx!, 68, 116, 14, 248, 7); ctx!.fill(); }
+      else { rr(ctx!, 50, 140, 14, 182, 7); ctx!.fill(); }
+      ctx!.restore();
+    }
+
+    drawBase();
+
+    if (!logoUrl) {
+      const [lx, ly, lw, lh] = LABEL_AREAS[bottleKey];
+      ctx.save();
+      ctx.strokeStyle = "rgba(201,184,168,0.35)";
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(lx + 10, ly + 10, lw - 20, lh - 20);
+      ctx.fillStyle = "rgba(201,184,168,0.45)";
+      ctx.font = "8px sans-serif";
+      ctx.textAlign = "center";
+      ctx.letterSpacing = "2px";
+      ctx.fillText("UPLOAD LOGO", lx + lw / 2, ly + lh / 2);
+      ctx.restore();
+      drawHighlights();
+      return;
+    }
+
+    const img = new window.Image();
+    img.onload = () => {
+      const [lx, ly, lw, lh] = LABEL_AREAS[bottleKey];
+
+      // Rasterise source to temp canvas
+      const tmp = document.createElement("canvas");
+      tmp.width = img.naturalWidth; tmp.height = img.naturalHeight;
+      const tc = tmp.getContext("2d")!;
+      tc.drawImage(img, 0, 0);
+      const src = tc.getImageData(0, 0, tmp.width, tmp.height);
+
+      // Cylindrical warp: for each output pixel map x via inverse cosine projection
+      const wc = document.createElement("canvas");
+      wc.width = lw; wc.height = lh;
+      const wctx = wc.getContext("2d")!;
+      const dst = wctx.createImageData(lw, lh);
+      const sw = tmp.width, sh = tmp.height;
+
+      for (let oy = 0; oy < lh; oy++) {
+        for (let ox = 0; ox < lw; ox++) {
+          const t = (2 * ox) / lw - 1;          // [-1, 1] across width
+          if (t <= -0.999 || t >= 0.999) continue;
+          // acos maps t∈[-1,1] → [π,0]; subtract from π so left→left
+          const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * sw);
+          const sy = Math.round((oy / lh) * sh);
+          if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
+          const si = (sy * sw + sx) * 4, di = (oy * lw + ox) * 4;
+          dst.data[di] = src.data[si]; dst.data[di+1] = src.data[si+1];
+          dst.data[di+2] = src.data[si+2]; dst.data[di+3] = src.data[si+3];
+        }
+      }
+      wctx.putImageData(dst, 0, 0);
+
+      // Clip to bottle body, draw warped logo, add cylindrical edge shading
+      ctx.save();
+      if (bottleKey === "dropper") { rr(ctx, 68, 108, 104, 258, 10); }
+      else if (bottleKey === "pump") { rr(ctx, 58, 108, 124, 270, 12); }
+      else { rr(ctx, 38, 132, 164, 200, 10); }
+      ctx.clip();
+      ctx.drawImage(wc, lx, ly);
+      // Edge darkening simulates light falloff on curved surface
+      const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+      grad.addColorStop(0, "rgba(0,0,0,0.28)");
+      grad.addColorStop(0.16, "rgba(0,0,0,0)");
+      grad.addColorStop(0.84, "rgba(0,0,0,0)");
+      grad.addColorStop(1, "rgba(0,0,0,0.28)");
+      ctx.fillStyle = grad; ctx.fillRect(lx, ly, lw, lh);
+      ctx.restore();
+
+      drawHighlights();
+    };
+    img.src = logoUrl;
+  }, [logoUrl, bottleKey]);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-      {/* Controls */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
       <div className="space-y-6">
         <div>
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>1. Upload your logo</p>
-          <label
-            className="flex flex-col items-center justify-center gap-2 px-4 py-8 border-2 border-dashed cursor-pointer transition-colors hover:border-[#C9B8A8]"
-            style={{ borderColor: "#4A4540", borderRadius: "2px" }}
-          >
+          <label className="flex flex-col items-center justify-center gap-2 px-4 py-8 border-2 border-dashed cursor-pointer transition-colors hover:border-[#C9B8A8]" style={{ borderColor: "#4A4540", borderRadius: "2px" }}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#C9B8A8" strokeWidth="1.5">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
             </svg>
-            <span className="text-xs" style={{ color: "#9E8F83" }}>{logoUrl ? "Change logo" : "PNG or SVG — transparent background works best"}</span>
+            <span className="text-xs" style={{ color: "#9E8F83" }}>
+              {logoUrl ? "Change logo" : "PNG or SVG · transparent background works best"}
+            </span>
             <input type="file" accept=".png,.svg,image/png,image/svg+xml" onChange={handleFile} className="hidden" />
           </label>
         </div>
         <div>
-          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>2. Pick a bottle</p>
+          <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>2. Choose a bottle shape</p>
           <div className="flex gap-3">
-            {BOTTLES.map((b) => (
-              <button
-                key={b.src}
-                onClick={() => setBottleImg(b.src)}
-                className="text-xs px-3 py-1.5 border transition-colors"
-                style={{
-                  borderColor: bottleImg === b.src ? "#FAF8F5" : "#4A4540",
-                  color: bottleImg === b.src ? "#FAF8F5" : "#9E8F83",
-                  borderRadius: "2px",
-                }}
-              >
-                {b.label}
+            {(["dropper", "pump", "jar"] as const).map((k) => (
+              <button key={k} onClick={() => setBottleKey(k)} className="text-xs px-4 py-2 border transition-colors capitalize" style={{ borderColor: bottleKey === k ? "#FAF8F5" : "#4A4540", color: bottleKey === k ? "#FAF8F5" : "#9E8F83", borderRadius: "2px" }}>
+                {k}
               </button>
             ))}
           </div>
         </div>
-        {!logoUrl && (
-          <p className="text-xs" style={{ color: "#4A4540", lineHeight: 1.7 }}>
-            Upload your logo above and it will appear overlaid on the bottle. For best results use a PNG with a transparent background.
-          </p>
-        )}
+        <p className="text-xs" style={{ color: "#4A4540", lineHeight: 1.8 }}>
+          {logoUrl
+            ? "Logo mapped using cylindrical projection — pixels are warped so the artwork follows the curve of the bottle, with edge shading to simulate light falloff. A formal print proof is sent before production."
+            : "Upload your logo above to see how it wraps around the bottle surface. PNG with a transparent background gives the best result."}
+        </p>
       </div>
-      {/* Preview */}
-      <div className="relative aspect-[3/4] overflow-hidden" style={{ borderRadius: "2px", backgroundColor: "#2A2724" }}>
-        <img src={bottleImg} alt="Bottle preview" className="w-full h-full object-cover" />
-        {logoUrl && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <img
-              src={logoUrl}
-              alt="Your logo"
-              className="max-w-[35%] max-h-[35%] object-contain"
-              style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.3))" }}
-            />
-          </div>
-        )}
-        {!logoUrl && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div
-              className="border border-dashed px-6 py-3 text-xs text-center"
-              style={{ borderColor: "rgba(201,184,168,0.4)", color: "rgba(201,184,168,0.6)", borderRadius: "2px" }}
-            >
-              your logo here
-            </div>
-          </div>
-        )}
+
+      <div style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
+        <canvas
+          ref={canvasRef}
+          width={CW}
+          height={CH}
+          style={{ borderRadius: "4px", backgroundColor: "#1E1C19", maxWidth: "220px", width: "100%", height: "auto" }}
+        />
       </div>
     </div>
   );
