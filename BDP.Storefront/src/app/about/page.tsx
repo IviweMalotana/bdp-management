@@ -5,8 +5,6 @@ import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
-
 const services = [
   {
     icon: (
@@ -62,6 +60,7 @@ export default function AboutPage() {
   const reasonsRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (heroRef.current) {
         gsap.from(heroRef.current.querySelectorAll(".hero-animate"), {

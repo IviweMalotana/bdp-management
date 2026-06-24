@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useCurrencyStore } from "@/store/currencyStore";
@@ -46,6 +47,7 @@ export default function Header() {
     { href: "/track", label: "Track Order" },
   ];
 
+  const pathname = usePathname();
   const accountHref = jwt ? "/account" : "/auth/login";
   const accountLabel = jwt && firstName ? firstName : "Account";
 
@@ -72,7 +74,7 @@ export default function Header() {
             <button
               onClick={() => setShopOpen((v) => !v)}
               className="flex items-center gap-1 hover:opacity-70 transition-opacity"
-              style={{ color: "#1A1A18", fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 500, letterSpacing: "0.35px" }}
+              style={{ color: "#1A1A18", fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 500, letterSpacing: "0.35px", borderBottom: pathname.startsWith("/shop") ? "1.5px solid #1A1A18" : "none", paddingBottom: "2px" }}
             >
               Shop
               <svg
@@ -126,7 +128,7 @@ export default function Header() {
               key={l.href}
               href={l.href}
               className="hover:opacity-70 transition-opacity"
-              style={{ color: "#1A1A18", fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 500, letterSpacing: "0.35px", textDecoration: "none" }}
+              style={{ color: "#1A1A18", fontFamily: "Inter, sans-serif", fontSize: "14px", fontWeight: 500, letterSpacing: "0.35px", textDecoration: "none", borderBottom: pathname === l.href ? "1.5px solid #1A1A18" : "none", paddingBottom: "2px" }}
             >
               {l.label}
             </Link>

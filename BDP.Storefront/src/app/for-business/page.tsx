@@ -2,11 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const FEATURES = [
   {
@@ -30,11 +27,6 @@ const FEATURES = [
     body: "Add your property logo via silk screen or hot stamp. Minimum 100 units. Delivered in 4–6 weeks.",
   },
   {
-    icon: "⊡",
-    heading: "Dedicated account manager",
-    body: "A single contact for all your orders, customisation briefs, and delivery queries.",
-  },
-  {
     icon: "⊞",
     heading: "Multi-site consolidation",
     body: "Manage orders across multiple properties from one account. Split delivery by site or consolidate into one shipment.",
@@ -52,11 +44,10 @@ export default function ForBusinessPage() {
   const heroRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
   const featuresRef = useRef<HTMLDivElement>(null);
-  const processRef = useRef<HTMLDivElement>(null);
-  const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
   // Hero + card animations
   useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger);
     const ctx = gsap.context(() => {
       if (heroRef.current) {
         gsap.from(heroRef.current.querySelectorAll(".hero-animate"), {
@@ -100,55 +91,6 @@ export default function ForBusinessPage() {
     });
 
     return () => ctx.revert();
-  }, []);
-
-  // Clip-path burst transition
-  useEffect(() => {
-    if (!processRef.current) return;
-
-    const burstShape =
-      "polygon(50% 0%, 45% 25%, 20% 20%, 35% 35%, 0% 50%, 35% 65%, 20% 80%, 45% 75%, 50% 100%, 55% 75%, 80% 80%, 65% 65%, 100% 50%, 65% 35%, 80% 20%, 55% 25%)";
-
-    const tl = gsap.timeline({
-      defaults: { ease: "power2.inOut" },
-      scrollTrigger: {
-        trigger: processRef.current,
-        start: "top top",
-        end: "+=200%",
-        scrub: true,
-        pin: true,
-        onLeave: () => gsap.set(".process-img--after", { clipPath: "none" }),
-      },
-    });
-
-    tl.to(
-      ".process-img--after",
-      {
-        clipPath: burstShape,
-        duration: 1,
-      },
-      0
-    );
-
-    tl.fromTo(
-      ".process-wrapper",
-      { filter: "brightness(80%) blur(3px)" },
-      { filter: "brightness(100%) blur(0px)", duration: 0.8 },
-      0
-    );
-
-    tl.fromTo(
-      ".process-img--before img",
-      { scale: 1.2 },
-      { scale: 1, duration: 1.2 },
-      0
-    );
-
-    timelineRef.current = tl;
-
-    return () => {
-      tl.kill();
-    };
   }, []);
 
   return (
@@ -233,52 +175,6 @@ export default function ForBusinessPage() {
                 </p>
               </div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Clip-Path Image Transition */}
-      <section
-        ref={processRef}
-        className="relative h-screen flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: "#1C1A17" }}
-      >
-        <div className="absolute top-8 left-0 right-0 text-center z-10">
-          <span className="label-caps" style={{ color: "rgba(255,255,255,0.4)" }}>
-            What you get
-          </span>
-        </div>
-        <div
-          className="process-wrapper relative overflow-hidden"
-          style={{ width: "80vw", height: "60vh", borderRadius: "2px" }}
-        >
-          <div
-            className="process-img--before absolute inset-0 w-full h-full"
-            style={{ zIndex: 1 }}
-          >
-            <Image
-              src="/images/hero-product-3.jpg"
-              alt="Plain stock packaging"
-              fill
-              className="object-cover block"
-              sizes="80vw"
-            />
-          </div>
-          <div
-            className="process-img--after absolute inset-0 w-full h-full"
-            style={{
-              zIndex: 2,
-              clipPath:
-                "polygon(50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%, 50% 50%)",
-            }}
-          >
-            <Image
-              src="/images/segment-hotel.jpg"
-              alt="Custom branded packaging"
-              fill
-              className="object-cover block"
-              sizes="80vw"
-            />
           </div>
         </div>
       </section>
