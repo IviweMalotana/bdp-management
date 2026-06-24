@@ -32,8 +32,14 @@ public class StorefrontShippingController : ControllerBase
 
         var options = await _yunExpress.GetRatesAsync(country, weightGrams);
 
-        var settings = await _db.ShippingSettings.FindAsync(1);
-        var markupPct = settings?.ShippingMarkupPercent ?? 40m;
+        decimal markupPct = 40m;
+        try
+        {
+            var settings = await _db.ShippingSettings.FindAsync(1);
+            markupPct = settings?.ShippingMarkupPercent ?? 40m;
+        }
+        catch { /* migration may not be applied yet — use default 40% */ }
+
         foreach (var opt in options)
             opt.PriceZAR = Math.Round(opt.PriceZAR * (1 + markupPct / 100m), 2);
 
