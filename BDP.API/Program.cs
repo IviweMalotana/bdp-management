@@ -182,7 +182,9 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""Website"" text;
             ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""LeadTimeDays"" integer NOT NULL DEFAULT 0;
             ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""MinOrderQuantity"" integer NOT NULL DEFAULT 0;
-            ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""Notes"" text;");
+            ALTER TABLE ""Suppliers"" ADD COLUMN IF NOT EXISTS ""Notes"" text;
+            ALTER TABLE ""ShippingSettings"" ADD COLUMN IF NOT EXISTS ""ShippingMarkupPercent"" numeric(18,4) NOT NULL DEFAULT 40;
+            ALTER TABLE ""ShippingSettings"" ADD COLUMN IF NOT EXISTS ""ActualShippingCostZAR"" numeric(18,4) NOT NULL DEFAULT 0;");
     }
     catch (Exception ex)
     {
