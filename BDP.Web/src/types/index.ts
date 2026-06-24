@@ -123,6 +123,14 @@ export interface ProductVariant {
   unitPriceCNY?: number
   actualCostPerUnitZAR?: number
   pricingTiers: VariantPricingTier[]
+  // Catalogue import fields
+  skuId?: string
+  specificationSize?: string
+  colorVariantName?: string
+  weightKg?: number
+  lengthCm?: number
+  widthCm?: number
+  heightCm?: number
 }
 
 export interface ProductImage {
