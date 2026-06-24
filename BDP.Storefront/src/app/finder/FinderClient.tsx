@@ -51,7 +51,7 @@ const STAGE_OPTIONS: StageOption[] = [
 const STAGE_MESSAGE: Record<string, string> = {
   test: "Perfect for testing the waters. Start at 10 units, no pallet required.",
   batch: "Smart move. Order a batch, see how it sells, reorder when you're ready.",
-  scale: "Let's scale. Volume pricing kicks in hard the more you order.",
+  scale: "Large order? We source directly and handle volume well. Open a B2B account for dedicated support and repeat ordering.",
 };
 
 /* ── helpers ───────────────────────────────────────────────────── */
