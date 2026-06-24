@@ -34,7 +34,7 @@ const addressSchema = z.object({
   line1: z.string().min(5),
   line2: z.string().optional(),
   city: z.string().min(2),
-  province: z.string().min(2),
+  province: z.string().optional(),
   postalCode: z.string().min(4),
   phone: z.string().min(7, "Phone number is required"),
   country: z.string().min(2),
@@ -405,7 +405,7 @@ export default function CheckoutPage() {
                   <input
                     className="w-full text-sm px-3 py-2.5 border outline-none"
                     style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
-                    placeholder="State / Region"
+                    placeholder="State / Region (optional)"
                     {...register("shipping.province")}
                   />
                 )}
