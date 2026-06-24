@@ -168,6 +168,11 @@ export default function FinderClient() {
         )}
 
         {step === 0 && (
+          <p className="text-sm mb-6 max-w-md" style={{ color: "#6B6359", lineHeight: 1.7 }}>
+            Answer 4 quick questions and we'll show you the bottles that fit your product. Tap any option to begin.
+          </p>
+        )}
+        {step === 0 && (
           <Question
             title="What are you packaging?"
             subtitle="We'll match it to the right type of bottle."
@@ -240,15 +245,19 @@ export default function FinderClient() {
               </>
             ) : (
               <div>
-                <p className="text-sm mb-8" style={{ color: "#4A4540", lineHeight: 1.7 }}>
-                  We couldn&apos;t pin down an exact match, but our shop has the full range. Have a browse, or start over.
+                <p className="text-sm mb-4" style={{ color: "#4A4540", lineHeight: 1.7 }}>
+                  We couldn&apos;t pin down an exact match, but our shop has the full range.
                 </p>
-                <div className="flex flex-wrap gap-4">
-                  <Link href="/shop" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide transition-opacity hover:opacity-90" style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}>
-                    Browse the shop →
-                  </Link>
-                  <button onClick={restart} className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide border transition-colors hover:bg-[#1A1A18] hover:text-[#F5F0E8]" style={{ borderColor: "#1A1A18", color: "#1A1A18", borderRadius: "2px" }}>
-                    Start over
+                <Link
+                  href="/shop"
+                  className="inline-flex items-center px-10 py-4 text-base font-medium tracking-wide transition-opacity hover:opacity-90 mb-6"
+                  style={{ backgroundColor: "#1A1A18", color: "#F5F0E8", borderRadius: "2px" }}
+                >
+                  Browse the full shop →
+                </Link>
+                <div className="mt-4">
+                  <button onClick={restart} className="text-sm hover:opacity-70 transition-opacity" style={{ color: "#B8B0A4" }}>
+                    ← Start over
                   </button>
                 </div>
               </div>
