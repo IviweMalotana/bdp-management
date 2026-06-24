@@ -30,12 +30,12 @@ function apiCountryCode(value: string): string {
 }
 
 const addressSchema = z.object({
-  recipientName: z.string().min(2),
-  line1: z.string().min(5),
+  recipientName: z.string().min(2, "Recipient name is required"),
+  line1: z.string().min(5, "Address is required"),
   line2: z.string().optional(),
-  city: z.string().min(2),
-  province: z.string().optional(),
-  postalCode: z.string().min(4),
+  city: z.string().min(2, "City is required"),
+  province: z.string().min(1, "Province / state is required"),
+  postalCode: z.string().min(4, "Postal code is required"),
   phone: z.string().min(7, "Phone number is required"),
   country: z.string().min(2),
 });
@@ -53,10 +53,12 @@ function formatZAR(n: number) {
   return `R ${n.toLocaleString("en-ZA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-function InputField({ label, error, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
+function InputField({ label, error, required, ...props }: React.InputHTMLAttributes<HTMLInputElement> & { label: string; error?: string }) {
   return (
     <div>
-      <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>{label}</label>
+      <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>
+        {label}{required && <span style={{ color: "#D4A89A" }}> *</span>}
+      </label>
       <input
         className="w-full text-sm px-3 py-2.5 border outline-none"
         style={{ borderColor: error ? "#D4A89A" : "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
@@ -364,17 +366,19 @@ export default function CheckoutPage() {
         <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-6">
           <h2 className="text-2xl" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}>Contact & address</h2>
 
-          <InputField label="Email" type="email" {...register("email")} error={errors.email?.message} />
+          <InputField label="Email" type="email" required {...register("email")} error={errors.email?.message} />
 
           <div className="space-y-4">
             <h3 className="text-sm font-medium" style={{ color: "#1C1A17" }}>Shipping address</h3>
-            <InputField label="Recipient name" {...register("shipping.recipientName")} error={errors.shipping?.recipientName?.message} />
-            <InputField label="Address line 1" {...register("shipping.line1")} error={errors.shipping?.line1?.message} />
+            <InputField label="Recipient name" required {...register("shipping.recipientName")} error={errors.shipping?.recipientName?.message} />
+            <InputField label="Address line 1" required {...register("shipping.line1")} error={errors.shipping?.line1?.message} />
             <InputField label="Address line 2 (optional)" {...register("shipping.line2")} />
 
             {/* Country selector */}
             <div>
-              <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>Country</label>
+              <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>
+                Country <span style={{ color: "#D4A89A" }}>*</span>
+              </label>
               <select
                 className="w-full text-sm px-3 py-2.5 border outline-none"
                 style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
@@ -387,15 +391,15 @@ export default function CheckoutPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="City" {...register("shipping.city")} error={errors.shipping?.city?.message} />
+              <InputField label="City" required {...register("shipping.city")} error={errors.shipping?.city?.message} />
               <div>
                 <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>
-                  {shippingCountry === "ZA" ? "Province" : "State / Region"}
+                  {shippingCountry === "ZA" ? "Province" : "State / Region"} <span style={{ color: "#D4A89A" }}>*</span>
                 </label>
                 {shippingCountry === "ZA" ? (
                   <select
                     className="w-full text-sm px-3 py-2.5 border outline-none"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
+                    style={{ borderColor: errors.shipping?.province ? "#D4A89A" : "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
                     {...register("shipping.province")}
                   >
                     <option value="">Select…</option>
@@ -404,16 +408,19 @@ export default function CheckoutPage() {
                 ) : (
                   <input
                     className="w-full text-sm px-3 py-2.5 border outline-none"
-                    style={{ borderColor: "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
-                    placeholder="State / Region (optional)"
+                    style={{ borderColor: errors.shipping?.province ? "#D4A89A" : "#C9B8A8", borderRadius: "2px", backgroundColor: "#FAF8F5", color: "#1C1A17" }}
+                    placeholder="State / Region"
                     {...register("shipping.province")}
                   />
+                )}
+                {errors.shipping?.province && (
+                  <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{errors.shipping.province.message}</p>
                 )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <InputField label="Postal code" {...register("shipping.postalCode")} error={errors.shipping?.postalCode?.message} />
-              <InputField label="Phone" type="tel" {...register("shipping.phone")} error={errors.shipping?.phone?.message} />
+              <InputField label="Postal code" required {...register("shipping.postalCode")} error={errors.shipping?.postalCode?.message} />
+              <InputField label="Phone" type="tel" required {...register("shipping.phone")} error={errors.shipping?.phone?.message} />
             </div>
           </div>
 
