@@ -20,61 +20,59 @@ Do not mix customer-facing UI into BDP.Web, and do not mix admin UI into BDP.Sto
 | Service | URL |
 |---------|-----|
 | API | https://bdp-api-production.up.railway.app |
-| Admin portal | *(deploy BDP.Web to its own Vercel project — see below)* |
-| Customer storefront | https://bdp-management.vercel.app *(rename this project — see below)* |
+| Admin portal | https://admin.bedifferentpackaging.com (BDP.Web — staff only) |
+| Customer storefront | https://www.bedifferentpackaging.com (BDP.Storefront — public) |
+
+Both Vercel projects use custom HostKing-managed domains:
+- `www.bedifferentpackaging.com` (+ apex `bedifferentpackaging.com`) → storefront
+- `admin.bedifferentpackaging.com` → admin portal
+
+The legacy `*.vercel.app` URLs are kept as fallbacks during transition.
 
 ---
 
 ## Deployment Setup (Two Separate Vercel Projects)
 
-The existing `bdp-management.vercel.app` is currently pointing to `BDP.Storefront`. It needs to be **renamed** to something customer-facing (e.g. `bdp-shop`), and a **new Vercel project** must be created for `BDP.Web` (the admin portal).
+Two separate Vercel projects, both on custom domains managed via HostKing DNS:
 
-### Step 1 — Rename the existing storefront Vercel project
+| Vercel project | Root Directory | Domain |
+|----------------|----------------|--------|
+| Storefront | `BDP.Storefront` | `www.bedifferentpackaging.com` (+ apex) |
+| Admin portal | `BDP.Web` | `admin.bedifferentpackaging.com` |
 
-1. Go to **vercel.com** → open the `bdp-management` project
-2. Go to **Settings → General → Project Name**
-3. Rename it to `bdp-shop` (or `bedifferentpackaging`, or your preferred public name)
-4. The URL will become `bdp-shop.vercel.app` (update API env vars accordingly)
-5. Confirm the **Root Directory** is set to `BDP.Storefront`
-6. Env vars needed:
+### DNS (HostKing)
+
+| Record | Host | Value |
+|--------|------|-------|
+| A | `@` | `216.198.79.1` (Vercel) |
+| CNAME | `www` | `fb870c8843381a54.vercel-dns-017.com.` |
+| CNAME | `admin` | `4bcafb9c376a376f.vercel-dns-017.com.` |
+
+### Vercel env vars
+
+**Storefront project:**
 
 | Key | Value |
 |-----|-------|
 | `NEXT_PUBLIC_API_URL` | `https://bdp-api-production.up.railway.app` |
-| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Your Paystack public key (`pk_live_...`) |
+| `NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY` | Paystack public key (`pk_live_...`) |
 
----
-
-### Step 2 — Create a new Vercel project for the admin portal
-
-1. Go to **vercel.com** → click **Add New → Project**
-2. Import the repo: `IviweMalotana/bdp-management`
-3. Set **Root Directory** to: `BDP.Web`
-4. Framework will auto-detect as **Vite**
-5. Name the project `bdp-management` (this is the internal tool — staff only)
-6. Env vars needed:
+**Admin portal project:**
 
 | Key | Value |
 |-----|-------|
 | `VITE_API_URL` | `https://bdp-api-production.up.railway.app` |
 
-7. Click **Deploy**
-8. The admin portal will be at `bdp-management.vercel.app`
+### Railway (bdp-api service) env vars
 
----
+| Key | Value |
+|-----|-------|
+| `STOREFRONT_URL` | `https://www.bedifferentpackaging.com` |
+| `ALLOWED_ORIGINS` | `https://www.bedifferentpackaging.com,https://admin.bedifferentpackaging.com` (legacy `*.vercel.app` URLs kept during transition) |
+| `JWT__Audience` | `https://www.bedifferentpackaging.com` |
+| `Paystack__StorefrontCallbackUrl` | `https://www.bedifferentpackaging.com/checkout/success` |
 
-### Step 3 — Update the API after renaming the storefront
-
-After the storefront is at its new URL, go to **Railway → bdp-api service → Variables** and update:
-
-| Key | New value |
-|-----|-----------|
-| `STOREFRONT_URL` | `https://bdp-shop.vercel.app` (your new storefront URL) |
-| `ALLOWED_ORIGINS` | `https://bdp-shop.vercel.app,https://bdp-management.vercel.app` |
-| `JWT__Audience` | `https://bdp-shop.vercel.app` |
-| `Paystack__StorefrontCallbackUrl` | `https://bdp-shop.vercel.app/checkout/success` |
-
-Railway will auto-redeploy after saving.
+Railway auto-redeploys after saving.
 
 ---
 

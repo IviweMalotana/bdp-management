@@ -620,7 +620,7 @@ public class OrdersController : ControllerBase
             ShippingAddress: order.ShippingAddressJson ?? ""
         );
 
-        var storefrontUrl = Environment.GetEnvironmentVariable("STOREFRONT_URL") ?? "https://bdp-management.vercel.app";
+        var storefrontUrl = Environment.GetEnvironmentVariable("STOREFRONT_URL") ?? "https://www.bedifferentpackaging.com";
         var tmpl = await _email.GetTemplateAsync(_context, "order_shipped");
         string subject, html;
         if (tmpl.HasValue)
