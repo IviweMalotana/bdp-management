@@ -197,7 +197,15 @@ using (var scope = app.Services.CreateScope())
                 ""IsActive"" boolean NOT NULL DEFAULT true,
                 ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
                 ""UpdatedAt"" timestamp with time zone NOT NULL DEFAULT now()
-            );");
+            );
+            UPDATE ""Products"" SET ""Category"" = 'Jar'     WHERE lower(""Category"") LIKE '%jar%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Pump'    WHERE lower(""Category"") LIKE '%pump%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Pump'    WHERE lower(""Category"") LIKE '%lotion%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Spray'   WHERE (lower(""Category"") LIKE '%spray%' OR lower(""Category"") LIKE '%mist%' OR lower(""Category"") LIKE '%perfume%') AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Serum'   WHERE (lower(""Category"") LIKE '%serum%' OR lower(""Category"") LIKE '%dropper%' OR lower(""Category"") LIKE '%essential oil%') AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Airless' WHERE lower(""Category"") LIKE '%airless%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Tube'    WHERE lower(""Category"") LIKE '%tube%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            UPDATE ""Products"" SET ""Category"" = 'Shampoo' WHERE (lower(""Category"") LIKE '%shampoo%' OR lower(""Category"") LIKE '%conditioner%') AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');");
     }
     catch (Exception ex)
     {
