@@ -642,7 +642,7 @@ public class OrdersController : ControllerBase
             html = EmailTemplates.OrderShipped(data);
         }
 
-        await _email.SendAsync(email, recipientName, subject, html);
+        await _email.SendAsync(email, recipientName, subject, html, category: "order_shipped");
     }
 
     // GET /api/orders/shipping-margin?from=&to=&page=1&pageSize=50

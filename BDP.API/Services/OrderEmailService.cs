@@ -108,7 +108,7 @@ public class OrderEmailService
                 html = EmailTemplates.OrderConfirmation(data);
             }
 
-            await _email.SendAsync(email, recipientName, subject, html);
+            await _email.SendAsync(email, recipientName, subject, html, category: "order_confirmation");
 
             _logger.LogInformation("Order confirmation sent for {OrderNumber} to {Email}", order.OrderNumber, email);
         }

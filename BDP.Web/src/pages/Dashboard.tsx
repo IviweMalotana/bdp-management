@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { dashboard, clients as clientsApi, invoices as invoicesApi, recurringOrders as recurringApi } from '../services/api'
+import { dashboard, clients as clientsApi, invoices as invoicesApi, recurringOrders as recurringApi, email as emailApi } from '../services/api'
 import type { DashboardSummary, Invoice, RecurringOrder } from '../types'
-import { Package, ShoppingCart, Users, TrendingUp, BarChart2, Building2, FileText, RefreshCw } from 'lucide-react'
+import { Package, ShoppingCart, Users, TrendingUp, BarChart2, Building2, FileText, RefreshCw, AlertTriangle } from 'lucide-react'
 
 const STATUS_COLOURS: Record<string, string> = {
   Pending:          'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
@@ -34,9 +34,13 @@ export default function Dashboard() {
   const [overdueCount, setOverdueCount] = useState(0)
   const [activeClientCount, setActiveClientCount] = useState(0)
   const [recurringDueSoon, setRecurringDueSoon] = useState<RecurringOrder[]>([])
+  const [smtpConfigured, setSmtpConfigured] = useState<boolean | null>(null)
 
   useEffect(() => {
     dashboard.getSummary().then(setSummary).finally(() => setLoading(false))
+
+    // Surface a warning if outgoing email is silently disabled in production
+    emailApi.status().then((s) => setSmtpConfigured(s.configured)).catch(() => setSmtpConfigured(null))
 
     // B2B supplementary stats
     clientsApi.getAll({ pageSize: 1 }).then((r) => setActiveClientCount(r.total ?? 0)).catch(() => {})
@@ -67,6 +71,21 @@ export default function Dashboard() {
         <h1 className="text-xl font-bold text-white">Dashboard</h1>
         <p className="text-sm text-gray-400 mt-0.5">Overview of BDP operations</p>
       </div>
+
+      {/* Email-not-configured warning — emails silently no-op until SMTP is set */}
+      {smtpConfigured === false && (
+        <Link
+          to="/email-test"
+          className="flex items-center gap-2 px-4 py-3 rounded-lg text-sm border bg-amber-900/20 border-amber-800 text-amber-300 hover:bg-amber-900/30 transition-colors"
+        >
+          <AlertTriangle size={16} className="shrink-0" />
+          <span>
+            <strong>Outgoing email is disabled.</strong> SMTP is not configured, so order confirmations, invoices and
+            other notifications are <strong>not being sent</strong>. Set the <span className="font-mono">Email__*</span> env
+            vars in Railway → click here to verify.
+          </span>
+        </Link>
+      )}
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">

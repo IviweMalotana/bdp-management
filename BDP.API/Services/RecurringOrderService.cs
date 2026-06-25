@@ -218,6 +218,7 @@ public class RecurringOrderService : BackgroundService
             client.ContactEmail,
             client.ContactPersonName,
             subject,
-            html);
+            html,
+            category: "recurring_order_generated");
     }
 }

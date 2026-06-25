@@ -19,6 +19,7 @@ import {
   Paintbrush,
   FlaskConical,
   Mail,
+  History,
   TrendingUp,
 } from 'lucide-react'
 
@@ -46,6 +47,7 @@ const NAV = [
   { to: '/shipping-margin',         label: 'Shipping Margin',      icon: TrendingUp },
   { to: '/yunexpress-test',         label: 'YunExpress Test', icon: FlaskConical },
   { to: '/email-test',              label: 'Email Test',      icon: Mail },
+  { to: '/email-log',               label: 'Email Log',       icon: History },
   { to: '/settings/emails',         label: 'Email Templates', icon: Mail },
 ]
 
