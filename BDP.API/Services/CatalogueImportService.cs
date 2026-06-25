@@ -135,7 +135,7 @@ public class CatalogueImportService
                 if (needsName)
                     product.Name = await ProductNameService.AssignUniqueNameAsync(_db);
 
-                product.Category = firstRow.Product_Type?.Trim() ?? product.Category;
+                product.Category = NormaliseCategory(firstRow.Product_Type?.Trim()) ?? product.Category;
                 product.SupplierItemNumber = supplierItemNumber;
                 product.ProductType = firstRow.Product_Type?.Trim();
                 product.ShapeStyle = firstRow.Shape_Style?.Trim();
@@ -402,6 +402,20 @@ public class CatalogueImportService
             });
             await context.SaveChangesAsync();
         }
+    }
+
+    private static string? NormaliseCategory(string? productType)
+    {
+        if (string.IsNullOrWhiteSpace(productType)) return null;
+        var lower = productType.ToLowerInvariant();
+        if (lower.Contains("jar"))                                    return "Jar";
+        if (lower.Contains("pump") || lower.Contains("lotion"))       return "Pump";
+        if (lower.Contains("spray") || lower.Contains("mist") || lower.Contains("perfume")) return "Spray";
+        if (lower.Contains("dropper") || lower.Contains("essential oil") || lower.Contains("serum")) return "Serum";
+        if (lower.Contains("airless"))                                return "Airless";
+        if (lower.Contains("tube"))                                   return "Tube";
+        if (lower.Contains("shampoo") || lower.Contains("conditioner")) return "Shampoo";
+        return productType.Trim();
     }
 
     private static string MapProductTypeToCollection(string productType)

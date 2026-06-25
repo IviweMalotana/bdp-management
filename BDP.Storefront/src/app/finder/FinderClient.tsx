@@ -104,7 +104,7 @@ export default function FinderClient() {
       // Map to a real category only if one of the candidates exists live.
       const matchedCategory =
         use?.categories
-          .map((c) => liveCategories.find((lc) => lc.toLowerCase() === c.toLowerCase()))
+          .map((c) => liveCategories.find((lc) => lc.toLowerCase() === c.toLowerCase() || lc.toLowerCase().includes(c.toLowerCase()) || c.toLowerCase().includes(lc.toLowerCase())))
           .find(Boolean) ?? "";
 
       const params = new URLSearchParams({ pageSize: "50" });
