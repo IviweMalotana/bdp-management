@@ -26,11 +26,18 @@ const TECHNIQUES = [
 
 type BKey = "dropper" | "pump" | "jar";
 
+// Label area on the canvas: [x, y, width, height] in pixels
+// dropper: these are % of canvas — resolved after photo loads
 const LABEL_AREAS: Record<BKey, [number, number, number, number]> = {
-  dropper: [68, 118, 104, 242],
+  dropper: [0, 0, 0, 0], // computed dynamically from photo dimensions
   pump:    [60, 120, 120, 244],
   jar:     [42, 134, 156, 144],
 };
+
+// Where the bottle body label sits on the Delila photo, as fractions [x, y, w, h]
+const DELILA_LABEL_FRAC = [0.22, 0.38, 0.56, 0.42] as const;
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://bdp-api-production.up.railway.app";
 
 function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
   ctx.beginPath();
@@ -42,11 +49,73 @@ function rr(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: n
   ctx.closePath();
 }
 
+function warpLogo(
+  ctx: CanvasRenderingContext2D,
+  logoImg: HTMLImageElement,
+  lx: number, ly: number, lw: number, lh: number,
+  clipPath: () => void
+) {
+  const tmp = document.createElement("canvas");
+  tmp.width = logoImg.naturalWidth; tmp.height = logoImg.naturalHeight;
+  const tc = tmp.getContext("2d")!;
+  tc.drawImage(logoImg, 0, 0);
+  const src = tc.getImageData(0, 0, tmp.width, tmp.height);
+
+  const wc = document.createElement("canvas");
+  wc.width = lw; wc.height = lh;
+  const wctx = wc.getContext("2d")!;
+  const dst = wctx.createImageData(lw, lh);
+  const sw = tmp.width, sh = tmp.height;
+
+  for (let oy = 0; oy < lh; oy++) {
+    for (let ox = 0; ox < lw; ox++) {
+      const t = (2 * ox) / lw - 1;
+      if (t <= -0.999 || t >= 0.999) continue;
+      const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * sw);
+      const sy = Math.round((oy / lh) * sh);
+      if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
+      const si = (sy * sw + sx) * 4, di = (oy * lw + ox) * 4;
+      dst.data[di] = src.data[si]; dst.data[di+1] = src.data[si+1];
+      dst.data[di+2] = src.data[si+2]; dst.data[di+3] = src.data[si+3];
+    }
+  }
+  wctx.putImageData(dst, 0, 0);
+
+  ctx.save();
+  clipPath();
+  ctx.clip();
+  ctx.drawImage(wc, lx, ly);
+  const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
+  grad.addColorStop(0, "rgba(0,0,0,0.22)");
+  grad.addColorStop(0.15, "rgba(0,0,0,0)");
+  grad.addColorStop(0.85, "rgba(0,0,0,0)");
+  grad.addColorStop(1, "rgba(0,0,0,0.22)");
+  ctx.fillStyle = grad; ctx.fillRect(lx, ly, lw, lh);
+  ctx.restore();
+}
+
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [bottleKey, setBottleKey] = useState<BKey>("dropper");
+  const [delilaImg, setDelilaImg] = useState<HTMLImageElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const CW = 240, CH = 420;
+  const CW = 320, CH = 520;
+
+  // Fetch Delila's primary image on mount
+  useEffect(() => {
+    fetch(`${API_URL}/api/storefront/products/delila`)
+      .then((r) => r.json())
+      .then((data) => {
+        const primary = (data.images as { url: string; isPrimary: boolean }[])
+          ?.find((i) => i.isPrimary) ?? data.images?.[0];
+        if (!primary?.url) return;
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => setDelilaImg(img);
+        img.src = primary.url;
+      })
+      .catch(() => {});
+  }, []);
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -62,109 +131,122 @@ function LogoPreviewTool() {
 
     ctx.clearRect(0, 0, CW, CH);
 
+    // ── Dropper: use Delila photo ──────────────────────────────────────────
+    if (bottleKey === "dropper") {
+      const drawDropper = (photoImg: HTMLImageElement | null) => {
+        ctx.clearRect(0, 0, CW, CH);
+
+        if (photoImg) {
+          // Fit photo into canvas maintaining aspect ratio, centred
+          const ratio = Math.min(CW / photoImg.naturalWidth, CH / photoImg.naturalHeight);
+          const dw = photoImg.naturalWidth * ratio;
+          const dh = photoImg.naturalHeight * ratio;
+          const dx = (CW - dw) / 2;
+          const dy = (CH - dh) / 2;
+          ctx.drawImage(photoImg, dx, dy, dw, dh);
+
+          // Label area in canvas pixels
+          const lx = dx + DELILA_LABEL_FRAC[0] * dw;
+          const ly = dy + DELILA_LABEL_FRAC[1] * dh;
+          const lw = DELILA_LABEL_FRAC[2] * dw;
+          const lh = DELILA_LABEL_FRAC[3] * dh;
+
+          if (!logoUrl) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(255,255,255,0.3)";
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(lx + 8, ly + 8, lw - 16, lh - 16);
+            ctx.fillStyle = "rgba(255,255,255,0.35)";
+            ctx.font = "9px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("UPLOAD LOGO", lx + lw / 2, ly + lh / 2);
+            ctx.restore();
+            return;
+          }
+
+          const logoImg = new window.Image();
+          logoImg.onload = () => {
+            ctx.drawImage(photoImg, dx, dy, dw, dh); // redraw photo cleanly
+            warpLogo(ctx, logoImg, lx, ly, lw, lh, () => {
+              ctx.rect(lx, ly, lw, lh); // clip to label rect; photo handles bottle shape
+            });
+          };
+          logoImg.src = logoUrl;
+        } else {
+          // Fallback: drawn shape while photo loads
+          rr(ctx, 108, 108, 104, 358, 10); ctx.fillStyle = "#CBC0B4"; ctx.fill();
+          if (!logoUrl) {
+            ctx.save();
+            ctx.strokeStyle = "rgba(201,184,168,0.35)";
+            ctx.setLineDash([4, 4]);
+            ctx.strokeRect(118, 178, 84, 202);
+            ctx.fillStyle = "rgba(201,184,168,0.45)";
+            ctx.font = "8px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("UPLOAD LOGO", 160, 280);
+            ctx.restore();
+          }
+        }
+      };
+      drawDropper(delilaImg);
+      return;
+    }
+
+    // ── Pump & Jar: drawn shapes ───────────────────────────────────────────
     function drawBase() {
-      if (bottleKey === "dropper") {
-        rr(ctx!, 68, 108, 104, 258, 10); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
-        ctx!.beginPath(); ctx!.moveTo(110, 80); ctx!.lineTo(68, 108); ctx!.lineTo(172, 108); ctx!.lineTo(130, 80); ctx!.closePath();
+      if (bottleKey === "pump") {
+        rr(ctx!, 98, 148, 124, 320, 12); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
+        ctx!.beginPath(); ctx!.moveTo(136, 128); ctx!.lineTo(98, 148); ctx!.lineTo(222, 148); ctx!.lineTo(184, 128); ctx!.closePath();
         ctx!.fillStyle = "#BFB5AA"; ctx!.fill();
-        ctx!.fillStyle = "#B3AAA0"; ctx!.fillRect(110, 52, 20, 30);
-        rr(ctx!, 105, 18, 30, 38, 5); ctx!.fillStyle = "#292622"; ctx!.fill();
-        ctx!.beginPath(); ctx!.ellipse(120, 12, 9, 13, 0, 0, Math.PI * 2); ctx!.fillStyle = "#292622"; ctx!.fill();
-      } else if (bottleKey === "pump") {
-        rr(ctx!, 58, 108, 124, 270, 12); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
-        ctx!.beginPath(); ctx!.moveTo(96, 88); ctx!.lineTo(58, 108); ctx!.lineTo(182, 108); ctx!.lineTo(144, 88); ctx!.closePath();
-        ctx!.fillStyle = "#BFB5AA"; ctx!.fill();
-        ctx!.fillStyle = "#B3AAA0"; ctx!.fillRect(111, 44, 18, 48);
-        rr(ctx!, 88, 24, 64, 24, 4); ctx!.fillStyle = "#292622"; ctx!.fill();
-        ctx!.fillStyle = "#292622"; ctx!.fillRect(148, 28, 32, 10);
+        ctx!.fillStyle = "#B3AAA0"; ctx!.fillRect(151, 80, 18, 52);
+        rr(ctx!, 128, 58, 64, 26, 4); ctx!.fillStyle = "#292622"; ctx!.fill();
+        ctx!.fillStyle = "#292622"; ctx!.fillRect(188, 62, 34, 12);
       } else {
-        rr(ctx!, 36, 80, 168, 52, 6); ctx!.fillStyle = "#292622"; ctx!.fill();
-        ctx!.fillStyle = "#1A1816"; ctx!.fillRect(36, 124, 168, 8);
-        rr(ctx!, 38, 132, 164, 200, 10); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
+        rr(ctx!, 76, 110, 168, 52, 6); ctx!.fillStyle = "#292622"; ctx!.fill();
+        ctx!.fillStyle = "#1A1816"; ctx!.fillRect(76, 155, 168, 8);
+        rr(ctx!, 78, 163, 164, 280, 10); ctx!.fillStyle = "#CBC0B4"; ctx!.fill();
       }
     }
 
     function drawHighlights() {
-      ctx!.save();
-      ctx!.globalAlpha = 0.13;
-      ctx!.fillStyle = "#fff";
-      if (bottleKey === "dropper") { rr(ctx!, 78, 115, 12, 238, 6); ctx!.fill(); }
-      else if (bottleKey === "pump") { rr(ctx!, 68, 116, 14, 248, 7); ctx!.fill(); }
-      else { rr(ctx!, 50, 140, 14, 182, 7); ctx!.fill(); }
+      ctx!.save(); ctx!.globalAlpha = 0.13; ctx!.fillStyle = "#fff";
+      if (bottleKey === "pump") { rr(ctx!, 108, 155, 14, 298, 7); ctx!.fill(); }
+      else { rr(ctx!, 90, 170, 14, 262, 7); ctx!.fill(); }
       ctx!.restore();
     }
 
+    const AREAS: Record<string, [number, number, number, number]> = {
+      pump: [100, 155, 120, 295],
+      jar:  [82, 170, 156, 255],
+    };
+
     drawBase();
 
+    const [lx, ly, lw, lh] = AREAS[bottleKey];
     if (!logoUrl) {
-      const [lx, ly, lw, lh] = LABEL_AREAS[bottleKey];
       ctx.save();
       ctx.strokeStyle = "rgba(201,184,168,0.35)";
       ctx.setLineDash([4, 4]);
       ctx.strokeRect(lx + 10, ly + 10, lw - 20, lh - 20);
       ctx.fillStyle = "rgba(201,184,168,0.45)";
-      ctx.font = "8px sans-serif";
+      ctx.font = "9px sans-serif";
       ctx.textAlign = "center";
-      ctx.letterSpacing = "2px";
       ctx.fillText("UPLOAD LOGO", lx + lw / 2, ly + lh / 2);
       ctx.restore();
       drawHighlights();
       return;
     }
 
-    const img = new window.Image();
-    img.onload = () => {
-      const [lx, ly, lw, lh] = LABEL_AREAS[bottleKey];
-
-      // Rasterise source to temp canvas
-      const tmp = document.createElement("canvas");
-      tmp.width = img.naturalWidth; tmp.height = img.naturalHeight;
-      const tc = tmp.getContext("2d")!;
-      tc.drawImage(img, 0, 0);
-      const src = tc.getImageData(0, 0, tmp.width, tmp.height);
-
-      // Cylindrical warp: for each output pixel map x via inverse cosine projection
-      const wc = document.createElement("canvas");
-      wc.width = lw; wc.height = lh;
-      const wctx = wc.getContext("2d")!;
-      const dst = wctx.createImageData(lw, lh);
-      const sw = tmp.width, sh = tmp.height;
-
-      for (let oy = 0; oy < lh; oy++) {
-        for (let ox = 0; ox < lw; ox++) {
-          const t = (2 * ox) / lw - 1;          // [-1, 1] across width
-          if (t <= -0.999 || t >= 0.999) continue;
-          // acos maps t∈[-1,1] → [π,0]; subtract from π so left→left
-          const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * sw);
-          const sy = Math.round((oy / lh) * sh);
-          if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
-          const si = (sy * sw + sx) * 4, di = (oy * lw + ox) * 4;
-          dst.data[di] = src.data[si]; dst.data[di+1] = src.data[si+1];
-          dst.data[di+2] = src.data[si+2]; dst.data[di+3] = src.data[si+3];
-        }
-      }
-      wctx.putImageData(dst, 0, 0);
-
-      // Clip to bottle body, draw warped logo, add cylindrical edge shading
-      ctx.save();
-      if (bottleKey === "dropper") { rr(ctx, 68, 108, 104, 258, 10); }
-      else if (bottleKey === "pump") { rr(ctx, 58, 108, 124, 270, 12); }
-      else { rr(ctx, 38, 132, 164, 200, 10); }
-      ctx.clip();
-      ctx.drawImage(wc, lx, ly);
-      // Edge darkening simulates light falloff on curved surface
-      const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
-      grad.addColorStop(0, "rgba(0,0,0,0.28)");
-      grad.addColorStop(0.16, "rgba(0,0,0,0)");
-      grad.addColorStop(0.84, "rgba(0,0,0,0)");
-      grad.addColorStop(1, "rgba(0,0,0,0.28)");
-      ctx.fillStyle = grad; ctx.fillRect(lx, ly, lw, lh);
-      ctx.restore();
-
+    const logoImg = new window.Image();
+    logoImg.onload = () => {
+      warpLogo(ctx, logoImg, lx, ly, lw, lh, () => {
+        if (bottleKey === "pump") rr(ctx, 98, 148, 124, 320, 12);
+        else rr(ctx, 78, 163, 164, 280, 10);
+      });
       drawHighlights();
     };
-    img.src = logoUrl;
-  }, [logoUrl, bottleKey]);
+    logoImg.src = logoUrl;
+  }, [logoUrl, bottleKey, delilaImg]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-start">
@@ -205,7 +287,7 @@ function LogoPreviewTool() {
           ref={canvasRef}
           width={CW}
           height={CH}
-          style={{ borderRadius: "4px", backgroundColor: "#1E1C19", maxWidth: "220px", width: "100%", height: "auto" }}
+          style={{ borderRadius: "4px", backgroundColor: "#1E1C19", maxWidth: "300px", width: "100%", height: "auto" }}
         />
       </div>
     </div>
