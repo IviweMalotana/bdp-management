@@ -156,7 +156,8 @@ public class OrdersController : ControllerBase
 
             var lineTotal = item.UnitPriceZAR * item.Quantity + item.CustomisationCostZAR;
             subtotal += lineTotal;
-            totalWeightGrams += (int)Math.Ceiling((variant.Product?.WeightKg ?? 0m) * 1000m * item.Quantity);
+            var unitWKg = variant.WeightKg > 0 ? variant.WeightKg : (variant.Product?.WeightKg ?? 0m);
+            totalWeightGrams += (int)Math.Ceiling(unitWKg * 1000m * item.Quantity);
             resolvedItems.Add((item, lineTotal));
         }
 

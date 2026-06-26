@@ -53,9 +53,14 @@ public class StorefrontCheckoutController : ControllerBase
 
         foreach (var item in cart.Items)
         {
-            var product = item.ProductVariant.Product;
-            totalWeight += product.WeightKg * item.Quantity;
-            totalVolume += ShippingCalculator.ComputeVolumeCBM(product.LengthCm, product.WidthCm, product.HeightCm) * item.Quantity;
+            var v = item.ProductVariant;
+            var product = v.Product;
+            var wKg = v.WeightKg > 0 ? v.WeightKg : product.WeightKg;
+            var l   = v.LengthCm > 0 ? v.LengthCm : product.LengthCm;
+            var w   = v.WidthCm  > 0 ? v.WidthCm  : product.WidthCm;
+            var h   = v.HeightCm > 0 ? v.HeightCm : product.HeightCm;
+            totalWeight += wKg * item.Quantity;
+            totalVolume += ShippingCalculator.ComputeVolumeCBM(l, w, h) * item.Quantity;
             totalQty += item.Quantity;
         }
 
@@ -155,9 +160,17 @@ public class StorefrontCheckoutController : ControllerBase
             });
         }
 
-        var totalWeight = cart.Items.Sum(i => i.ProductVariant.Product.WeightKg * i.Quantity);
-        var totalVolume = cart.Items.Sum(i => ShippingCalculator.ComputeVolumeCBM(
-            i.ProductVariant.Product.LengthCm, i.ProductVariant.Product.WidthCm, i.ProductVariant.Product.HeightCm) * i.Quantity);
+        var totalWeight = cart.Items.Sum(i => {
+            var v = i.ProductVariant; var p = v.Product;
+            return (v.WeightKg > 0 ? v.WeightKg : p.WeightKg) * i.Quantity;
+        });
+        var totalVolume = cart.Items.Sum(i => {
+            var v = i.ProductVariant; var p = v.Product;
+            var l = v.LengthCm > 0 ? v.LengthCm : p.LengthCm;
+            var w = v.WidthCm  > 0 ? v.WidthCm  : p.WidthCm;
+            var h = v.HeightCm > 0 ? v.HeightCm : p.HeightCm;
+            return ShippingCalculator.ComputeVolumeCBM(l, w, h) * i.Quantity;
+        });
         // If client provided a shipping option price, use it; otherwise fall back to calculator
         var shippingZAR = req.ShippingPriceZAR.HasValue && req.ShippingPriceZAR.Value > 0
             ? req.ShippingPriceZAR.Value
