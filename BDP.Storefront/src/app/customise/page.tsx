@@ -57,22 +57,18 @@ function LogoPreviewTool() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Debounced search
-  useEffect(() => {
-    if (!query.trim()) { setResults([]); return; }
-    const t = setTimeout(() => {
-      setSearching(true);
-      fetch(`${API_URL}/api/storefront/products?search=${encodeURIComponent(query)}&pageSize=12`)
-        .then((r) => r.json())
-        .then((d) => {
-          const items = (d.items ?? d) as { slug: string; name: string; primaryUrl?: string }[];
-          setResults(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
-          setOpen(true);
-        })
-        .catch(() => {})
-        .finally(() => setSearching(false));
-    }, 300);
-    return () => clearTimeout(t);
+  const runSearch = useCallback(() => {
+    if (!query.trim()) return;
+    setSearching(true);
+    fetch(`${API_URL}/api/storefront/products?search=${encodeURIComponent(query)}&pageSize=12`)
+      .then((r) => r.json())
+      .then((d) => {
+        const items = (d.items ?? d) as { slug: string; name: string; primaryUrl?: string }[];
+        setResults(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
+        setOpen(true);
+      })
+      .catch(() => {})
+      .finally(() => setSearching(false));
   }, [query]);
 
   // Load product image when selection changes
@@ -222,25 +218,35 @@ function LogoPreviewTool() {
         <div>
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>1. Choose a bottle</p>
           <div ref={searchRef} style={{ position: "relative" }}>
-            <div style={{ position: "relative" }}>
-              <input
-                style={inputStyle}
-                placeholder="Search bottles e.g. Delila, Ada, 30ml…"
-                value={selected ? selected.name : query}
-                onChange={(e) => { setSelected(null); setQuery(e.target.value); }}
-                onFocus={() => { if (results.length) setOpen(true); }}
-              />
-              {searching && (
-                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#9E8F83", fontSize: 11 }}>
-                  searching…
-                </span>
-              )}
-              {selected && (
-                <button
-                  onClick={() => { setSelected(null); setQuery(""); setProductImg(null); }}
-                  style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9E8F83", cursor: "pointer", fontSize: 16, lineHeight: 1 }}
-                >×</button>
-              )}
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ position: "relative", flex: 1 }}>
+                <input
+                  style={inputStyle}
+                  placeholder="Search bottles e.g. Delila, Ada, 30ml…"
+                  value={selected ? selected.name : query}
+                  onChange={(e) => { setSelected(null); setQuery(e.target.value); }}
+                  onFocus={() => { if (results.length) setOpen(true); }}
+                  onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
+                />
+                {selected && (
+                  <button
+                    onClick={() => { setSelected(null); setQuery(""); setProductImg(null); setResults([]); }}
+                    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9E8F83", cursor: "pointer", fontSize: 18, lineHeight: 1 }}
+                  >×</button>
+                )}
+              </div>
+              <button
+                onClick={runSearch}
+                disabled={searching || !query.trim()}
+                style={{
+                  padding: "10px 18px", background: "#C9B8A8", border: "none",
+                  borderRadius: "2px", color: "#1C1A17", fontSize: "13px",
+                  fontWeight: 500, cursor: "pointer", letterSpacing: "0.5px",
+                  opacity: (!query.trim() || searching) ? 0.5 : 1, whiteSpace: "nowrap",
+                }}
+              >
+                {searching ? "…" : "Search"}
+              </button>
             </div>
 
             {open && results.length > 0 && !selected && (
