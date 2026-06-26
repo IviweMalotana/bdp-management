@@ -63,31 +63,6 @@ const reviewAverage = reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.le
 /* ────────────────────── Hero Section ────────────────────── */
 
 function HeroSection({ products }: { products: any[] }) {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Deep-link each hero slide to a real product when available.
-  const heroLink = (i: number) => (products[i]?.slug ? `/product/${products[i].slug}` : "/shop");
-  const heroLabel = (i: number) => products[i]?.name ?? heroSlides[i].code;
-
-  useEffect(() => {
-    intervalRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
-  const handleMouseEnter = () => {
-    if (intervalRef.current) clearInterval(intervalRef.current);
-  };
-
-  const handleMouseLeave = () => {
-    intervalRef.current = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-  };
-
   return (
     <section
       className="min-h-[90vh] flex items-center py-20 md:py-28 px-4"
@@ -132,41 +107,22 @@ function HeroSection({ products }: { products: any[] }) {
           </div>
         </div>
 
-        <Link
-          href={heroLink(currentSlide)}
-          className="relative aspect-[4/5] max-w-[520px] mx-auto md:mx-0 md:ml-auto w-full overflow-hidden block"
+        <div
+          className="relative aspect-[4/5] max-w-[520px] mx-auto md:mx-0 md:ml-auto w-full overflow-hidden"
           style={{
             borderRadius: "2px",
             boxShadow: "0 4px 20px rgba(28, 26, 23, 0.08)",
           }}
-          onMouseEnter={handleMouseEnter}
-          onMouseLeave={handleMouseLeave}
         >
-          {heroSlides.map((slide, i) => (
-            <Image
-              key={slide.code}
-              src={slide.src}
-              alt={heroLabel(i)}
-              fill
-              className={`object-cover transition-opacity duration-700 ${
-                i === currentSlide ? "opacity-100" : "opacity-0"
-              }`}
-              sizes="(max-width: 768px) 100vw, 520px"
-              priority={i === 0}
-            />
-          ))}
-          <span
-            className="absolute bottom-4 left-4 z-10 text-[10px] tracking-[0.08em] uppercase px-2 py-1"
-            style={{
-              color: "rgba(255,255,255,0.85)",
-              backgroundColor: "rgba(28, 26, 23, 0.35)",
-              fontFamily: "var(--font-body)",
-              borderRadius: "2px",
-            }}
-          >
-            {heroLabel(currentSlide)}
-          </span>
-        </Link>
+          <Image
+            src={heroSlides[0].src}
+            alt="BDP packaging"
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 520px"
+            priority
+          />
+        </div>
       </div>
     </section>
   );
