@@ -37,6 +37,7 @@ import CustomisationSettings from './pages/settings/CustomisationSettings'
 import EmailTemplatesPage from './pages/settings/EmailTemplatesPage'
 import YunExpressTestPage from './pages/YunExpressTestPage'
 import EmailTestPage from './pages/EmailTestPage'
+import EmailLogPage from './pages/EmailLogPage'
 import CustomisationProfitPage from './pages/CustomisationProfitPage'
 import ShippingMarginPage from './pages/ShippingMarginPage'
 
@@ -121,6 +122,7 @@ export default function App() {
             <Route path="/catalogue" element={<CataloguePage />} />
             <Route path="/yunexpress-test" element={<YunExpressTestPage />} />
             <Route path="/email-test" element={<EmailTestPage />} />
+            <Route path="/email-log" element={<EmailLogPage />} />
           </Route>
         </Route>
 

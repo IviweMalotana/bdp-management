@@ -28,7 +28,7 @@ public class OrderEmailService
     private string StorefrontUrl =>
         Environment.GetEnvironmentVariable("STOREFRONT_URL")
         ?? _config["StorefrontUrl"]
-        ?? "https://bdp-management.vercel.app";
+        ?? "https://www.bedifferentpackaging.com";
 
     /// <summary>
     /// Sends the order confirmation email for a given order id. Safe to call
@@ -108,7 +108,7 @@ public class OrderEmailService
                 html = EmailTemplates.OrderConfirmation(data);
             }
 
-            await _email.SendAsync(email, recipientName, subject, html);
+            await _email.SendAsync(email, recipientName, subject, html, category: "order_confirmation");
 
             _logger.LogInformation("Order confirmation sent for {OrderNumber} to {Email}", order.OrderNumber, email);
         }

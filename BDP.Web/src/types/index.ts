@@ -12,6 +12,17 @@ export interface EmailTemplate extends EmailTemplateSummary {
   htmlBody: string
 }
 
+export interface EmailLog {
+  id: number
+  toEmail: string
+  toName: string
+  subject: string
+  category: string | null
+  status: 'Sent' | 'Failed' | 'Skipped'
+  error: string | null
+  createdAt: string
+}
+
 // ── Auth ─────────────────────────────────────────────────────────────────────
 export interface User {
   id: string

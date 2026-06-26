@@ -121,7 +121,8 @@ public class InvoiceService
             invoice.Client.ContactPersonName,
             subject,
             html,
-            (pdfBytes, $"{invoice.InvoiceNumber}.pdf", "application/pdf"));
+            (pdfBytes, $"{invoice.InvoiceNumber}.pdf", "application/pdf"),
+            category: "invoice_sent");
 
         invoice.Status = "Sent";
         invoice.SentAt = DateTime.UtcNow;

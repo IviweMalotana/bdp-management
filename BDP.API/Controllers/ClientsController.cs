@@ -320,7 +320,7 @@ public class ClientsController : ControllerBase
                     <p>Regards,<br/>BDP Packaging Co.</p>
                     """;
             }
-            await _email.SendAsync(client.ContactEmail, client.ContactPersonName, subject, html);
+            await _email.SendAsync(client.ContactEmail, client.ContactPersonName, subject, html, category: "b2b_approved");
         }
         catch (Exception ex)
         {

@@ -270,6 +270,9 @@ export const email = {
 
   sendTest: (body: { to: string; subject?: string; message?: string }) =>
     http.post('/email/test', body).then((r) => r.data),
+
+  logs: (take = 100) =>
+    http.get<import('../types').EmailLog[]>('/email/logs', { params: { take } }).then((r) => r.data),
 }
 
 // ── Invoices ──────────────────────────────────────────────────────────────────

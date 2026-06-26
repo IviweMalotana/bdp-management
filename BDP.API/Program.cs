@@ -198,6 +198,17 @@ using (var scope = app.Services.CreateScope())
                 ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
                 ""UpdatedAt"" timestamp with time zone NOT NULL DEFAULT now()
             );
+            CREATE TABLE IF NOT EXISTS ""EmailLogs"" (
+                ""Id"" serial PRIMARY KEY,
+                ""ToEmail"" text NOT NULL,
+                ""ToName"" text NOT NULL,
+                ""Subject"" text NOT NULL,
+                ""Category"" text,
+                ""Status"" text NOT NULL,
+                ""Error"" text,
+                ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now()
+            );
+            CREATE INDEX IF NOT EXISTS ""IX_EmailLogs_CreatedAt"" ON ""EmailLogs"" (""CreatedAt"" DESC);
             UPDATE ""Products"" SET ""Category"" = 'Jar'     WHERE lower(""Category"") LIKE '%jar%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
             UPDATE ""Products"" SET ""Category"" = 'Pump'    WHERE lower(""Category"") LIKE '%pump%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
             UPDATE ""Products"" SET ""Category"" = 'Pump'    WHERE lower(""Category"") LIKE '%lotion%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');

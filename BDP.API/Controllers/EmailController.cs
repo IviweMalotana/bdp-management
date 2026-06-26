@@ -1,6 +1,8 @@
+using BDP.API.Data;
 using BDP.API.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BDP.API.Controllers;
 
@@ -25,6 +27,29 @@ public class EmailController : ControllerBase
         configured = _email.IsConfigured,
         fromAddress = _email.FromAddress,
     });
+
+    // GET /api/email/logs — recent send history (sent / failed / skipped)
+    [HttpGet("logs")]
+    public async Task<IActionResult> Logs([FromServices] AppDbContext db, [FromQuery] int take = 100)
+    {
+        take = Math.Clamp(take, 1, 500);
+        var logs = await db.EmailLogs
+            .OrderByDescending(l => l.CreatedAt)
+            .Take(take)
+            .Select(l => new
+            {
+                l.Id,
+                l.ToEmail,
+                l.ToName,
+                l.Subject,
+                l.Category,
+                l.Status,
+                l.Error,
+                l.CreatedAt,
+            })
+            .ToListAsync();
+        return Ok(logs);
+    }
 
     public record TestEmailRequest(string To, string? Subject, string? Message);
 
@@ -57,7 +82,7 @@ public class EmailController : ControllerBase
 
         try
         {
-            await _email.SendAsync(dto.To, "Test Recipient", subject, body);
+            await _email.SendAsync(dto.To, "Test Recipient", subject, body, category: "test");
             return Ok(new
             {
                 success = true,
