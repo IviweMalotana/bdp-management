@@ -35,15 +35,17 @@ interface ProductHit { slug: string; name: string; primaryUrl?: string }
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
 
-  // Product search
+  // Picker state
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<ProductHit[]>([]);
-  const [searching, setSearching] = useState(false);
+  const [allProducts, setAllProducts] = useState<ProductHit[]>([]);
   const [open, setOpen] = useState(false);
-  const [selected, setSelected] = useState<ProductHit | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [highlighted, setHighlighted] = useState<ProductHit | null>(null); // highlighted in dropdown
+  const [confirmed, setConfirmed] = useState<ProductHit | null>(null);     // confirmed for canvas
   const [productImg, setProductImg] = useState<HTMLImageElement | null>(null);
   const [imgLoading, setImgLoading] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const CW = 360, CH = 540;
@@ -51,31 +53,36 @@ function LogoPreviewTool() {
   // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setOpen(false);
+      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) setOpen(false);
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const runSearch = useCallback(() => {
-    if (!query.trim()) return;
-    setSearching(true);
-    fetch(`${API_URL}/api/storefront/products?search=${encodeURIComponent(query)}&pageSize=12`)
+  // Load all products once when dropdown first opens
+  const openDropdown = useCallback(() => {
+    setOpen(true);
+    if (allProducts.length > 0) return;
+    setLoading(true);
+    fetch(`${API_URL}/api/storefront/products?pageSize=100`)
       .then((r) => r.json())
       .then((d) => {
         const items = (d.items ?? d) as { slug: string; name: string; primaryUrl?: string }[];
-        setResults(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
-        setOpen(true);
+        setAllProducts(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
       })
       .catch(() => {})
-      .finally(() => setSearching(false));
-  }, [query]);
+      .finally(() => setLoading(false));
+  }, [allProducts.length]);
 
-  // Load product image when selection changes
+  // Filter by query client-side
+  const filtered = query.trim()
+    ? allProducts.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
+    : allProducts;
+
+  // Load image when confirmed
   useEffect(() => {
-    if (!selected?.primaryUrl) { setProductImg(null); return; }
+    if (!confirmed) return;
     setImgLoading(true);
-    // Fetch full product to get image URL if not already on search result
     const load = (url: string) => {
       const img = new window.Image();
       img.crossOrigin = "anonymous";
@@ -83,21 +90,25 @@ function LogoPreviewTool() {
       img.onerror = () => setImgLoading(false);
       img.src = url;
     };
-    if (selected.primaryUrl) {
-      load(selected.primaryUrl);
+    if (confirmed.primaryUrl) {
+      load(confirmed.primaryUrl);
     } else {
-      // No thumbnail from search result — fetch full product for image
-      fetch(`${API_URL}/api/storefront/products/${selected.slug}`)
+      fetch(`${API_URL}/api/storefront/products/${confirmed.slug}`)
         .then((r) => r.json())
         .then((d) => {
           const img = (d.images as { url: string; isPrimary: boolean }[])
             ?.find((i) => i.isPrimary) ?? d.images?.[0];
-          if (img?.url) load(img.url);
-          else setImgLoading(false);
+          if (img?.url) load(img.url); else setImgLoading(false);
         })
         .catch(() => setImgLoading(false));
     }
-  }, [selected]);
+  }, [confirmed]);
+
+  const confirmSelection = () => {
+    if (!highlighted) return;
+    setConfirmed(highlighted);
+    setOpen(false);
+  };
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -217,67 +228,99 @@ function LogoPreviewTool() {
         {/* Step 1: Pick bottle */}
         <div>
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>1. Choose a bottle</p>
-          <div ref={searchRef} style={{ position: "relative" }}>
+          <div ref={pickerRef} style={{ position: "relative" }}>
+
+            {/* Input row */}
             <div style={{ display: "flex", gap: 8 }}>
-              <div style={{ position: "relative", flex: 1 }}>
-                <input
-                  style={inputStyle}
-                  placeholder="Search bottles e.g. Delila, Ada, 30ml…"
-                  value={selected ? selected.name : query}
-                  onChange={(e) => { setSelected(null); setQuery(e.target.value); }}
-                  onFocus={() => { if (results.length) setOpen(true); }}
-                  onKeyDown={(e) => { if (e.key === "Enter") runSearch(); }}
-                />
-                {selected && (
-                  <button
-                    onClick={() => { setSelected(null); setQuery(""); setProductImg(null); setResults([]); }}
-                    style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", background: "none", border: "none", color: "#9E8F83", cursor: "pointer", fontSize: 18, lineHeight: 1 }}
-                  >×</button>
-                )}
-              </div>
-              <button
-                onClick={runSearch}
-                disabled={searching || !query.trim()}
-                style={{
-                  padding: "10px 18px", background: "#C9B8A8", border: "none",
-                  borderRadius: "2px", color: "#1C1A17", fontSize: "13px",
-                  fontWeight: 500, cursor: "pointer", letterSpacing: "0.5px",
-                  opacity: (!query.trim() || searching) ? 0.5 : 1, whiteSpace: "nowrap",
-                }}
-              >
-                {searching ? "…" : "Search"}
-              </button>
+              <input
+                ref={inputRef}
+                style={{ ...inputStyle, flex: 1 }}
+                placeholder={confirmed ? confirmed.name : "Search by name e.g. Delila, Ada…"}
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); if (!open) openDropdown(); }}
+                onFocus={openDropdown}
+              />
+              {confirmed && (
+                <button
+                  onClick={() => { setConfirmed(null); setHighlighted(null); setProductImg(null); setQuery(""); }}
+                  style={{ padding: "10px 12px", background: "none", border: "1px solid #4A4540", borderRadius: "2px", color: "#9E8F83", cursor: "pointer", fontSize: 18, lineHeight: 1 }}
+                >×</button>
+              )}
             </div>
 
-            {open && results.length > 0 && !selected && (
-              <ul style={{
+            {/* Dropdown */}
+            {open && (
+              <div style={{
                 position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
-                background: "#2A2723", border: "1px solid #4A4540", borderRadius: "2px",
-                maxHeight: "220px", overflowY: "auto", margin: 0, padding: 0, listStyle: "none",
+                background: "#1E1C19", border: "1px solid #4A4540", borderRadius: "2px",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
               }}>
-                {results.map((r) => (
-                  <li key={r.slug}>
-                    <button
-                      onClick={() => { setSelected(r); setQuery(""); setOpen(false); }}
-                      style={{
-                        width: "100%", textAlign: "left", padding: "10px 14px",
-                        background: "none", border: "none", color: "#FAF8F5",
-                        fontSize: "14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 10,
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.background = "#3A3530")}
-                      onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                    >
-                      {r.primaryUrl && (
-                        <img src={r.primaryUrl} alt="" style={{ width: 32, height: 32, objectFit: "contain", borderRadius: 2, background: "#1E1C19" }} />
-                      )}
-                      <span>{r.name}</span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+                {/* Search inside dropdown */}
+                <div style={{ padding: "8px 8px 4px" }}>
+                  <input
+                    style={{ ...inputStyle, fontSize: 13 }}
+                    placeholder="Type to filter…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    autoFocus
+                  />
+                </div>
+
+                {/* Results list */}
+                <ul style={{ maxHeight: "240px", overflowY: "auto", margin: 0, padding: "4px 0", listStyle: "none" }}>
+                  {loading && (
+                    <li style={{ padding: "12px 14px", color: "#9E8F83", fontSize: 13 }}>Loading bottles…</li>
+                  )}
+                  {!loading && filtered.length === 0 && (
+                    <li style={{ padding: "12px 14px", color: "#9E8F83", fontSize: 13 }}>No results</li>
+                  )}
+                  {filtered.map((r) => {
+                    const isHighlighted = highlighted?.slug === r.slug;
+                    return (
+                      <li key={r.slug}>
+                        <button
+                          onMouseDown={(e) => e.preventDefault()} // prevent input blur closing dropdown
+                          onClick={() => setHighlighted(r)}
+                          style={{
+                            width: "100%", textAlign: "left", padding: "10px 14px",
+                            background: isHighlighted ? "#3A3530" : "none",
+                            border: "none", borderLeft: isHighlighted ? "2px solid #C9B8A8" : "2px solid transparent",
+                            color: "#FAF8F5", fontSize: "14px", cursor: "pointer",
+                            display: "flex", alignItems: "center", gap: 10, boxSizing: "border-box",
+                          }}
+                        >
+                          {r.primaryUrl && (
+                            <img src={r.primaryUrl} alt="" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 2, background: "#2A2723", flexShrink: 0 }} />
+                          )}
+                          <span>{r.name}</span>
+                          {isHighlighted && <span style={{ marginLeft: "auto", color: "#C9B8A8", fontSize: 11 }}>selected</span>}
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {/* Confirm button */}
+                <div style={{ padding: "8px", borderTop: "1px solid #2A2723" }}>
+                  <button
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={confirmSelection}
+                    disabled={!highlighted}
+                    style={{
+                      width: "100%", padding: "10px", background: highlighted ? "#C9B8A8" : "#2A2723",
+                      border: "none", borderRadius: "2px", color: highlighted ? "#1C1A17" : "#4A4540",
+                      fontSize: "13px", fontWeight: 600, cursor: highlighted ? "pointer" : "default",
+                      letterSpacing: "0.5px", transition: "background 0.15s",
+                    }}
+                  >
+                    {highlighted ? `Preview "${highlighted.name}" on bottle` : "Select a bottle above"}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
           {imgLoading && <p style={{ color: "#9E8F83", fontSize: 12, marginTop: 6 }}>Loading bottle image…</p>}
+          {confirmed && !imgLoading && <p style={{ color: "#C9B8A8", fontSize: 12, marginTop: 6 }}>Showing: {confirmed.name}</p>}
         </div>
 
         {/* Step 2: Upload logo */}
