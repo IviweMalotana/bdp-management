@@ -30,7 +30,7 @@ interface ProductHit { slug: string; name: string; primaryUrl?: string }
 
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [logoSize, setLogoSize] = useState(40); // % of image width
+  const [logoSize, setLogoSize] = useState(25); // % of image width
 
   // Picker
   const [query, setQuery] = useState("");
@@ -118,40 +118,12 @@ function LogoPreviewTool() {
 
     const logoImg = new window.Image();
     logoImg.onload = () => {
-      // Target width as % of image width; height maintains aspect ratio
       const targetW = canvas.width * (logoSize / 100);
       const targetH = (logoImg.naturalHeight / logoImg.naturalWidth) * targetW;
+      // Center horizontally; place in the lower-middle of the bottle body
       const lx = (canvas.width - targetW) / 2;
-      const ly = (canvas.height - targetH) / 2;
-
-      // Cylindrical warp
-      const tmp = document.createElement("canvas");
-      tmp.width = logoImg.naturalWidth; tmp.height = logoImg.naturalHeight;
-      const tc = tmp.getContext("2d")!;
-      tc.drawImage(logoImg, 0, 0);
-      const src = tc.getImageData(0, 0, tmp.width, tmp.height);
-
-      const wc = document.createElement("canvas");
-      wc.width = Math.ceil(targetW); wc.height = Math.ceil(targetH);
-      const wctx = wc.getContext("2d")!;
-      const dst = wctx.createImageData(wc.width, wc.height);
-
-      for (let oy = 0; oy < wc.height; oy++) {
-        for (let ox = 0; ox < wc.width; ox++) {
-          const t = (2 * ox) / wc.width - 1;
-          if (t <= -0.999 || t >= 0.999) continue;
-          const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * tmp.width);
-          const sy = Math.round((oy / wc.height) * tmp.height);
-          if (sx < 0 || sx >= tmp.width || sy < 0 || sy >= tmp.height) continue;
-          const si = (sy * tmp.width + sx) * 4, di = (oy * wc.width + ox) * 4;
-          dst.data[di]   = src.data[si];
-          dst.data[di+1] = src.data[si+1];
-          dst.data[di+2] = src.data[si+2];
-          dst.data[di+3] = src.data[si+3];
-        }
-      }
-      wctx.putImageData(dst, 0, 0);
-      ctx.drawImage(wc, lx, ly);
+      const ly = canvas.height * 0.55 - targetH / 2;
+      ctx.drawImage(logoImg, lx, ly, targetW, targetH);
     };
     logoImg.src = logoUrl;
   }, [logoUrl, logoSize]);
