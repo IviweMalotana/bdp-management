@@ -65,8 +65,8 @@ function LogoPreviewTool() {
       fetch(`${API_URL}/api/storefront/products?search=${encodeURIComponent(query)}&pageSize=12`)
         .then((r) => r.json())
         .then((d) => {
-          const items = (d.items ?? d) as { slug: string; name: string; primaryImageUrl?: string }[];
-          setResults(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryImageUrl })));
+          const items = (d.items ?? d) as { slug: string; name: string; primaryUrl?: string }[];
+          setResults(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
           setOpen(true);
         })
         .catch(() => {})
@@ -90,10 +90,12 @@ function LogoPreviewTool() {
     if (selected.primaryUrl) {
       load(selected.primaryUrl);
     } else {
+      // No thumbnail from search result — fetch full product for image
       fetch(`${API_URL}/api/storefront/products/${selected.slug}`)
         .then((r) => r.json())
         .then((d) => {
-          const img = (d.images as { url: string; isPrimary: boolean }[])?.find((i) => i.isPrimary) ?? d.images?.[0];
+          const img = (d.images as { url: string; isPrimary: boolean }[])
+            ?.find((i) => i.isPrimary) ?? d.images?.[0];
           if (img?.url) load(img.url);
           else setImgLoading(false);
         })
