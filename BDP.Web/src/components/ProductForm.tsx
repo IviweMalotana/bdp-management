@@ -607,6 +607,37 @@ export default function ProductForm({ product, onClose, onSaved }: Props) {
               </div>
             )}
 
+            {(savedProduct.variants?.length ?? 0) > 0 && (
+              <div className="bg-gray-800/30 rounded-lg overflow-hidden">
+                <p className="text-xs text-gray-400 font-medium px-4 py-2 border-b border-gray-800">
+                  Variants — weights &amp; dimensions ({savedProduct.variants!.length} SKUs)
+                </p>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-gray-800 bg-gray-800/50">
+                        {['SKU ID', 'Size', 'Weight (kg)', 'L (cm)', 'W (cm)', 'H (cm)'].map((h) => (
+                          <th key={h} className="px-3 py-2 text-left text-gray-400 font-semibold uppercase tracking-wider whitespace-nowrap">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800/50">
+                      {savedProduct.variants!.map((v) => (
+                        <tr key={v.id} className="hover:bg-gray-800/20">
+                          <td className="px-3 py-2 font-mono text-indigo-300">{v.skuId ?? v.sku ?? '—'}</td>
+                          <td className="px-3 py-2 text-gray-300">{v.specificationSize ?? v.size ?? '—'}</td>
+                          <td className="px-3 py-2 text-gray-300 font-mono">{v.weightKg != null ? v.weightKg.toFixed(3) : '—'}</td>
+                          <td className="px-3 py-2 text-gray-300 font-mono">{v.lengthCm != null ? v.lengthCm.toFixed(1) : '—'}</td>
+                          <td className="px-3 py-2 text-gray-300 font-mono">{v.widthCm != null ? v.widthCm.toFixed(1) : '—'}</td>
+                          <td className="px-3 py-2 text-gray-300 font-mono">{v.heightCm != null ? v.heightCm.toFixed(1) : '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {(aiTitle || savedProduct.shopifyTitle) && (
               <div className="bg-purple-900/20 border border-purple-800/30 rounded-lg px-4 py-3">
                 <p className="text-xs text-purple-400 font-medium mb-1 flex items-center gap-1"><Sparkles size={10} /> AI Content</p>
