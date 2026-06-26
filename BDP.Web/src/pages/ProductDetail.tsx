@@ -258,12 +258,19 @@ export default function ProductDetail() {
                 {(product.variants ?? []).map((v) => (
                   <div key={v.id} className="flex items-center justify-between bg-gray-800/40 border border-gray-800 rounded-lg px-4 py-3">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span className="text-sm font-semibold text-indigo-300 bg-indigo-900/40 border border-indigo-800/40 px-2 py-0.5 rounded">{v.size}</span>
+                      <span className="text-sm font-semibold text-indigo-300 bg-indigo-900/40 border border-indigo-800/40 px-2 py-0.5 rounded">
+                        {v.specificationSize ?? v.size}
+                      </span>
                       <span className="text-sm text-gray-300">{v.bottleColour} / {v.lidColour}</span>
                       <span className="text-xs text-gray-500">{v.texture}</span>
-                      <span className="text-xs font-mono text-gray-600">{v.sku}</span>
+                      <span className="text-xs font-mono text-gray-600">{v.skuId ?? v.sku}</span>
                       {(v.pricingTiers?.length ?? 0) > 0 && (
                         <span className="text-xs text-green-400">{v.pricingTiers.length} price tiers</span>
+                      )}
+                      {(v.weightKg != null && v.weightKg > 0) && (
+                        <span className="text-xs text-gray-500 font-mono bg-gray-800 px-2 py-0.5 rounded">
+                          {v.weightKg.toFixed(3)}kg · {v.lengthCm?.toFixed(1)}×{v.widthCm?.toFixed(1)}×{v.heightCm?.toFixed(1)}cm
+                        </span>
                       )}
                     </div>
                     {isAdmin && (
