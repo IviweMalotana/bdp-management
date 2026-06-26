@@ -26,29 +26,25 @@ const TECHNIQUES = [
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://bdp-api-production.up.railway.app";
 
-// Label area as fractions of the displayed image [x, y, w, h]
-// Centred on the bottle body — works for most portrait product photos
-const LABEL_FRAC = [0.22, 0.36, 0.56, 0.40] as const;
-
 interface ProductHit { slug: string; name: string; primaryUrl?: string }
 
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoSize, setLogoSize] = useState(40); // % of image width
 
-  // Picker state
+  // Picker
   const [query, setQuery] = useState("");
   const [allProducts, setAllProducts] = useState<ProductHit[]>([]);
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [highlighted, setHighlighted] = useState<ProductHit | null>(null); // highlighted in dropdown
-  const [confirmed, setConfirmed] = useState<ProductHit | null>(null);     // confirmed for canvas
-  const [productImg, setProductImg] = useState<HTMLImageElement | null>(null);
+  const [loadingList, setLoadingList] = useState(false);
+  const [highlighted, setHighlighted] = useState<ProductHit | null>(null);
+  const [confirmed, setConfirmed] = useState<ProductHit | null>(null);
+  const [productImgUrl, setProductImgUrl] = useState<string | null>(null);
   const [imgLoading, setImgLoading] = useState(false);
-  const pickerRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
+  const pickerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const CW = 360, CH = 540;
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -59,11 +55,11 @@ function LogoPreviewTool() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Load all products once when dropdown first opens
+  // Load all products once
   const openDropdown = useCallback(() => {
     setOpen(true);
     if (allProducts.length > 0) return;
-    setLoading(true);
+    setLoadingList(true);
     fetch(`${API_URL}/api/storefront/products?pageSize=100`)
       .then((r) => r.json())
       .then((d) => {
@@ -71,43 +67,34 @@ function LogoPreviewTool() {
         setAllProducts(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
       })
       .catch(() => {})
-      .finally(() => setLoading(false));
+      .finally(() => setLoadingList(false));
   }, [allProducts.length]);
 
-  // Filter by query client-side
   const filtered = query.trim()
     ? allProducts.filter((p) => p.name.toLowerCase().includes(query.toLowerCase()))
     : allProducts;
 
-  // Load image when confirmed
+  // Resolve image URL when confirmed
   useEffect(() => {
-    if (!confirmed) return;
+    if (!confirmed) { setProductImgUrl(null); return; }
+    if (confirmed.primaryUrl) { setProductImgUrl(confirmed.primaryUrl); return; }
     setImgLoading(true);
-    const load = (url: string) => {
-      const img = new window.Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => { setProductImg(img); setImgLoading(false); };
-      img.onerror = () => setImgLoading(false);
-      img.src = url;
-    };
-    if (confirmed.primaryUrl) {
-      load(confirmed.primaryUrl);
-    } else {
-      fetch(`${API_URL}/api/storefront/products/${confirmed.slug}`)
-        .then((r) => r.json())
-        .then((d) => {
-          const img = (d.images as { url: string; isPrimary: boolean }[])
-            ?.find((i) => i.isPrimary) ?? d.images?.[0];
-          if (img?.url) load(img.url); else setImgLoading(false);
-        })
-        .catch(() => setImgLoading(false));
-    }
+    fetch(`${API_URL}/api/storefront/products/${confirmed.slug}`)
+      .then((r) => r.json())
+      .then((d) => {
+        const img = (d.images as { url: string; isPrimary: boolean }[])
+          ?.find((i) => i.isPrimary) ?? d.images?.[0];
+        setProductImgUrl(img?.url ?? null);
+      })
+      .catch(() => {})
+      .finally(() => setImgLoading(false));
   }, [confirmed]);
 
   const confirmSelection = () => {
     if (!highlighted) return;
     setConfirmed(highlighted);
     setOpen(false);
+    setQuery("");
   };
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -116,103 +103,60 @@ function LogoPreviewTool() {
     setLogoUrl(URL.createObjectURL(f));
   }
 
-  const draw = useCallback(() => {
+  // Draw logo onto overlay canvas whenever logo/size changes
+  const drawLogo = useCallback(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, CW, CH);
-
-    if (!productImg) {
-      // Placeholder state
-      ctx.fillStyle = "#2A2723";
-      ctx.fillRect(0, 0, CW, CH);
-      ctx.fillStyle = "rgba(201,184,168,0.25)";
-      ctx.font = "12px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("Search and select a bottle above", CW / 2, CH / 2 - 10);
-      ctx.fillText("to preview your logo on it", CW / 2, CH / 2 + 12);
+    const img = imgRef.current;
+    if (!canvas || !img || !logoUrl) {
+      if (canvas) canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height);
       return;
     }
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Fit photo into canvas
-    const ratio = Math.min(CW / productImg.naturalWidth, CH / productImg.naturalHeight);
-    const dw = productImg.naturalWidth * ratio;
-    const dh = productImg.naturalHeight * ratio;
-    const dx = (CW - dw) / 2;
-    const dy = (CH - dh) / 2;
-    ctx.drawImage(productImg, dx, dy, dw, dh);
-
-    // Label area in pixels
-    const lx = dx + LABEL_FRAC[0] * dw;
-    const ly = dy + LABEL_FRAC[1] * dh;
-    const lw = LABEL_FRAC[2] * dw;
-    const lh = LABEL_FRAC[3] * dh;
-
-    if (!logoUrl) {
-      ctx.save();
-      ctx.strokeStyle = "rgba(255,255,255,0.28)";
-      ctx.setLineDash([5, 5]);
-      ctx.strokeRect(lx + 8, ly + 8, lw - 16, lh - 16);
-      ctx.fillStyle = "rgba(255,255,255,0.28)";
-      ctx.font = "10px sans-serif";
-      ctx.textAlign = "center";
-      ctx.fillText("UPLOAD LOGO", lx + lw / 2, ly + lh / 2);
-      ctx.restore();
-      return;
-    }
-
-    // Cylindrical warp
-    const tmp = document.createElement("canvas");
-    tmp.width = logoUrl ? 1 : 1; // ensure not zero
     const logoImg = new window.Image();
     logoImg.onload = () => {
-      ctx.drawImage(productImg, dx, dy, dw, dh); // redraw clean
+      // Target width as % of image width; height maintains aspect ratio
+      const targetW = canvas.width * (logoSize / 100);
+      const targetH = (logoImg.naturalHeight / logoImg.naturalWidth) * targetW;
+      const lx = (canvas.width - targetW) / 2;
+      const ly = (canvas.height - targetH) / 2;
 
-      const t2 = document.createElement("canvas");
-      t2.width = logoImg.naturalWidth; t2.height = logoImg.naturalHeight;
-      const tc = t2.getContext("2d")!;
+      // Cylindrical warp
+      const tmp = document.createElement("canvas");
+      tmp.width = logoImg.naturalWidth; tmp.height = logoImg.naturalHeight;
+      const tc = tmp.getContext("2d")!;
       tc.drawImage(logoImg, 0, 0);
-      const src = tc.getImageData(0, 0, t2.width, t2.height);
+      const src = tc.getImageData(0, 0, tmp.width, tmp.height);
 
       const wc = document.createElement("canvas");
-      wc.width = Math.ceil(lw); wc.height = Math.ceil(lh);
+      wc.width = Math.ceil(targetW); wc.height = Math.ceil(targetH);
       const wctx = wc.getContext("2d")!;
       const dst = wctx.createImageData(wc.width, wc.height);
-      const sw = t2.width, sh = t2.height;
 
       for (let oy = 0; oy < wc.height; oy++) {
         for (let ox = 0; ox < wc.width; ox++) {
           const t = (2 * ox) / wc.width - 1;
           if (t <= -0.999 || t >= 0.999) continue;
-          const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * sw);
-          const sy = Math.round((oy / wc.height) * sh);
-          if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
-          const si = (sy * sw + sx) * 4, di = (oy * wc.width + ox) * 4;
-          dst.data[di] = src.data[si]; dst.data[di+1] = src.data[si+1];
-          dst.data[di+2] = src.data[si+2]; dst.data[di+3] = src.data[si+3];
+          const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * tmp.width);
+          const sy = Math.round((oy / wc.height) * tmp.height);
+          if (sx < 0 || sx >= tmp.width || sy < 0 || sy >= tmp.height) continue;
+          const si = (sy * tmp.width + sx) * 4, di = (oy * wc.width + ox) * 4;
+          dst.data[di]   = src.data[si];
+          dst.data[di+1] = src.data[si+1];
+          dst.data[di+2] = src.data[si+2];
+          dst.data[di+3] = src.data[si+3];
         }
       }
       wctx.putImageData(dst, 0, 0);
-
-      ctx.save();
-      ctx.rect(lx, ly, lw, lh);
-      ctx.clip();
       ctx.drawImage(wc, lx, ly);
-      const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
-      grad.addColorStop(0,    "rgba(0,0,0,0.25)");
-      grad.addColorStop(0.15, "rgba(0,0,0,0)");
-      grad.addColorStop(0.85, "rgba(0,0,0,0)");
-      grad.addColorStop(1,    "rgba(0,0,0,0.25)");
-      ctx.fillStyle = grad;
-      ctx.fillRect(lx, ly, lw, lh);
-      ctx.restore();
     };
     logoImg.src = logoUrl;
-    void tmp;
-  }, [logoUrl, productImg]);
+  }, [logoUrl, logoSize]);
 
-  useEffect(() => { draw(); }, [draw]);
+  useEffect(() => { drawLogo(); }, [drawLogo]);
 
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "10px 14px",
@@ -229,11 +173,8 @@ function LogoPreviewTool() {
         <div>
           <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>1. Choose a bottle</p>
           <div ref={pickerRef} style={{ position: "relative" }}>
-
-            {/* Input row */}
             <div style={{ display: "flex", gap: 8 }}>
               <input
-                ref={inputRef}
                 style={{ ...inputStyle, flex: 1 }}
                 placeholder={confirmed ? confirmed.name : "Search by name e.g. Delila, Ada…"}
                 value={query}
@@ -242,20 +183,18 @@ function LogoPreviewTool() {
               />
               {confirmed && (
                 <button
-                  onClick={() => { setConfirmed(null); setHighlighted(null); setProductImg(null); setQuery(""); }}
-                  style={{ padding: "10px 12px", background: "none", border: "1px solid #4A4540", borderRadius: "2px", color: "#9E8F83", cursor: "pointer", fontSize: 18, lineHeight: 1 }}
+                  onClick={() => { setConfirmed(null); setHighlighted(null); setProductImgUrl(null); setQuery(""); }}
+                  style={{ padding: "10px 14px", background: "none", border: "1px solid #4A4540", borderRadius: "2px", color: "#9E8F83", cursor: "pointer", fontSize: 20, lineHeight: 1 }}
                 >×</button>
               )}
             </div>
 
-            {/* Dropdown */}
             {open && (
               <div style={{
                 position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 50,
                 background: "#1E1C19", border: "1px solid #4A4540", borderRadius: "2px",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
               }}>
-                {/* Search inside dropdown */}
                 <div style={{ padding: "8px 8px 4px" }}>
                   <input
                     style={{ ...inputStyle, fontSize: 13 }}
@@ -265,61 +204,52 @@ function LogoPreviewTool() {
                     autoFocus
                   />
                 </div>
-
-                {/* Results list */}
                 <ul style={{ maxHeight: "240px", overflowY: "auto", margin: 0, padding: "4px 0", listStyle: "none" }}>
-                  {loading && (
-                    <li style={{ padding: "12px 14px", color: "#9E8F83", fontSize: 13 }}>Loading bottles…</li>
-                  )}
-                  {!loading && filtered.length === 0 && (
-                    <li style={{ padding: "12px 14px", color: "#9E8F83", fontSize: 13 }}>No results</li>
-                  )}
+                  {loadingList && <li style={{ padding: "12px 14px", color: "#9E8F83", fontSize: 13 }}>Loading…</li>}
+                  {!loadingList && filtered.length === 0 && <li style={{ padding: "12px 14px", color: "#9E8F83", fontSize: 13 }}>No results</li>}
                   {filtered.map((r) => {
-                    const isHighlighted = highlighted?.slug === r.slug;
+                    const isHL = highlighted?.slug === r.slug;
                     return (
                       <li key={r.slug}>
                         <button
-                          onMouseDown={(e) => e.preventDefault()} // prevent input blur closing dropdown
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => setHighlighted(r)}
                           style={{
-                            width: "100%", textAlign: "left", padding: "10px 14px",
-                            background: isHighlighted ? "#3A3530" : "none",
-                            border: "none", borderLeft: isHighlighted ? "2px solid #C9B8A8" : "2px solid transparent",
+                            width: "100%", textAlign: "left", padding: "9px 14px",
+                            background: isHL ? "#3A3530" : "none", border: "none",
+                            borderLeft: isHL ? "2px solid #C9B8A8" : "2px solid transparent",
                             color: "#FAF8F5", fontSize: "14px", cursor: "pointer",
                             display: "flex", alignItems: "center", gap: 10, boxSizing: "border-box",
                           }}
                         >
-                          {r.primaryUrl && (
-                            <img src={r.primaryUrl} alt="" style={{ width: 36, height: 36, objectFit: "contain", borderRadius: 2, background: "#2A2723", flexShrink: 0 }} />
-                          )}
+                          {r.primaryUrl && <img src={r.primaryUrl} alt="" style={{ width: 36, height: 36, objectFit: "contain", background: "#2A2723", borderRadius: 2, flexShrink: 0 }} />}
                           <span>{r.name}</span>
-                          {isHighlighted && <span style={{ marginLeft: "auto", color: "#C9B8A8", fontSize: 11 }}>selected</span>}
+                          {isHL && <span style={{ marginLeft: "auto", color: "#C9B8A8", fontSize: 11 }}>✓</span>}
                         </button>
                       </li>
                     );
                   })}
                 </ul>
-
-                {/* Confirm button */}
                 <div style={{ padding: "8px", borderTop: "1px solid #2A2723" }}>
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={confirmSelection}
                     disabled={!highlighted}
                     style={{
-                      width: "100%", padding: "10px", background: highlighted ? "#C9B8A8" : "#2A2723",
-                      border: "none", borderRadius: "2px", color: highlighted ? "#1C1A17" : "#4A4540",
+                      width: "100%", padding: "10px", borderRadius: "2px", border: "none",
+                      background: highlighted ? "#C9B8A8" : "#2A2723",
+                      color: highlighted ? "#1C1A17" : "#4A4540",
                       fontSize: "13px", fontWeight: 600, cursor: highlighted ? "pointer" : "default",
-                      letterSpacing: "0.5px", transition: "background 0.15s",
+                      letterSpacing: "0.5px",
                     }}
                   >
-                    {highlighted ? `Preview "${highlighted.name}" on bottle` : "Select a bottle above"}
+                    {highlighted ? `Preview "${highlighted.name}"` : "Select a bottle above"}
                   </button>
                 </div>
               </div>
             )}
           </div>
-          {imgLoading && <p style={{ color: "#9E8F83", fontSize: 12, marginTop: 6 }}>Loading bottle image…</p>}
+          {imgLoading && <p style={{ color: "#9E8F83", fontSize: 12, marginTop: 6 }}>Loading image…</p>}
           {confirmed && !imgLoading && <p style={{ color: "#C9B8A8", fontSize: 12, marginTop: 6 }}>Showing: {confirmed.name}</p>}
         </div>
 
@@ -339,20 +269,61 @@ function LogoPreviewTool() {
           </label>
         </div>
 
+        {/* Step 3: Size slider */}
+        {logoUrl && productImgUrl && (
+          <div>
+            <p className="text-xs uppercase tracking-widest mb-3" style={{ color: "#C9B8A8" }}>3. Adjust logo size</p>
+            <input
+              type="range" min={10} max={80} value={logoSize}
+              onChange={(e) => setLogoSize(Number(e.target.value))}
+              style={{ width: "100%", accentColor: "#C9B8A8" }}
+            />
+            <p style={{ color: "#9E8F83", fontSize: 11, marginTop: 4 }}>{logoSize}% of bottle width</p>
+          </div>
+        )}
+
         <p className="text-xs" style={{ color: "#4A4540", lineHeight: 1.8 }}>
-          {logoUrl && productImg
+          {logoUrl && productImgUrl
             ? "Logo mapped using cylindrical projection — pixels are warped to follow the curve of the bottle with edge shading. A formal print proof is sent before production."
             : "Select a bottle from your catalogue, then upload your logo to see how it wraps around the surface."}
         </p>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", padding: "16px 0" }}>
-        <canvas
-          ref={canvasRef}
-          width={CW}
-          height={CH}
-          style={{ borderRadius: "4px", backgroundColor: "#1E1C19", maxWidth: "320px", width: "100%", height: "auto" }}
-        />
+      <div style={{ display: "flex", justifyContent: "center", padding: "16px 0", width: "100%" }}>
+        <div style={{ position: "relative", width: "100%", maxWidth: "320px" }}>
+          {productImgUrl ? (
+            <>
+              <img
+                ref={imgRef}
+                src={productImgUrl}
+                alt={confirmed?.name}
+                crossOrigin="anonymous"
+                onLoad={drawLogo}
+                style={{ width: "100%", display: "block", borderRadius: "4px" }}
+              />
+              <canvas
+                ref={canvasRef}
+                style={{
+                  position: "absolute", top: 0, left: 0,
+                  width: "100%", height: "100%",
+                  mixBlendMode: "multiply",
+                  pointerEvents: "none",
+                  borderRadius: "4px",
+                }}
+              />
+            </>
+          ) : (
+            <div style={{
+              background: "#1E1C19", borderRadius: "4px",
+              aspectRatio: "2/3", display: "flex", alignItems: "center",
+              justifyContent: "center", flexDirection: "column", gap: 8,
+            }}>
+              <p style={{ color: "rgba(201,184,168,0.4)", fontSize: 13, textAlign: "center", padding: "0 24px" }}>
+                {imgLoading ? "Loading bottle image…" : "Select a bottle above to preview your logo"}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
