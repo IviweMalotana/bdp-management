@@ -226,12 +226,11 @@ public class CatalogueImportService
                     const decimal markupRate = 0.70m;
                     var landedCostPerUnit = (unitPrice + bufferCNY) * cnyToZar;
                     var basePricePerUnit = landedCostPerUnit * (1 + markupRate);
-                    var quantities = new[] { 10, 50, 100, 250, 500, 1000, 2500, 5000 };
+                    var quantities = new[] { 10, 50, 100, 250, 500, 1000, 2500, 5000, 10000, 25000 };
                     // Volume discount: % off the base unit price at each quantity anchor.
-                    // Larger orders get a lower per-unit price.
                     // Discount ladder capped at 20% so even the deepest tier holds a
                     // ~26.5% gross margin (with the 70% markup, 20% off = 1.36× landed cost).
-                    var discounts   = new[] { 0m, 0.03m, 0.06m, 0.10m, 0.14m, 0.18m, 0.20m, 0.20m };
+                    var discounts   = new[] { 0m, 0.03m, 0.06m, 0.10m, 0.14m, 0.18m, 0.20m, 0.20m, 0.20m, 0.20m };
 
                     for (var i = 0; i < quantities.Length; i++)
                     {
