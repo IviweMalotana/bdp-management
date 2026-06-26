@@ -150,6 +150,13 @@ public class CatalogueImportService
                 product.MetaDescription = ProductSeoGenerator.GenerateMetaDescription(firstRow);
                 product.MetaKeywords = ProductSeoGenerator.GenerateMetaKeywords(firstRow);
 
+                // Weight and dimensions: parse from CSV (estimate if blank), apply buffers
+                product.WeightKg = PackagingMeasurements.ResolveWeightKg(firstRow);
+                var (l, w, h) = PackagingMeasurements.ResolveDimsCm(firstRow);
+                product.LengthCm = l;
+                product.WidthCm  = w;
+                product.HeightCm = h;
+
                 await _db.SaveChangesAsync();
 
                 // ── Auto-assign to collection based on product type ───────────
@@ -464,4 +471,116 @@ public class CatalogueRow
     public string? Image_Drive_Link { get; set; }
     public string? Source_URL { get; set; }
     public string? Date_Added { get; set; }
+    public string? Weight { get; set; }
+    public string? Dimensions { get; set; }
+}
+
+// ── PackagingMeasurements — parses, estimates, and applies shipping buffers ───
+public static class PackagingMeasurements
+{
+    private const decimal WeightBufferG  = 50m;   // grams added to stated weight
+    private const decimal DimBufferCm    = 1m;    // cm added to each L/W/H
+
+    // ── Weight ────────────────────────────────────────────────────────────────
+
+    public static decimal ResolveWeightKg(CatalogueRow row)
+    {
+        var rawG = ParseWeightG(row.Weight);
+        if (rawG == null)
+            rawG = EstimateWeightG(row);
+        return Math.Round((rawG.Value + WeightBufferG) / 1000m, 4);
+    }
+
+    private static decimal? ParseWeightG(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        var lower = s.Trim().ToLowerInvariant();
+        var kg = Regex.Match(lower, @"([\d.]+)\s*kg");
+        if (kg.Success && decimal.TryParse(kg.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var kgVal))
+            return kgVal * 1000m;
+        var g = Regex.Match(lower, @"([\d.]+)\s*g");
+        if (g.Success && decimal.TryParse(g.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var gVal))
+            return gVal;
+        return null;
+    }
+
+    private static decimal EstimateWeightG(CatalogueRow row)
+    {
+        var pt  = (row.Product_Type ?? "").ToLowerInvariant();
+        var sz  = ParseSizeMl(row.Specification_Size);
+
+        if (pt.Contains("vial") || pt.Contains("liquid"))
+            return sz switch { <= 5 => 15, <= 10 => 30, <= 20 => 40, <= 30 => 55, <= 50 => 70, _ => 100 };
+
+        if (pt.Contains("dropper") || pt.Contains("essential oil"))
+            return sz switch { <= 5 => 20, <= 10 => 30, <= 20 => 45, <= 30 => 55, <= 50 => 75, _ => 110 };
+
+        if (pt.Contains("cream") || pt.Contains("jar"))
+            return sz switch { <= 15 => 100, <= 30 => 130, <= 50 => 160, <= 100 => 210, _ => 260 };
+
+        if (pt.Contains("pump") || pt.Contains("lotion"))
+            return sz switch { <= 30 => 120, <= 50 => 150, <= 100 => 200, _ => 240 };
+
+        if (pt.Contains("spray") || pt.Contains("perfume"))
+            return sz switch { <= 10 => 35, <= 20 => 50, <= 30 => 65, <= 50 => 85, _ => 120 };
+
+        return 100m;
+    }
+
+    // ── Dimensions ───────────────────────────────────────────────────────────
+
+    public static (decimal L, decimal W, decimal H) ResolveDimsCm(CatalogueRow row)
+    {
+        var parsed = ParseDims(row.Dimensions);
+        var (l, w, h) = parsed ?? EstimateDims(row);
+        return (l + DimBufferCm, w + DimBufferCm, h + DimBufferCm);
+    }
+
+    private static (decimal, decimal, decimal)? ParseDims(string? s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return null;
+        var m = Regex.Match(s, @"L:([\d.]+)\s*cm\s*x\s*W:([\d.]+)\s*cm\s*x\s*H:([\d.]+)\s*cm", RegexOptions.IgnoreCase);
+        if (!m.Success) return null;
+        return (
+            decimal.Parse(m.Groups[1].Value, CultureInfo.InvariantCulture),
+            decimal.Parse(m.Groups[2].Value, CultureInfo.InvariantCulture),
+            decimal.Parse(m.Groups[3].Value, CultureInfo.InvariantCulture)
+        );
+    }
+
+    private static (decimal, decimal, decimal) EstimateDims(CatalogueRow row)
+    {
+        var pt  = (row.Product_Type ?? "").ToLowerInvariant();
+        var sh  = (row.Shape_Style  ?? "").ToLowerInvariant();
+        var sz  = ParseSizeMl(row.Specification_Size);
+        bool sq = sh.Contains("square");
+
+        if (pt.Contains("pump") || pt.Contains("lotion"))
+            return sq
+                ? sz switch { <= 30 => (5.0m,5.0m,14.0m), <= 50 => (5.5m,5.5m,16.0m), <= 100 => (6.0m,6.0m,19.0m), _ => (6.0m,6.0m,21.0m) }
+                : sz switch { <= 30 => (4.5m,4.5m,14.0m), <= 50 => (5.0m,5.0m,16.0m), <= 100 => (5.5m,5.5m,19.0m), _ => (5.5m,5.5m,21.0m) };
+
+        if (pt.Contains("spray") || pt.Contains("perfume"))
+            return sq
+                ? sz switch { <= 10 => (3.0m,3.0m,9.5m), <= 15 => (3.0m,3.0m,11.0m), <= 20 => (3.5m,3.5m,12.0m), <= 30 => (4.0m,4.0m,13.5m), _ => (4.5m,4.5m,16.0m) }
+                : sz switch { <= 10 => (3.0m,3.0m,9.5m), <= 20 => (3.5m,3.5m,12.5m), <= 30 => (4.0m,4.0m,14.0m), _ => (4.5m,4.5m,17.0m) };
+
+        if (pt.Contains("vial") || pt.Contains("liquid"))
+            return sz switch { <= 2 => (1.5m,1.5m,4.0m), <= 5 => (2.0m,2.0m,6.0m), <= 10 => (2.5m,2.5m,9.0m), <= 20 => (3.0m,3.0m,12.0m), <= 30 => (3.5m,3.5m,14.0m), <= 50 => (4.0m,4.0m,17.0m), _ => (5.0m,5.0m,22.0m) };
+
+        if (pt.Contains("dropper") || pt.Contains("essential oil"))
+            return sz switch { <= 5 => (2.2m,2.2m,7.0m), <= 10 => (2.5m,2.5m,9.0m), <= 15 => (2.8m,2.8m,11.0m), <= 20 => (3.0m,3.0m,12.5m), <= 30 => (3.2m,3.2m,14.0m), <= 50 => (3.8m,3.8m,17.5m), _ => (4.5m,4.5m,22.0m) };
+
+        // cream jar / general jar
+        return sq
+            ? sz switch { <= 20 => (5.0m,5.0m,4.5m), <= 30 => (5.5m,5.5m,5.0m), <= 50 => (6.5m,6.5m,5.5m), _ => (8.0m,8.0m,6.5m) }
+            : sz switch { <= 5 => (4.0m,4.0m,3.0m), <= 15 => (5.5m,5.5m,4.0m), <= 20 => (5.5m,5.5m,4.5m), <= 30 => (6.5m,6.5m,5.0m), <= 50 => (7.5m,7.5m,5.5m), <= 100 => (9.0m,9.0m,6.5m), _ => (10.0m,10.0m,7.5m) };
+    }
+
+    private static decimal ParseSizeMl(string? spec)
+    {
+        if (string.IsNullOrWhiteSpace(spec)) return 30m;
+        var m = Regex.Match(spec.Trim(), @"([\d.]+)\s*(?:ml|g)", RegexOptions.IgnoreCase);
+        return m.Success && decimal.TryParse(m.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) ? v : 30m;
+    }
 }
