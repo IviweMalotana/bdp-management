@@ -1,4 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Cosmetic Packaging Collections South Africa | Bottles, Jars & Droppers",
+  description:
+    "Browse cosmetic packaging by type — dropper bottles, cream jars, pump bottles, serum droppers and sprays. Wholesale in South Africa from 10 units.",
+  alternates: { canonical: "/collections" },
+};
 
 async function getCollections() {
   try {
