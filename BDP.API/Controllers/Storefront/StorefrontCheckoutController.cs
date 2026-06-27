@@ -116,36 +116,20 @@ public class StorefrontCheckoutController : ControllerBase
             var moq = tiers.First().Quantity;
             if (item.Quantity < moq) return BadRequest($"Quantity {item.Quantity} is below MOQ of {moq} for variant {item.ProductVariantId}.");
 
+            // Keep a representative tier for the OrderItem FK, but price via the SAME
+            // interpolation the storefront quote uses so charged == shown for any qty
+            // (the old floor-tier price diverged from the cart for non-anchor quantities).
             var tier = tiers.LastOrDefault(t => t.Quantity <= item.Quantity) ?? tiers.First();
-            var unitPrice = tier.Quantity > 0 ? tier.SalePriceZAR / tier.Quantity : 0m;
-            var lineTotal = unitPrice * item.Quantity;
+            var unitPrice = PricingService.InterpolateTierPrice(tiers, item.Quantity);
+            var lineTotal = Math.Round(unitPrice * item.Quantity, 2);
             subtotal += lineTotal;
 
-            // Compute customisation cost server-side (same logic as StorefrontPricingController)
-            decimal customisationCost = 0;
-            if (item.CustomisationOption != null)
-            {
-                var setting = customSettings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type);
-                if (setting != null)
-                {
-                    var customMoq = item.CustomisationOption.MinimumQuantity ?? setting.DefaultMinimumQuantity;
-                    if (item.Quantity >= customMoq)
-                    {
-                        decimal customUnitPrice;
-                        if (setting.Type == "ColourChange")
-                        {
-                            customUnitPrice = setting.PricePerUnitZAR;
-                        }
-                        else
-                        {
-                            var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
-                            var markup = PricingService.InterpolateMarkup(item.Quantity);
-                            customUnitPrice = Math.Round(costZAR * (1 + markup / 100m), 4);
-                        }
-                        customisationCost = Math.Round(customUnitPrice * item.Quantity, 2);
-                    }
-                }
-            }
+            // Customisation cost — shared calc so checkout == cart == quote == order.
+            var coSetting = item.CustomisationOption != null
+                ? customSettings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type)
+                : null;
+            decimal customisationCost = PricingService.ComputeCustomisationCostZAR(
+                item.CustomisationOption, coSetting, item.Quantity, rate);
             subtotal += customisationCost;
 
             orderItems.Add(new OrderItem
@@ -160,21 +144,19 @@ public class StorefrontCheckoutController : ControllerBase
             });
         }
 
+        var units = cart.Items.Sum(i => i.Quantity);
         var totalWeight = cart.Items.Sum(i => {
             var v = i.ProductVariant; var p = v.Product;
             return (v.WeightKg > 0 ? v.WeightKg : p.WeightKg) * i.Quantity;
         });
-        var totalVolume = cart.Items.Sum(i => {
-            var v = i.ProductVariant; var p = v.Product;
-            var l = v.LengthCm > 0 ? v.LengthCm : p.LengthCm;
-            var w = v.WidthCm  > 0 ? v.WidthCm  : p.WidthCm;
-            var h = v.HeightCm > 0 ? v.HeightCm : p.HeightCm;
-            return ShippingCalculator.ComputeVolumeCBM(l, w, h) * i.Quantity;
-        });
-        // If client provided a shipping option price, use it; otherwise fall back to calculator
-        var shippingZAR = req.ShippingPriceZAR.HasValue && req.ShippingPriceZAR.Value > 0
-            ? req.ShippingPriceZAR.Value
-            : await _shipping.CalculateAsync(totalWeight, totalVolume, cart.Items.Sum(i => i.Quantity));
+
+        // Authoritative shipping: re-quote the SAME source the customer saw in step 2
+        // (YunExpress rates + configured markup) and charge the service they selected.
+        // We never fall back to the CBM ShippingCalculator here — that produced a wildly
+        // different (much higher) figure the customer never agreed to, which charged
+        // buyers far above the review total. See ResolveSelectedShippingZAR.
+        var shippingZAR = await ResolveSelectedShippingZAR(
+            req.ShippingAddress.Country, units, req.ShippingServiceCode, req.ShippingPriceZAR);
 
         // What the shipment actually costs us: re-quote the SAME service at the real
         // product weight (totalWeight). The customer is charged at the inflated billing
@@ -244,6 +226,48 @@ public class StorefrontCheckoutController : ControllerBase
             paystackPublicKey = _config["Paystack:PublicKey"],
             amountZAR = totalZAR
         });
+    }
+
+    // Resolve the shipping price authoritatively from the SAME source shown to the
+    // customer in step 2: YunExpress live rates for this destination/billing-weight,
+    // plus the configured retail markup, keyed by the service the customer selected.
+    // This guarantees the charged shipping equals one of the prices we displayed.
+    // If the carrier can't be reached we charge exactly what we showed the customer
+    // (the client-supplied price) — never the divergent CBM calculator.
+    private async Task<decimal> ResolveSelectedShippingZAR(
+        string country, int units, string? serviceCode, decimal? clientShownPrice)
+    {
+        try
+        {
+            // Same billing-weight basis the options endpoint uses (250 g / unit).
+            var weightGrams = Math.Max(1, units * (int)Math.Round(ShippingCalculator.FixedUnitWeightKg * 1000));
+            var rates = await _yunExpress.GetRatesAsync(country, weightGrams);
+
+            decimal markupPct = 40m;
+            try
+            {
+                var settings = await _db.ShippingSettings.FindAsync(1);
+                markupPct = settings?.ShippingMarkupPercent ?? 40m;
+            }
+            catch { /* settings/migration missing — use default 40% */ }
+
+            foreach (var r in rates)
+                r.PriceZAR = Math.Round(r.PriceZAR * (1 + markupPct / 100m), 2);
+
+            // Prefer the exact service the customer chose (authoritative, tamper-proof).
+            if (!string.IsNullOrWhiteSpace(serviceCode))
+            {
+                var match = rates.FirstOrDefault(r => r.Code == serviceCode);
+                if (match != null) return match.PriceZAR;
+            }
+            // No code, or it no longer quotes: use the price we showed, else cheapest quote.
+            if (clientShownPrice is > 0) return clientShownPrice.Value;
+            if (rates.Count > 0) return rates.OrderBy(r => r.PriceZAR).First().PriceZAR;
+        }
+        catch { /* carrier unreachable — fall through to the shown price */ }
+
+        // Last resort: charge exactly what we showed the customer; never the CBM calculator.
+        return clientShownPrice is > 0 ? clientShownPrice.Value : 0m;
     }
 
     // Our true shipping cost: the SAME service code re-quoted at the real product

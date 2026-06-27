@@ -1,4 +1,5 @@
 using BDP.API.DTOs.Products;
+using BDP.API.Models;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
@@ -38,6 +39,60 @@ public class PricingService
             }
         }
         return MarkupAnchors[^1].Markup;
+    }
+
+    // Linear interpolation of sale price PER UNIT between the two surrounding anchor
+    // tiers. Shared by the storefront quote AND checkout so the price we charge always
+    // equals the price we showed — no more floor-tier vs interpolated divergence.
+    public static decimal InterpolateTierPrice(List<ProductPricingTier> tiers, int qty)
+    {
+        if (tiers.Count == 0) return 0m;
+        var ordered = tiers.OrderBy(t => t.Quantity).ToList();
+        var first = ordered[0];
+        var last = ordered[^1];
+        if (qty <= first.Quantity)
+            return first.Quantity > 0 ? first.SalePriceZAR / first.Quantity : 0m;
+        if (qty >= last.Quantity)
+            return last.Quantity > 0 ? last.SalePriceZAR / last.Quantity : 0m;
+
+        for (int i = 0; i < ordered.Count - 1; i++)
+        {
+            var lower = ordered[i];
+            var upper = ordered[i + 1];
+            if (qty >= lower.Quantity && qty <= upper.Quantity)
+            {
+                var t = (decimal)(qty - lower.Quantity) / (upper.Quantity - lower.Quantity);
+                var lowerPrice = lower.SalePriceZAR / lower.Quantity;
+                var upperPrice = upper.SalePriceZAR / upper.Quantity;
+                return Math.Round(lowerPrice + (upperPrice - lowerPrice) * t, 4);
+            }
+        }
+        return last.Quantity > 0 ? last.SalePriceZAR / last.Quantity : 0m;
+    }
+
+    // Customisation surcharge for a line — shared by the quote, cart and checkout so the
+    // add-on price shown always equals the price charged. Returns 0 below the option's
+    // minimum quantity. ColourChange is a flat per-unit fee; printing types are
+    // cost x interpolated markup.
+    public static decimal ComputeCustomisationCostZAR(
+        CustomisationOption? option, CustomisationSetting? setting, int quantity, decimal rate)
+    {
+        if (option == null || setting == null) return 0m;
+        var customMoq = option.MinimumQuantity ?? setting.DefaultMinimumQuantity;
+        if (quantity < customMoq) return 0m;
+
+        decimal unit;
+        if (setting.Type == "ColourChange")
+        {
+            unit = setting.PricePerUnitZAR;
+        }
+        else
+        {
+            var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
+            var markup = InterpolateMarkup(quantity);
+            unit = Math.Round(costZAR * (1 + markup / 100m), 4);
+        }
+        return Math.Round(unit * quantity, 2);
     }
 
     private static readonly Dictionary<int, decimal> MarkupTable = MarkupAnchors

@@ -62,37 +62,14 @@ public class StorefrontPricingController : ControllerBase
             if (!moqMet) allMoqsMet = false;
 
             // Interpolate unit price between the two surrounding anchor tiers
-            decimal unitPrice = InterpolateTierPrice(tiers, line.Quantity);
+            decimal unitPrice = PricingService.InterpolateTierPrice(tiers, line.Quantity);
             var lineTotal = Math.Round(unitPrice * line.Quantity, 2);
 
-            decimal customCost = 0;
-            if (line.CustomisationOptionId.HasValue)
-            {
-                var co = customOptions.FirstOrDefault(c => c.Id == line.CustomisationOptionId.Value);
-                if (co != null)
-                {
-                    var setting = customSettings.FirstOrDefault(s => s.Type == co.Type);
-                    if (setting != null)
-                    {
-                        var customMoq = co.MinimumQuantity ?? setting.DefaultMinimumQuantity;
-                        if (line.Quantity >= customMoq)
-                        {
-                            decimal customUnitPrice;
-                            if (setting.Type == "ColourChange")
-                            {
-                                customUnitPrice = setting.PricePerUnitZAR; // flat fee (R1.25)
-                            }
-                            else
-                            {
-                                var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
-                                var markup = PricingService.InterpolateMarkup(line.Quantity);
-                                customUnitPrice = Math.Round(costZAR * (1 + markup / 100m), 4);
-                            }
-                            customCost = Math.Round(customUnitPrice * line.Quantity, 2);
-                        }
-                    }
-                }
-            }
+            var co = line.CustomisationOptionId.HasValue
+                ? customOptions.FirstOrDefault(c => c.Id == line.CustomisationOptionId.Value)
+                : null;
+            var coSetting = co != null ? customSettings.FirstOrDefault(s => s.Type == co.Type) : null;
+            decimal customCost = PricingService.ComputeCustomisationCostZAR(co, coSetting, line.Quantity, rate);
 
             subtotal += lineTotal + customCost;
 
@@ -109,29 +86,5 @@ public class StorefrontPricingController : ControllerBase
         }
 
         return Ok(new { lines = resultLines, subtotalZAR = subtotal, allMoqsMet });
-    }
-
-    // Linear interpolation of sale price per unit between the two surrounding anchor tiers
-    private static decimal InterpolateTierPrice(List<Models.ProductPricingTier> tiers, int qty)
-    {
-        if (qty <= tiers.First().Quantity)
-            return tiers.First().SalePriceZAR / tiers.First().Quantity;
-        if (qty >= tiers.Last().Quantity)
-            return tiers.Last().SalePriceZAR / tiers.Last().Quantity;
-
-        for (int i = 0; i < tiers.Count - 1; i++)
-        {
-            var lower = tiers[i];
-            var upper = tiers[i + 1];
-            if (qty >= lower.Quantity && qty <= upper.Quantity)
-            {
-                var t = (decimal)(qty - lower.Quantity) / (upper.Quantity - lower.Quantity);
-                var lowerPrice = lower.SalePriceZAR / lower.Quantity;
-                var upperPrice = upper.SalePriceZAR / upper.Quantity;
-                return Math.Round(lowerPrice + (upperPrice - lowerPrice) * t, 4);
-            }
-        }
-
-        return tiers.Last().SalePriceZAR / tiers.Last().Quantity;
     }
 }

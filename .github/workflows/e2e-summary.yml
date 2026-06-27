@@ -1,0 +1,44 @@
+name: E2E results summary
+
+# Regenerate qa/e2e-claude-chrome/SUMMARY.md whenever a session report lands
+# in the results/ folder. Commits the refreshed summary back to the branch.
+
+on:
+  push:
+    paths:
+      - 'qa/e2e-claude-chrome/results/**.md'
+      - 'qa/e2e-claude-chrome/aggregate.py'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: e2e-summary-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Aggregate reports
+        working-directory: qa/e2e-claude-chrome
+        run: python3 aggregate.py results/
+
+      - name: Commit SUMMARY.md if it changed
+        run: |
+          if git diff --quiet -- qa/e2e-claude-chrome/SUMMARY.md; then
+            echo "SUMMARY.md unchanged — nothing to commit."
+            exit 0
+          fi
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add qa/e2e-claude-chrome/SUMMARY.md
+          git commit -m "chore(e2e): regenerate SUMMARY.md [skip ci]"
+          git push

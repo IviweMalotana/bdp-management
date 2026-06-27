@@ -255,8 +255,11 @@ export interface ShippingOption {
   icon: "air" | "sea";
 }
 
-export function getShippingOptions(country: string, weightGrams: number): Promise<ShippingOption[]> {
-  return request(`/api/storefront/shipping/options?country=${encodeURIComponent(country)}&weightGrams=${Math.max(1, Math.round(weightGrams))}`);
+// Quote by units (not raw weight) so the storefront and checkout use the identical
+// 250 g/unit billing-weight basis the API applies server-side — keeps the price the
+// customer is shown equal to the price they are charged.
+export function getShippingOptions(country: string, units: number): Promise<ShippingOption[]> {
+  return request(`/api/storefront/shipping/options?country=${encodeURIComponent(country)}&units=${Math.max(1, Math.round(units))}`);
 }
 
 export function trackOrder(orderNumber: string, email: string) {

@@ -40,11 +40,26 @@ const addressSchema = z.object({
   country: z.string().min(2),
 });
 
+// Billing collects fewer fields than shipping (the billing UI has no phone/country),
+// so those are optional here. With the full addressSchema, unchecking "same as billing"
+// made the form impossible to submit — phone/country could never be filled, and the
+// validation error sat on un-rendered fields, so nothing happened on Continue.
+const billingSchema = z.object({
+  recipientName: z.string().min(2, "Recipient name is required"),
+  line1: z.string().min(5, "Address is required"),
+  line2: z.string().optional(),
+  city: z.string().min(2, "City is required"),
+  province: z.string().min(1, "Province / state is required"),
+  postalCode: z.string().min(4, "Postal code is required"),
+  phone: z.string().optional(),
+  country: z.string().optional(),
+});
+
 const step1Schema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
   shipping: addressSchema,
   sameAsBilling: z.boolean(),
-  billing: addressSchema.optional(),
+  billing: billingSchema.optional(),
 });
 
 type Step1Data = z.infer<typeof step1Schema>;
@@ -248,7 +263,6 @@ export default function CheckoutPage() {
 
   const subtotal = items.reduce((s, i) => s + i.lineTotalZAR, 0);
   const totalUnits = items.reduce((s, i) => s + i.quantity, 0);
-  const totalWeightGrams = items.reduce((s, i) => s + (i.weightKg ?? 0.08) * i.quantity * 1000, 0);
 
   const { register, handleSubmit, watch, formState: { errors } } = useForm<Step1Data>({
     resolver: zodResolver(step1Schema),
@@ -257,13 +271,22 @@ export default function CheckoutPage() {
 
   const sameAsBilling = watch("sameAsBilling");
   const shippingCountry = watch("shipping.country");
+  const [formError, setFormError] = useState<string | null>(null);
+
+  // Called when the step-1 form fails validation. Surfaces a banner and scrolls to the
+  // top so the user always gets feedback instead of the Continue button appearing to do
+  // nothing (the inline error could otherwise sit off-screen below the fold).
+  function onStep1Invalid() {
+    setFormError("Please complete all required fields highlighted below.");
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function loadShippingOptions(country: string) {
     setShippingLoading(true);
     setShippingError(null);
     setSelectedOption(null);
     try {
-      const options = await getShippingOptions(apiCountryCode(country), Math.max(1, Math.round(totalWeightGrams)));
+      const options = await getShippingOptions(apiCountryCode(country), totalUnits);
       setShippingOptions(options);
     } catch {
       setShippingError("Could not load shipping options. Please try again.");
@@ -274,6 +297,7 @@ export default function CheckoutPage() {
   }
 
   async function onStep1Submit(data: Step1Data) {
+    setFormError(null);
     setStep1Data(data);
     await loadShippingOptions(data.shipping.country);
     setStep(2);
@@ -363,8 +387,14 @@ export default function CheckoutPage() {
 
       {/* Step 1 — Contact & address */}
       {step === 1 && (
-        <form onSubmit={handleSubmit(onStep1Submit)} className="space-y-6">
+        <form onSubmit={handleSubmit(onStep1Submit, onStep1Invalid)} className="space-y-6">
           <h2 className="text-2xl" style={{ fontFamily: "var(--font-display)", fontWeight: 300, color: "#1C1A17" }}>Contact & address</h2>
+
+          {formError && (
+            <div className="text-sm px-3 py-2.5 border" style={{ borderColor: "#D4A89A", color: "#D4A89A", borderRadius: "2px", backgroundColor: "#FAF8F5" }}>
+              {formError}
+            </div>
+          )}
 
           <InputField label="Email" type="email" required {...register("email")} error={errors.email?.message} />
 

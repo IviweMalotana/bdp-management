@@ -1,5 +1,6 @@
 using BDP.API.Data;
 using BDP.API.Models;
+using BDP.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -11,8 +12,13 @@ namespace BDP.API.Controllers.Storefront;
 public class StorefrontCartController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly PricingService _pricing;
 
-    public StorefrontCartController(AppDbContext db) => _db = db;
+    public StorefrontCartController(AppDbContext db, PricingService pricing)
+    {
+        _db = db;
+        _pricing = pricing;
+    }
 
     private string? GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 
@@ -47,7 +53,18 @@ public class StorefrontCartController : ControllerBase
         return cart;
     }
 
-    private object SerialiseCart(Cart cart)
+    // Loads the customisation settings + live rate, then serialises the cart so the
+    // line totals it returns already include the customisation surcharge (the cart and
+    // checkout sum lineTotalZAR — omitting it here under-charged the displayed total
+    // while the order added it back, so buyers saw less than they were charged).
+    private async Task<object> SerialiseCartAsync(Cart cart)
+    {
+        var settings = await _db.CustomisationSettings.ToListAsync();
+        var rate = await _pricing.GetLiveExchangeRate();
+        return SerialiseCart(cart, settings, rate);
+    }
+
+    private object SerialiseCart(Cart cart, List<CustomisationSetting> settings, decimal rate)
     {
         return new
         {
@@ -56,8 +73,16 @@ public class StorefrontCartController : ControllerBase
             items = cart.Items.Select(item =>
             {
                 var tiers = item.ProductVariant.PricingTiers.OrderBy(t => t.Quantity).ToList();
-                var tier = tiers.LastOrDefault(t => t.Quantity <= item.Quantity) ?? tiers.FirstOrDefault();
-                var unitPrice = tier != null && tier.Quantity > 0 ? tier.SalePriceZAR / tier.Quantity : 0m;
+                // Interpolated unit price — matches the quote/PDP/checkout for any qty.
+                var unitPrice = PricingService.InterpolateTierPrice(tiers, item.Quantity);
+                var bottleTotal = Math.Round(unitPrice * item.Quantity, 2);
+
+                var setting = item.CustomisationOption != null
+                    ? settings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type)
+                    : null;
+                var customisationCost = PricingService.ComputeCustomisationCostZAR(
+                    item.CustomisationOption, setting, item.Quantity, rate);
+
                 var imageUrl = item.ProductVariant.Product?.Images
                     .OrderBy(i => i.SortOrder).FirstOrDefault()?.Url;
                 return new
@@ -76,7 +101,8 @@ public class StorefrontCartController : ControllerBase
                     item.CustomisationOptionId,
                     item.CustomisationNotes,
                     unitPriceZAR = unitPrice,
-                    lineTotalZAR = unitPrice * item.Quantity,
+                    customisationCostZAR = customisationCost,
+                    lineTotalZAR = bottleTotal + customisationCost,
                     weightKg = (double?)(item.ProductVariant.WeightKg > 0
                         ? item.ProductVariant.WeightKg
                         : item.ProductVariant.Product?.WeightKg)
@@ -94,7 +120,7 @@ public class StorefrontCartController : ControllerBase
         var cart = ResolveCart(userId, sessionToken) ?? CreateCart(userId, sessionToken);
         await _db.SaveChangesAsync();
 
-        return Ok(SerialiseCart(cart));
+        return Ok(await SerialiseCartAsync(cart));
     }
 
     public record AddItemRequest(int VariantId, int Quantity, int? CustomisationOptionId, string? CustomisationNotes);
@@ -128,7 +154,7 @@ public class StorefrontCartController : ControllerBase
 
         // reload with pricing data
         var fresh = ResolveCart(userId, cart.SessionToken)!;
-        return Ok(SerialiseCart(fresh));
+        return Ok(await SerialiseCartAsync(fresh));
     }
 
     public record UpdateQuantityRequest(int Quantity);
@@ -154,7 +180,7 @@ public class StorefrontCartController : ControllerBase
         await _db.SaveChangesAsync();
 
         var fresh = ResolveCart(userId, cart.SessionToken)!;
-        return Ok(SerialiseCart(fresh));
+        return Ok(await SerialiseCartAsync(fresh));
     }
 
     [HttpDelete("items/{id:int}")]
@@ -174,7 +200,7 @@ public class StorefrontCartController : ControllerBase
         await _db.SaveChangesAsync();
 
         var fresh = ResolveCart(userId, cart.SessionToken)!;
-        return Ok(SerialiseCart(fresh));
+        return Ok(await SerialiseCartAsync(fresh));
     }
 
     public record MergeRequest(string GuestSessionToken);
