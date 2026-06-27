@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "./layout";
+import { POSTS } from "./blog/posts";
 
 const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5252";
 
@@ -26,7 +27,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/finder`, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${SITE_URL}/contact`, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}/blog`, changeFrequency: "weekly", priority: 0.6 },
   ];
+
+  const blogRoutes: MetadataRoute.Sitemap = POSTS.map((p) => ({
+    url: `${SITE_URL}/blog/${p.slug}`,
+    lastModified: p.date,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  }));
 
   const productsData = await fetchJson<{ items?: { slug?: string }[] }>(
     "/api/storefront/products?pageSize=1000",
@@ -48,5 +57,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     }));
 
-  return [...staticRoutes, ...productRoutes, ...collectionRoutes];
+  return [...staticRoutes, ...blogRoutes, ...productRoutes, ...collectionRoutes];
 }

@@ -43,6 +43,7 @@ export default function Header() {
     { href: "/customise", label: "Customise" },
     { href: "/for-business", label: "For Business" },
     { href: "/about", label: "About" },
+    { href: "/blog", label: "Blog" },
     { href: "/contact", label: "Contact" },
     { href: "/track", label: "Track Order" },
   ];
