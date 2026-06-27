@@ -62,7 +62,7 @@ public class StorefrontPricingController : ControllerBase
             if (!moqMet) allMoqsMet = false;
 
             // Interpolate unit price between the two surrounding anchor tiers
-            decimal unitPrice = InterpolateTierPrice(tiers, line.Quantity);
+            decimal unitPrice = PricingService.InterpolateTierPrice(tiers, line.Quantity);
             var lineTotal = Math.Round(unitPrice * line.Quantity, 2);
 
             decimal customCost = 0;
@@ -109,29 +109,5 @@ public class StorefrontPricingController : ControllerBase
         }
 
         return Ok(new { lines = resultLines, subtotalZAR = subtotal, allMoqsMet });
-    }
-
-    // Linear interpolation of sale price per unit between the two surrounding anchor tiers
-    private static decimal InterpolateTierPrice(List<Models.ProductPricingTier> tiers, int qty)
-    {
-        if (qty <= tiers.First().Quantity)
-            return tiers.First().SalePriceZAR / tiers.First().Quantity;
-        if (qty >= tiers.Last().Quantity)
-            return tiers.Last().SalePriceZAR / tiers.Last().Quantity;
-
-        for (int i = 0; i < tiers.Count - 1; i++)
-        {
-            var lower = tiers[i];
-            var upper = tiers[i + 1];
-            if (qty >= lower.Quantity && qty <= upper.Quantity)
-            {
-                var t = (decimal)(qty - lower.Quantity) / (upper.Quantity - lower.Quantity);
-                var lowerPrice = lower.SalePriceZAR / lower.Quantity;
-                var upperPrice = upper.SalePriceZAR / upper.Quantity;
-                return Math.Round(lowerPrice + (upperPrice - lowerPrice) * t, 4);
-            }
-        }
-
-        return tiers.Last().SalePriceZAR / tiers.Last().Quantity;
     }
 }

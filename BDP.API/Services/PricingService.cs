@@ -1,4 +1,5 @@
 using BDP.API.DTOs.Products;
+using BDP.API.Models;
 using Microsoft.Extensions.Caching.Memory;
 using System.Text.Json;
 
@@ -38,6 +39,35 @@ public class PricingService
             }
         }
         return MarkupAnchors[^1].Markup;
+    }
+
+    // Linear interpolation of sale price PER UNIT between the two surrounding anchor
+    // tiers. Shared by the storefront quote AND checkout so the price we charge always
+    // equals the price we showed — no more floor-tier vs interpolated divergence.
+    public static decimal InterpolateTierPrice(List<ProductPricingTier> tiers, int qty)
+    {
+        if (tiers.Count == 0) return 0m;
+        var ordered = tiers.OrderBy(t => t.Quantity).ToList();
+        var first = ordered[0];
+        var last = ordered[^1];
+        if (qty <= first.Quantity)
+            return first.Quantity > 0 ? first.SalePriceZAR / first.Quantity : 0m;
+        if (qty >= last.Quantity)
+            return last.Quantity > 0 ? last.SalePriceZAR / last.Quantity : 0m;
+
+        for (int i = 0; i < ordered.Count - 1; i++)
+        {
+            var lower = ordered[i];
+            var upper = ordered[i + 1];
+            if (qty >= lower.Quantity && qty <= upper.Quantity)
+            {
+                var t = (decimal)(qty - lower.Quantity) / (upper.Quantity - lower.Quantity);
+                var lowerPrice = lower.SalePriceZAR / lower.Quantity;
+                var upperPrice = upper.SalePriceZAR / upper.Quantity;
+                return Math.Round(lowerPrice + (upperPrice - lowerPrice) * t, 4);
+            }
+        }
+        return last.Quantity > 0 ? last.SalePriceZAR / last.Quantity : 0m;
     }
 
     private static readonly Dictionary<int, decimal> MarkupTable = MarkupAnchors
