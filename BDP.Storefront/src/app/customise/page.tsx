@@ -34,6 +34,14 @@ interface ProductHit { slug: string; name: string; primaryUrl?: string }
 
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const logoImgRef = useRef<HTMLImageElement | null>(null);
+  const [logoReady, setLogoReady] = useState(false);
+
+  // Logo placement on the bottle, as fractions of the displayed photo
+  const [scale, setScale] = useState(0.55);  // logo width ÷ bottle width
+  const [posX, setPosX] = useState(0.5);      // horizontal centre
+  const [posY, setPosY] = useState(0.54);     // vertical centre
+  const [inkMode, setInkMode] = useState<"dark" | "light">("dark");
 
   // Picker state
   const [query, setQuery] = useState("");
@@ -116,6 +124,15 @@ function LogoPreviewTool() {
     setLogoUrl(URL.createObjectURL(f));
   }
 
+  // Decode the logo once when it changes; the redraw is triggered by `logoReady`.
+  useEffect(() => {
+    if (!logoUrl) { logoImgRef.current = null; setLogoReady(false); return; }
+    setLogoReady(false);
+    const img = new window.Image();
+    img.onload = () => { logoImgRef.current = img; setLogoReady(true); };
+    img.src = logoUrl;
+  }, [logoUrl]);
+
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -143,74 +160,84 @@ function LogoPreviewTool() {
     const dy = (CH - dh) / 2;
     ctx.drawImage(productImg, dx, dy, dw, dh);
 
-    // Label area in pixels
-    const lx = dx + LABEL_FRAC[0] * dw;
-    const ly = dy + LABEL_FRAC[1] * dh;
-    const lw = LABEL_FRAC[2] * dw;
-    const lh = LABEL_FRAC[3] * dh;
+    // Default label box — used only for the empty-state hint
+    const baseLx = dx + LABEL_FRAC[0] * dw;
+    const baseLy = dy + LABEL_FRAC[1] * dh;
+    const baseLw = LABEL_FRAC[2] * dw;
+    const baseLh = LABEL_FRAC[3] * dh;
 
-    if (!logoUrl) {
+    const logoImg = logoImgRef.current;
+    if (!logoUrl || !logoImg) {
       ctx.save();
       ctx.strokeStyle = "rgba(255,255,255,0.28)";
       ctx.setLineDash([5, 5]);
-      ctx.strokeRect(lx + 8, ly + 8, lw - 16, lh - 16);
+      ctx.strokeRect(baseLx + 8, baseLy + 8, baseLw - 16, baseLh - 16);
       ctx.fillStyle = "rgba(255,255,255,0.28)";
       ctx.font = "10px sans-serif";
       ctx.textAlign = "center";
-      ctx.fillText("UPLOAD LOGO", lx + lw / 2, ly + lh / 2);
+      ctx.fillText("UPLOAD LOGO", baseLx + baseLw / 2, baseLy + baseLh / 2);
       ctx.restore();
       return;
     }
 
-    // Cylindrical warp
-    const tmp = document.createElement("canvas");
-    tmp.width = logoUrl ? 1 : 1; // ensure not zero
-    const logoImg = new window.Image();
-    logoImg.onload = () => {
-      ctx.drawImage(productImg, dx, dy, dw, dh); // redraw clean
+    // ── Read the logo's pixels ───────────────────────────────────────────────
+    const sw = logoImg.naturalWidth, sh = logoImg.naturalHeight;
+    const t2 = document.createElement("canvas");
+    t2.width = sw; t2.height = sh;
+    const tc = t2.getContext("2d")!;
+    tc.drawImage(logoImg, 0, 0);
+    const src = tc.getImageData(0, 0, sw, sh);
 
-      const t2 = document.createElement("canvas");
-      t2.width = logoImg.naturalWidth; t2.height = logoImg.naturalHeight;
-      const tc = t2.getContext("2d")!;
-      tc.drawImage(logoImg, 0, 0);
-      const src = tc.getImageData(0, 0, t2.width, t2.height);
+    // ── Label box: keep the logo's aspect ratio; size + place with the sliders ─
+    const lw = Math.max(8, scale * dw);
+    const lh = lw * (sh / sw);
+    const lx = dx + posX * dw - lw / 2;
+    const ly = dy + posY * dh - lh / 2;
 
-      const wc = document.createElement("canvas");
-      wc.width = Math.ceil(lw); wc.height = Math.ceil(lh);
-      const wctx = wc.getContext("2d")!;
-      const dst = wctx.createImageData(wc.width, wc.height);
-      const sw = t2.width, sh = t2.height;
+    // ── Warp onto a partial cylinder (the "wrap") ────────────────────────────
+    const ARC = (150 * Math.PI) / 180;     // visible wrap angle (~150°)
+    const halfArc = ARC / 2;
+    const sinHalf = Math.sin(halfArc);
+    const W = Math.max(1, Math.ceil(lw));
+    const H = Math.max(1, Math.ceil(lh));
+    const wc = document.createElement("canvas");
+    wc.width = W; wc.height = H;
+    const wctx = wc.getContext("2d")!;
+    const dst = wctx.createImageData(W, H);
 
-      for (let oy = 0; oy < wc.height; oy++) {
-        for (let ox = 0; ox < wc.width; ox++) {
-          const t = (2 * ox) / wc.width - 1;
-          if (t <= -0.999 || t >= 0.999) continue;
-          const sx = Math.round(((Math.PI - Math.acos(t)) / Math.PI) * sw);
-          const sy = Math.round((oy / wc.height) * sh);
-          if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
-          const si = (sy * sw + sx) * 4, di = (oy * wc.width + ox) * 4;
-          dst.data[di] = src.data[si]; dst.data[di+1] = src.data[si+1];
-          dst.data[di+2] = src.data[si+2]; dst.data[di+3] = src.data[si+3];
-        }
+    for (let oy = 0; oy < H; oy++) {
+      const sy = Math.round((oy / (H - 1 || 1)) * (sh - 1));
+      for (let ox = 0; ox < W; ox++) {
+        const u = (2 * ox) / (W - 1 || 1) - 1;                 // -1..1 across box
+        const theta = Math.asin(Math.max(-1, Math.min(1, u * sinHalf)));
+        const texU = theta / halfArc * 0.5 + 0.5;              // 0..1 into logo
+        const sx = Math.round(texU * (sw - 1));
+        if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
+        const si = (sy * sw + sx) * 4;
+        const a = src.data[si + 3];
+        if (a === 0) continue;                                  // skip transparency
+        const shade = 0.6 + 0.4 * Math.cos(theta);             // dim toward edges
+        const di = (oy * W + ox) * 4;
+        dst.data[di]     = src.data[si]     * shade;
+        dst.data[di + 1] = src.data[si + 1] * shade;
+        dst.data[di + 2] = src.data[si + 2] * shade;
+        dst.data[di + 3] = a;
       }
-      wctx.putImageData(dst, 0, 0);
+    }
+    wctx.putImageData(dst, 0, 0);
 
-      ctx.save();
-      ctx.rect(lx, ly, lw, lh);
-      ctx.clip();
-      ctx.drawImage(wc, lx, ly);
-      const grad = ctx.createLinearGradient(lx, 0, lx + lw, 0);
-      grad.addColorStop(0,    "rgba(0,0,0,0.25)");
-      grad.addColorStop(0.15, "rgba(0,0,0,0)");
-      grad.addColorStop(0.85, "rgba(0,0,0,0)");
-      grad.addColorStop(1,    "rgba(0,0,0,0.25)");
-      ctx.fillStyle = grad;
-      ctx.fillRect(lx, ly, lw, lh);
-      ctx.restore();
-    };
-    logoImg.src = logoUrl;
-    void tmp;
-  }, [logoUrl, productImg]);
+    // ── Composite into the bottle's own light/shadow (the PSD-mockup look) ────
+    // Multiply makes a dark logo print into the glass; Screen lets a light logo
+    // glow on a dark bottle. Either way it picks up the real shading underneath.
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(dx, dy, dw, dh);                 // never spill past the photo
+    ctx.clip();
+    ctx.globalCompositeOperation = inkMode === "light" ? "screen" : "multiply";
+    ctx.globalAlpha = 0.94;
+    ctx.drawImage(wc, lx, ly);
+    ctx.restore();
+  }, [logoUrl, productImg, logoReady, scale, posX, posY, inkMode]);
 
   useEffect(() => { draw(); }, [draw]);
 
@@ -339,9 +366,61 @@ function LogoPreviewTool() {
           </label>
         </div>
 
+        {/* Step 3: Place the logo */}
+        {logoUrl && (
+          <div className="space-y-4">
+            <p className="text-xs uppercase tracking-widest" style={{ color: "#C9B8A8" }}>3. Position &amp; size</p>
+
+            <div>
+              <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "#9E8F83" }}>Size</div>
+              <input type="range" min={0.2} max={0.95} step={0.01} value={scale}
+                onChange={(e) => setScale(parseFloat(e.target.value))}
+                className="w-full" aria-label="Logo size" />
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "#9E8F83" }}>Position — left / right</div>
+              <input type="range" min={0.2} max={0.8} step={0.01} value={posX}
+                onChange={(e) => setPosX(parseFloat(e.target.value))}
+                className="w-full" aria-label="Logo horizontal position" />
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase tracking-widest mb-1" style={{ color: "#9E8F83" }}>Position — up / down</div>
+              <input type="range" min={0.2} max={0.85} step={0.01} value={posY}
+                onChange={(e) => setPosY(parseFloat(e.target.value))}
+                className="w-full" aria-label="Logo vertical position" />
+            </div>
+
+            <div>
+              <div className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "#9E8F83" }}>Logo ink</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["dark", "light"] as const).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setInkMode(m)}
+                    style={{
+                      flex: 1, padding: "8px", fontSize: 12, borderRadius: 2, cursor: "pointer",
+                      textTransform: "capitalize",
+                      background: inkMode === m ? "#C9B8A8" : "#2A2723",
+                      color: inkMode === m ? "#1C1A17" : "#9E8F83",
+                      border: "1px solid #4A4540",
+                    }}
+                  >
+                    {m} logo
+                  </button>
+                ))}
+              </div>
+              <p className="text-[10px] mt-1.5" style={{ color: "#4A4540" }}>
+                Dark = printed into the glass · Light = for light logos on dark bottles
+              </p>
+            </div>
+          </div>
+        )}
+
         <p className="text-xs" style={{ color: "#4A4540", lineHeight: 1.8 }}>
           {logoUrl && productImg
-            ? "Logo mapped using cylindrical projection — pixels are warped to follow the curve of the bottle with edge shading. A formal print proof is sent before production."
+            ? "Your logo is warped onto the bottle's curve and blended into its real light and shadow — drag the sliders to place it. This is an approximate preview; a formal print proof is provided before production."
             : "Select a bottle from your catalogue, then upload your logo to see how it wraps around the surface."}
         </p>
       </div>
