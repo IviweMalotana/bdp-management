@@ -1,0 +1,64 @@
+# Optional CI deploy to the HostKing VPS. Builds all three apps and rsyncs them
+# over SSH, then restarts services — same as deploy/deploy.sh but on push.
+#
+# Required repo secrets:
+#   VPS_HOST  — VPS IP / hostname
+#   VPS_USER  — deploy user (e.g. "deploy")
+#   VPS_SSH_KEY — private SSH key authorized for VPS_USER
+# Required repo variables (build-time, baked into the frontends):
+#   NEXT_PUBLIC_API_URL, NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY, VITE_API_URL
+name: Deploy to VPS
+
+on:
+  push:
+    branches: [claude/hosting-platform-pricing-review-j26glk]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build API
+        run: dotnet publish BDP.API/BDP.API.csproj -c Release -o publish-api
+
+      - name: Build storefront
+        working-directory: BDP.Storefront
+        env:
+          NEXT_PUBLIC_API_URL: ${{ vars.NEXT_PUBLIC_API_URL }}
+          NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY: ${{ vars.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY }}
+        run: bun install && bun run build
+
+      - name: Build admin
+        working-directory: BDP.Web
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+        run: npm ci && npm run build
+
+      - name: Add SSH key
+        run: |
+          install -d -m 700 ~/.ssh
+          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H "${{ secrets.VPS_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Rsync to VPS
+        env:
+          SSH: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          rsync -az --delete --exclude 'wwwroot/uploads' --exclude 'wwwroot/invoices' \
+            publish-api/ "$SSH:/var/www/bdp-api/"
+          rsync -az --delete BDP.Storefront/.next BDP.Storefront/public \
+            BDP.Storefront/package.json BDP.Storefront/bun.lock BDP.Storefront/next.config.ts \
+            "$SSH:/var/www/bdp-storefront/"
+          rsync -az --delete BDP.Web/dist/ "$SSH:/var/www/admin/"
+          ssh "$SSH" 'cd /var/www/bdp-storefront && ~/.bun/bin/bun install --production && sudo systemctl restart bdp-api bdp-storefront && sudo systemctl reload nginx'

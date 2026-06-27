@@ -1,0 +1,25 @@
+# BDP Storefront — Next.js 16 (`next start`).
+# Install: cp deploy/systemd/bdp-storefront.service /etc/systemd/system/
+#          systemctl daemon-reload && systemctl enable --now bdp-storefront
+#
+# ExecStart uses bun. Confirm the bun path on the server (`which bun`, usually
+# /home/deploy/.bun/bin/bun) and update it below. To run with Node instead:
+#   ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -p 3000
+[Unit]
+Description=BDP Storefront (Next.js)
+After=network.target
+
+[Service]
+WorkingDirectory=/var/www/bdp-storefront
+ExecStart=/home/deploy/.bun/bin/bun run start
+Restart=always
+RestartSec=5
+SyslogIdentifier=bdp-storefront
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/bdp/storefront.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+[Install]
+WantedBy=multi-user.target

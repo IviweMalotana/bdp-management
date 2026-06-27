@@ -1,0 +1,22 @@
+# BDP API — ASP.NET Core (.NET 8) under Kestrel.
+# Install: cp deploy/systemd/bdp-api.service /etc/systemd/system/
+#          systemctl daemon-reload && systemctl enable --now bdp-api
+[Unit]
+Description=BDP API (ASP.NET Core)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+WorkingDirectory=/var/www/bdp-api
+ExecStart=/usr/bin/dotnet /var/www/bdp-api/BDP.API.dll
+Restart=always
+RestartSec=5
+SyslogIdentifier=bdp-api
+User=www-data
+Group=www-data
+EnvironmentFile=/etc/bdp/bdp-api.env
+Environment=ASPNETCORE_ENVIRONMENT=Production
+Environment=PORT=5000
+
+[Install]
+WantedBy=multi-user.target
