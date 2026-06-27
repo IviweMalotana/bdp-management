@@ -189,6 +189,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""LengthCm"" numeric(18,4) NOT NULL DEFAULT 0;
             ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""WidthCm"" numeric(18,4) NOT NULL DEFAULT 0;
             ALTER TABLE ""ProductVariants"" ADD COLUMN IF NOT EXISTS ""HeightCm"" numeric(18,4) NOT NULL DEFAULT 0;
+            ALTER TABLE ""ProductImages"" ADD COLUMN IF NOT EXISTS ""PrintArea"" text;
             CREATE TABLE IF NOT EXISTS ""EmailTemplates"" (
                 ""Id"" serial PRIMARY KEY,
                 ""Name"" text NOT NULL,

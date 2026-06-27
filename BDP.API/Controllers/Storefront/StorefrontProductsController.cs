@@ -51,6 +51,7 @@ public class StorefrontProductsController : ControllerBase
                 p.Name,
                 p.Category,
                 primaryUrl = p.Images.OrderBy(i => i.Id).FirstOrDefault()?.Url,
+                primaryPrintArea = p.Images.OrderBy(i => i.Id).FirstOrDefault()?.PrintArea,
                 basePrice,
                 lowestMoq,
                 variants = p.Variants.Select(v => new { v.Id, v.Size, colour = v.BottleColour, v.Texture })
@@ -151,7 +152,7 @@ public class StorefrontProductsController : ControllerBase
             product.LengthCm,
             product.WidthCm,
             product.HeightCm,
-            images = product.Images.OrderBy(i => i.SortOrder).Select(i => new { i.Url, i.AltText, i.IsPrimary }),
+            images = product.Images.OrderBy(i => i.SortOrder).Select(i => new { i.Url, i.AltText, i.IsPrimary, i.PrintArea }),
             variants = product.Variants.Select(v => new
             {
                 v.Id,
@@ -239,6 +240,7 @@ public class StorefrontProductsController : ControllerBase
                     p.Name,
                     p.Category,
                     primaryUrl = p.Images.OrderBy(i => i.Id).FirstOrDefault()?.Url,
+                primaryPrintArea = p.Images.OrderBy(i => i.Id).FirstOrDefault()?.PrintArea,
                     basePrice = allTiers.Any() ? allTiers.Min(t => t.SalePriceZAR) : 0m,
                     lowestMoq = allTiers.Any() ? allTiers.Min(t => t.Quantity) : 0
                 };

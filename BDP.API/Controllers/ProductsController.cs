@@ -342,6 +342,21 @@ public class ProductsController : ControllerBase
         return NoContent();
     }
 
+    // PUT /api/products/{id}/images/{imageId}/print-area
+    // Saves (or clears, when PrintArea is null/blank) the logo smart-warp for an image.
+    [HttpPut("{id:int}/images/{imageId:int}/print-area")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SetPrintArea(int id, int imageId, [FromBody] SetPrintAreaDto dto)
+    {
+        var image = await _context.ProductImages
+            .FirstOrDefaultAsync(i => i.Id == imageId && i.ProductId == id);
+        if (image == null) return NotFound();
+
+        image.PrintArea = string.IsNullOrWhiteSpace(dto.PrintArea) ? null : dto.PrintArea;
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
 
     // GET /api/products/shopify-export?productIds=1,2,3 (stubbed)
     [HttpGet("shopify-export")]
@@ -512,6 +527,7 @@ public class ProductsController : ControllerBase
             AltText = i.AltText,
             SortOrder = i.SortOrder,
             IsPrimary = i.IsPrimary,
+            PrintArea = i.PrintArea,
         }).ToList() ?? new(),
         Collections = p.ProductCollections?.Select(pc => pc.Collection?.Name ?? string.Empty).ToList() ?? new(),
     };

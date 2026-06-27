@@ -13,4 +13,5 @@ public class ProductImageDto
     public string AltText { get; set; } = string.Empty;
     public int SortOrder { get; set; }
     public bool IsPrimary { get; set; }
+    public string? PrintArea { get; set; }
 }
