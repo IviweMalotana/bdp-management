@@ -55,6 +55,16 @@ For **each** pass, record four figures and they must reconcile:
 8. (Pass B only) Confirm the **per-unit price** on the PDP/cart for the odd quantity is
    what was actually charged: D − S should equal (per-unit × qty) from step 2.
 
+## ⚠️ If "Continue →" on step 1 seems to do nothing
+This was a fixed bug. After the fix, a failed step-1 submit shows a **red banner**
+("Please complete all required fields highlighted below.") and scrolls you to the top with
+the offending field outlined. If you see that banner, a required field didn't register —
+**re-enter it by actually typing (and pressing Tab/click out)** rather than pasting/JS-
+setting the value, since programmatic value-setting can bypass the form's change handlers.
+Then click Continue again. Also verify the **"Billing address same as shipping"** box is
+ticked (the unticked billing path was previously un-submittable — confirm it now works too
+by unticking, filling billing recipient/address/city/province/postal, and submitting).
+
 ## Acceptance criteria (PASS requires ALL)
 - [ ] Pass A: A = B = C − S = D − S, and D is in ZAR. (totals reconcile at an anchor qty)
 - [ ] Pass B: same reconciliation at a **non-anchor** quantity (interpolated price holds).
