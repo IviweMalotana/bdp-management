@@ -151,6 +151,7 @@ export interface ProductImage {
   altText: string
   sortOrder: number
   isPrimary: boolean
+  printArea?: string | null
 }
 
 export interface Product {

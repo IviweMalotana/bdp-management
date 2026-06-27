@@ -5,6 +5,7 @@ import type { Product, ProductVariant } from '../types'
 import { ChevronLeft, Pencil, ExternalLink, Plus, Trash2, X, Loader2 } from 'lucide-react'
 import { useAuthStore } from '../store/authStore'
 import ProductForm from '../components/ProductForm'
+import PrintAreaEditor from '../components/PrintAreaEditor'
 
 const SIZES_ML = ['5ml','10ml','15ml','20ml','30ml','50ml','60ml','100ml','120ml','150ml','200ml','250ml','300ml','500ml','1000ml']
 const SIZES_G  = ['5g','10g','15g','20g','30g','50g','100g','150g','200g','250g','300g','500g']
@@ -14,7 +15,7 @@ const iCls = 'w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg tex
 interface VariantForm { size: string; bottleColour: string; lidColour: string; texture: string }
 const emptyVariant = (): VariantForm => ({ size: '', bottleColour: '', lidColour: '', texture: '' })
 
-type Tab = 'variants' | 'pricing' | 'customisation'
+type Tab = 'variants' | 'pricing' | 'customisation' | 'printArea'
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>()
@@ -156,6 +157,7 @@ export default function ProductDetail() {
             { key: 'variants',       label: `Variants (${product.variants?.length ?? 0})` },
             { key: 'pricing',        label: `Cost & Profit (${product.variants?.reduce((n, v) => n + (v.pricingTiers?.length ?? 0), 0) ?? 0})` },
             { key: 'customisation',  label: `Pricing & Customisation (${product.productPricingTiers?.length ?? 0})` },
+            { key: 'printArea',      label: 'Logo Print Area' },
           ] as { key: Tab; label: string }[]).map(({ key, label }) => (
             <button
               key={key}
@@ -166,6 +168,9 @@ export default function ProductDetail() {
             </button>
           ))}
         </div>
+
+        {/* Logo print area tab */}
+        {tab === 'printArea' && <PrintAreaEditor product={product} />}
 
         {/* Variants tab */}
         {tab === 'variants' && (

@@ -88,6 +88,9 @@ export const products = {
   deleteImage: (productId: number, imageId: number) =>
     http.delete(`/products/${productId}/images/${imageId}`),
 
+  setPrintArea: (productId: number, imageId: number, printArea: string | null) =>
+    http.put(`/products/${productId}/images/${imageId}/print-area`, { printArea }),
+
   // Legacy
   setPricingTiers: (id: number, tiers: object[]) =>
     http.post(`/products/${id}/pricing-tiers`, { tiers }).then((r) => r.data),
