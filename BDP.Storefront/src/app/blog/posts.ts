@@ -548,6 +548,197 @@ export const POSTS: Post[] = [
       { href: "/for-business", label: "Scaling up? See B2B options" },
     ],
   },
+  {
+    slug: "retinol-packaging-how-to-keep-your-formula-stable",
+    title: "Retinol Packaging: How to Keep Your Formula Stable",
+    description:
+      "Retinol degrades in light and air. Here's the best packaging for a retinol serum or cream — airless, opaque and amber options explained.",
+    excerpt:
+      "Retinol is the most-searched skincare active — and one of the most fragile. Package it wrong and it stops working. Here's how to protect it.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "Retinol is the most-searched skincare active in the world and the gold standard for anti-ageing — but it's also one of the most unstable. Exposure to light and air breaks retinol down quickly, and once it degrades it stops delivering results. If you're bottling a retinol product, packaging is part of whether it actually works.",
+      },
+      { type: "h2", text: "Why retinol is so fragile" },
+      {
+        type: "p",
+        text: "Retinol oxidises in air and is degraded by UV and visible light. A retinol serum in a clear bottle with an ordinary dropper is exposed to oxygen every single use — and to light on every shelf. The fix is to block both.",
+      },
+      { type: "h2", text: "Airless pump bottles: the top choice" },
+      {
+        type: "p",
+        text: "Airless bottles keep oxygen out entirely — no dip tube, no air drawn back in — so the formula is protected with every press, and you dispense almost all of it. Choose an opaque or tinted airless bottle and you block light too. For a serious retinol serum or cream, this is the best option and the one that signals 'high-performance' to customers.",
+      },
+      { type: "h2", text: "Amber or opaque glass" },
+      {
+        type: "p",
+        text: "If airless isn't right for your format, amber or opaque glass blocks much of the damaging light and is a recognisable 'active skincare' look. Pair it with a quality dropper or, better, a treatment pump to limit air exposure. Avoid clear glass and open jars for retinol — they expose the formula every time the lid comes off.",
+      },
+      { type: "h2", text: "Quick guide" },
+      {
+        type: "ul",
+        items: [
+          "Best protection & most premium → opaque airless pump.",
+          "Classic active look on a budget → amber glass with a pump or dropper.",
+          "Retinol in a cream → opaque airless jar or tube, not an open pot.",
+          "Avoid → clear glass, open jars, standard air-return droppers.",
+        ],
+      },
+      {
+        type: "p",
+        text: "You can order airless bottles, amber droppers and tubes from just 10 units, so it's easy to test the right protection for your retinol formula before scaling. Finish with silk-screen or hot-stamp branding for a professional look.",
+      },
+    ],
+    related: [
+      { href: "/collections/airless-pump-bottles", label: "Airless pump bottles" },
+      { href: "/collections/dropper-bottles", label: "Amber & glass droppers" },
+      { href: "/collections/serum-bottles", label: "Serum bottles" },
+      { href: "/customise", label: "Brand your retinol range" },
+    ],
+  },
+  {
+    slug: "hyaluronic-acid-peptide-serum-packaging",
+    title: "Packaging for Hyaluronic Acid & Peptide Serums",
+    description:
+      "The best packaging for hyaluronic acid and peptide serums — dropper, pump or airless? How to choose for these popular hydrating actives.",
+    excerpt:
+      "Hyaluronic acid and peptides are hero hydrating and anti-ageing actives. Here's how to package them so they look premium and stay effective.",
+    date: "2026-06-27",
+    readMinutes: 4,
+    blocks: [
+      {
+        type: "p",
+        text: "Hyaluronic acid and peptides are two of the most popular actives in modern skincare — hyaluronic acid for deep hydration and plumping, peptides for firming and anti-ageing. Both are customer favourites and frequent searches, which makes them great products to build a range around. Here's how to package them.",
+      },
+      { type: "h2", text: "Hyaluronic acid: stable and forgiving" },
+      {
+        type: "p",
+        text: "Hyaluronic acid is relatively stable and not especially light-sensitive, so you have freedom to focus on presentation. The classic choice is a 30ml glass dropper bottle — frosted or clear — which signals 'serum' and gives precise dosing. A treatment pump works well too for thinner, water-light HA serums applied over larger areas.",
+      },
+      { type: "h2", text: "Peptides: protect them a little more" },
+      {
+        type: "p",
+        text: "Peptides can be more sensitive, especially in blends with other actives. An airless pump bottle is a smart upgrade: it limits air exposure, keeps the formula fresh, and gives a premium, modern feel that suits a higher-priced peptide serum. If you prefer glass, a dropper in tinted or frosted glass is a good middle ground.",
+      },
+      { type: "h2", text: "Choosing your format" },
+      {
+        type: "ul",
+        items: [
+          "Hyaluronic acid serum → 30ml glass dropper (frosted or clear).",
+          "Water-light HA mist or essence → fine-mist spray or treatment pump.",
+          "Peptide serum → airless pump for protection and premium feel.",
+          "Multi-active blend → airless, to protect the most sensitive ingredient.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Because you can order from just 10 units, you can match the packaging to each formula in your range — droppers for the HA, airless for the peptides — without overcommitting. Add your logo to tie the collection together.",
+      },
+    ],
+    related: [
+      { href: "/collections/dropper-bottles", label: "Glass dropper bottles" },
+      { href: "/collections/airless-pump-bottles", label: "Airless pump bottles" },
+      { href: "/collections/serum-bottles", label: "Serum bottles" },
+      { href: "/collections/spray-bottles", label: "Mist & spray bottles" },
+    ],
+  },
+  {
+    slug: "shein-temu-beauty-packaging-why-pay-more",
+    title: "SHEIN & Temu Beauty Packaging: Why It's Worth Paying a Little More",
+    description:
+      "Tempted by cheap SHEIN or Temu cosmetic bottles? Here's what to watch for — quality, branding, shipping — and a better low-MOQ alternative.",
+    excerpt:
+      "Cheap cosmetic bottles from SHEIN and Temu are tempting, but they can cost your brand more than they save. Here's the honest trade-off — and a better option.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "If you're starting a beauty brand on a budget, the ultra-cheap cosmetic bottles and jars on SHEIN and Temu are tempting. Sometimes they're a fine way to prototype. But for the packaging your paying customers actually receive, the cheapest option often costs your brand more than it saves. Here's the honest trade-off.",
+      },
+      { type: "h2", text: "The real risks of the cheapest packaging" },
+      {
+        type: "ul",
+        items: [
+          "Inconsistent quality — caps that don't seal, pumps that fail, leaks in transit.",
+          "No branding — generic bottles make your product look like a repackaged generic, because it is one.",
+          "Unpredictable stock — listings vanish, so you can't reliably reorder the same bottle.",
+          "Long, uncertain shipping and returns if something's wrong.",
+          "No support — no one to help you match a pump to your formula.",
+        ],
+      },
+      { type: "h2", text: "Why packaging is not the place to cut corners" },
+      {
+        type: "p",
+        text: "Packaging is the first thing your customer touches. A leaking bottle or a wobbly pump doesn't just disappoint — it tells the customer your whole brand is low quality, no matter how good the formula is. And a generic, unbranded bottle is invisible in a market where presentation drives the sale.",
+      },
+      { type: "h2", text: "The middle ground: low-MOQ branded packaging" },
+      {
+        type: "p",
+        text: "The reason brands turned to marketplaces was the minimum order: traditional suppliers wanted thousands of units. That's no longer the trade-off. Be Different Packaging gives you proper, consistent cosmetic packaging — glass and quality PET, reliable pumps and droppers — from just 10 units, with transparent tiered pricing and the option to add your own logo. You get the affordability that made the cheap route attractive, without the quality lottery.",
+      },
+      { type: "h2", text: "When cheap is fine — and when it isn't" },
+      {
+        type: "p",
+        text: "Prototyping a concept at home? A marketplace bottle is fine. Sending product to real customers, or trying to look like a brand worth paying for? Invest the small extra in reliable, brandable packaging. It pays for itself in fewer complaints, repeat customers, and a brand that looks the part.",
+      },
+    ],
+    related: [
+      { href: "/shop", label: "Reliable packaging from 10 units" },
+      { href: "/customise", label: "Add your own branding" },
+      { href: "/collections/dropper-bottles", label: "Quality dropper bottles" },
+      { href: "/for-business", label: "Scaling up? See B2B options" },
+    ],
+  },
+  {
+    slug: "refillable-sustainable-cosmetic-packaging-south-africa",
+    title: "Refillable & Sustainable Cosmetic Packaging in South Africa",
+    description:
+      "Eco-friendly and refillable cosmetic packaging is a major 2026 trend. Here's how South African beauty brands can offer it affordably.",
+    excerpt:
+      "Customers increasingly want sustainable, refillable beauty packaging. Here's how a small South African brand can offer it without blowing the budget.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "Sustainability is one of the defining beauty trends going into 2026, and customers — especially younger ones — increasingly factor packaging into what they buy. Refillable systems, recyclable materials and a less-is-more approach are no longer niche. Here's how a South African beauty brand can lean in without overcomplicating things.",
+      },
+      { type: "h2", text: "Choose recyclable materials" },
+      {
+        type: "p",
+        text: "Glass is endlessly recyclable and feels premium — a natural fit for a sustainability story. PET is widely recyclable and lightweight, which also lowers the carbon cost of shipping. Leading with glass for hero products and recyclable PET elsewhere is a credible, practical approach.",
+      },
+      { type: "h2", text: "Design for refills and reuse" },
+      {
+        type: "p",
+        text: "Refillable formats are the headline sustainability trend. Even simple steps help: choose sturdy jars and bottles customers will want to keep and reuse, offer larger refill sizes, and design a range customers can top up rather than replace. Airless bottles and quality glass jars lend themselves well to a reuse story.",
+      },
+      { type: "h2", text: "Keep the look clean" },
+      {
+        type: "p",
+        text: "Sustainability and the minimalist 'quiet luxury' aesthetic go hand in hand — less plastic, less over-packaging, simple branding. A clean frosted glass bottle with a single logo signals both premium and conscious, which is exactly where the market is heading.",
+      },
+      { type: "h2", text: "Make the claims you can back up" },
+      {
+        type: "p",
+        text: "Be specific and honest — 'recyclable glass bottle' or 'refillable jar' — rather than vague 'eco' language. Customers (and regulators) increasingly see through greenwashing, and genuine, modest claims build more trust than big unsupported ones.",
+      },
+      {
+        type: "p",
+        text: "Because you can order from just 10 units with tiered pricing, it's easy to trial recyclable glass and refill-friendly formats for your range without a large commitment. Add your branding and you've got a sustainable line that looks the part.",
+      },
+    ],
+    related: [
+      { href: "/collections/cosmetic-jars", label: "Glass jars" },
+      { href: "/collections/dropper-bottles", label: "Glass dropper bottles" },
+      { href: "/collections/airless-pump-bottles", label: "Refill-friendly airless bottles" },
+      { href: "/shop", label: "Shop all packaging" },
+    ],
+  },
 ];
 
 export function getPost(slug: string): Post | undefined {
