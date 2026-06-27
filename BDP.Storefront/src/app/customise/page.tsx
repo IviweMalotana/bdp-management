@@ -38,9 +38,9 @@ function LogoPreviewTool() {
   const [logoReady, setLogoReady] = useState(false);
 
   // Logo placement on the bottle, as fractions of the displayed photo
-  const [scale, setScale] = useState(0.55);  // logo width ÷ bottle width
+  const [scale, setScale] = useState(0.42);  // logo width ÷ bottle width
   const [posX, setPosX] = useState(0.5);      // horizontal centre
-  const [posY, setPosY] = useState(0.54);     // vertical centre
+  const [posY, setPosY] = useState(0.55);     // vertical centre (on the body)
   const [inkMode, setInkMode] = useState<"dark" | "light">("dark");
 
   // Picker state
