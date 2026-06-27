@@ -226,7 +226,31 @@ function LogoPreviewTool() {
     }
     wctx.putImageData(dst, 0, 0);
 
-    // ── Composite into the bottle's own light/shadow (the PSD-mockup look) ────
+    // ── Capture the glass highlights under the logo box ──────────────────────
+    // The bottle is already drawn; pull out only its bright glints so we can lay
+    // them back OVER the print — making the logo sit *under* the glass shine.
+    const bx = Math.max(0, Math.round(lx));
+    const by = Math.max(0, Math.round(ly));
+    const bw = Math.min(CW - bx, W);
+    const bh = Math.min(CH - by, H);
+    let highlights: HTMLCanvasElement | null = null;
+    try {
+      if (bw > 0 && bh > 0) {
+        const region = ctx.getImageData(bx, by, bw, bh);
+        const rd = region.data;
+        const T = 175;                                   // highlight threshold
+        for (let i = 0; i < rd.length; i += 4) {
+          const lum = 0.299 * rd[i] + 0.587 * rd[i + 1] + 0.114 * rd[i + 2];
+          const k = lum > T ? Math.min(1, (lum - T) / (255 - T)) : 0;
+          rd[i + 3] = Math.round(rd[i + 3] * k * 0.7);   // keep only the glints
+        }
+        highlights = document.createElement("canvas");
+        highlights.width = bw; highlights.height = bh;
+        highlights.getContext("2d")!.putImageData(region, 0, 0);
+      }
+    } catch { /* tainted canvas — skip the highlight pass gracefully */ }
+
+    // ── Composite: print the logo into the glass, then shine back on top ──────
     // Multiply makes a dark logo print into the glass; Screen lets a light logo
     // glow on a dark bottle. Either way it picks up the real shading underneath.
     ctx.save();
@@ -236,6 +260,11 @@ function LogoPreviewTool() {
     ctx.globalCompositeOperation = inkMode === "light" ? "screen" : "multiply";
     ctx.globalAlpha = 0.94;
     ctx.drawImage(wc, lx, ly);
+    if (highlights) {
+      ctx.globalCompositeOperation = "screen";   // glass shine sits over the ink
+      ctx.globalAlpha = 1;
+      ctx.drawImage(highlights, bx, by);
+    }
     ctx.restore();
   }, [logoUrl, productImg, logoReady, scale, posX, posY, inkMode]);
 
