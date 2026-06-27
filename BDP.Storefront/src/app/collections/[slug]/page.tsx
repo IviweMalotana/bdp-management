@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductCard from "@/app/components/ProductCard";
@@ -35,8 +36,35 @@ async function getCollection(slug: string): Promise<CollectionDetail | null> {
   }
 }
 
-export default async function CollectionDetailPage({ params }: { params: { slug: string } }) {
-  const collection = await getCollection(params.slug);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const collection = await getCollection(slug);
+  if (!collection) return { title: "Collection not found" };
+
+  const title = `${collection.name} South Africa | Wholesale Cosmetic Packaging`;
+  const description =
+    collection.description?.replace(/\s+/g, " ").slice(0, 160) ||
+    `Buy ${collection.name.toLowerCase()} wholesale in South Africa from 10 units. Premium cosmetic packaging with custom branding.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/collections/${slug}` },
+    openGraph: { title, description, url: `/collections/${slug}`, type: "website" },
+  };
+}
+
+export default async function CollectionDetailPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const collection = await getCollection(slug);
 
   if (!collection) notFound();
 
