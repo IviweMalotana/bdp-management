@@ -336,6 +336,218 @@ export const POSTS: Post[] = [
       { href: "/contact", label: "Plan your amenity range" },
     ],
   },
+  {
+    slug: "make-your-skincare-brand-look-luxury-minimalist-packaging",
+    title: "How to Make Your Skincare Brand Look Luxury: The Minimalist Packaging Aesthetic",
+    description:
+      "The clean, minimalist 'quiet luxury' packaging look that makes new skincare brands feel expensive — and how to get it on a small budget.",
+    excerpt:
+      "The biggest celebrity beauty launches all share one look: clean, minimal, expensive-feeling. Here's how to capture that aesthetic for your own brand — without a big budget.",
+    date: "2026-06-27",
+    readMinutes: 6,
+    blocks: [
+      {
+        type: "p",
+        text: "Look at the beauty brands breaking records right now — the celebrity- and influencer-founded labels dominating TikTok and Sephora — and you'll notice they share a visual language. It's clean, pared-back and tactile: frosted glass, soft neutral tones, minimal text, a single confident logo. This 'quiet luxury' aesthetic is what makes a brand feel expensive before a customer has even tried the product. The good news: the look is far more about restraint than budget, so a small South African brand can absolutely achieve it.",
+      },
+      { type: "h2", text: "1. Let the bottle do the talking" },
+      {
+        type: "p",
+        text: "Premium-feeling packaging is usually simple packaging. Frosted glass droppers and jars, matte or soft-touch finishes, and a restrained colour palette read as high-end. Resist the urge to crowd the bottle — negative space signals confidence. A frosted glass serum bottle with a single hot-stamped logo will out-class a busy, over-printed one every time.",
+      },
+      { type: "h2", text: "2. Choose a tight, neutral palette" },
+      {
+        type: "p",
+        text: "The expensive look leans on muted, tonal colours — soft beige, sand, sage, off-white, charcoal — rather than bright primaries. Pick two or three colours and apply them consistently across your bottles, lids and labels. Coordination is what makes a collection look intentional rather than assembled.",
+      },
+      { type: "h2", text: "3. Coordinate the whole range" },
+      {
+        type: "p",
+        text: "Luxury reads as cohesion: the serum, the cream and the cleanser look like family. Use the same material story (e.g. frosted glass throughout), matching lids, and consistent logo placement. A coordinated three-product set looks far more established than three mismatched bottles — even if the formulas are simple.",
+      },
+      { type: "h2", text: "4. Brand it — even subtly" },
+      {
+        type: "p",
+        text: "A logo is what turns a generic bottle into your product. Silk-screen printing gives a crisp, modern mark; hot stamping adds that reflective gold or silver detail associated with prestige skincare. Even a single-colour logo dramatically lifts perceived value. This is the highest-impact, lowest-cost upgrade you can make.",
+      },
+      { type: "h2", text: "5. You don't need a thousand units to look the part" },
+      {
+        type: "p",
+        text: "The reason this aesthetic used to be out of reach for small brands was minimum orders. At Be Different Packaging you can build a coordinated, branded range from just 10 units per item, with transparent tiered pricing as you grow. So you can launch looking like an established brand — and scale once your products prove themselves.",
+      },
+      {
+        type: "p",
+        text: "Quiet luxury isn't about spending more; it's about choosing well and staying consistent. Pick clean shapes, a calm palette, one good logo treatment, and coordinate the set — and your brand will punch well above its size.",
+      },
+    ],
+    related: [
+      { href: "/customise", label: "Add your logo (silk screen & hot stamp)" },
+      { href: "/collections/dropper-bottles", label: "Frosted glass dropper bottles" },
+      { href: "/collections/cosmetic-jars", label: "Frosted & glass jars" },
+      { href: "/shop", label: "Build your range from 10 units" },
+    ],
+  },
+  {
+    slug: "best-packaging-for-niacinamide-serum",
+    title: "Best Packaging for a Niacinamide Serum",
+    description:
+      "What packaging suits a niacinamide serum? How to choose the right bottle, dropper or pump for one of skincare's most popular actives.",
+    excerpt:
+      "Niacinamide is one of the most-searched skincare ingredients going. If you're bottling one, here's how to choose packaging that suits the formula and sells.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "Niacinamide (vitamin B3) is one of the most popular skincare actives in the world — gentle, well-tolerated and effective for oil control, pores and brightening. If you're formulating a niacinamide serum, the packaging you choose affects both how stable it stays and how well it sells. Here's how to get it right.",
+      },
+      { type: "h2", text: "Niacinamide is relatively stable — which gives you options" },
+      {
+        type: "p",
+        text: "Unlike vitamin C or retinol, niacinamide is comparatively stable and not especially light- or air-sensitive, so you're not forced into amber glass or airless packaging. That means you can prioritise the look and the customer experience — though many brands still choose tinted or frosted bottles for the premium feel and to keep the serum looking fresh.",
+      },
+      { type: "h2", text: "Dropper bottles: the classic choice" },
+      {
+        type: "p",
+        text: "Most niacinamide serums sell in glass dropper bottles, typically 30ml. The dropper gives precise, mess-free dosing and signals 'serum' instantly to the customer. Frosted or clear glass both work; amber adds an apothecary feel and extra peace of mind if your formula also contains more sensitive actives.",
+      },
+      { type: "h2", text: "When to consider a pump or airless bottle" },
+      {
+        type: "p",
+        text: "If your niacinamide serum is combined with sensitive actives (like vitamin C or peptides), or you want the most premium, modern presentation, an airless pump bottle protects the formula and dispenses almost every drop. A treatment pump is also a great fit for thinner, water-based serums applied to larger areas.",
+      },
+      { type: "h2", text: "Get the size right" },
+      {
+        type: "ul",
+        items: [
+          "30ml glass dropper — the standard, sells well and finishes in a sensible time.",
+          "15ml — great for a starter or travel size, or a higher-strength formula.",
+          "Airless 30–50ml — for premium positioning or multi-active blends.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Because you can order from just 10 units, it's easy to test a 30ml frosted dropper against an airless option with your actual formula before committing. Add your logo with silk-screen or hot-stamp printing and your niacinamide serum will look every bit as considered as the formula inside.",
+      },
+    ],
+    related: [
+      { href: "/collections/dropper-bottles", label: "Glass dropper bottles (30ml)" },
+      { href: "/collections/serum-bottles", label: "Serum bottles" },
+      { href: "/collections/airless-pump-bottles", label: "Airless pump bottles" },
+      { href: "/customise", label: "Brand your serum" },
+    ],
+  },
+  {
+    slug: "vitamin-c-serum-packaging-amber-airless",
+    title: "Why a Vitamin C Serum Needs Amber or Airless Packaging",
+    description:
+      "Vitamin C oxidises in light and air. Here's why amber glass or airless packaging matters for a vitamin C serum — and how to choose.",
+    excerpt:
+      "Vitamin C is one of the fastest-rising skincare searches — and one of the trickiest to package. Get it wrong and your serum goes brown. Here's how to protect it.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "Vitamin C is a powerhouse brightening active and one of the fastest-growing skincare searches — but it's also notoriously unstable. Pure L-ascorbic acid oxidises when exposed to light, air and heat, turning yellow then brown and losing potency. If you're bottling a vitamin C serum, packaging isn't a cosmetic decision — it's part of the formulation.",
+      },
+      { type: "h2", text: "The enemy: light and air" },
+      {
+        type: "p",
+        text: "Every time a clear bottle sits on a shelf or a dropper draws air back in, oxidation accelerates. A beautiful serum in the wrong bottle can be past its best before the customer finishes it. Two packaging strategies solve this: block the light, or block the air.",
+      },
+      { type: "h2", text: "Option 1: Amber (or tinted) glass" },
+      {
+        type: "p",
+        text: "Amber glass filters out much of the light that degrades vitamin C, which is why so many serums use it — it's the classic, recognisable 'active skincare' look. Amber glass dropper bottles are an affordable, effective choice, especially for smaller batches. Frosted and violet glass offer similar protection with a different aesthetic.",
+      },
+      { type: "h2", text: "Option 2: Airless pump bottles" },
+      {
+        type: "p",
+        text: "Airless bottles keep oxygen out entirely — there's no dip tube and air never enters the chamber — so the formula is protected with every use, and you dispense almost all of it. For a premium vitamin C serum, or one combined with other sensitive actives, airless is the gold standard. Opaque or tinted airless bottles add light protection on top.",
+      },
+      { type: "h2", text: "Quick guide" },
+      {
+        type: "ul",
+        items: [
+          "Budget-friendly & classic look → amber glass dropper bottle.",
+          "Most protection & most premium → opaque airless pump.",
+          "Avoid → clear glass with a standard dropper for pure vitamin C.",
+          "Always → store cool and away from direct light.",
+        ],
+      },
+      {
+        type: "p",
+        text: "You can order amber droppers or airless bottles from just 10 units, so it's easy to trial both with your formula and see which keeps your serum freshest. Add your branding with silk-screen or hot-stamp printing to finish the look.",
+      },
+    ],
+    related: [
+      { href: "/collections/dropper-bottles", label: "Amber & glass dropper bottles" },
+      { href: "/collections/airless-pump-bottles", label: "Airless pump bottles" },
+      { href: "/collections/serum-bottles", label: "Serum bottles" },
+      { href: "/customise", label: "Brand your serum" },
+    ],
+  },
+  {
+    slug: "how-to-start-skincare-brand-south-africa-2026",
+    title: "How to Start a Skincare Brand in South Africa (2026 Guide)",
+    description:
+      "A step-by-step guide to starting a skincare brand in South Africa in 2026 — formulation, packaging, branding, costs and where to begin.",
+    excerpt:
+      "Thinking of launching a skincare line in South Africa? Here's a practical, step-by-step roadmap — from formula to branded packaging — without a huge budget.",
+    date: "2026-06-27",
+    readMinutes: 7,
+    blocks: [
+      {
+        type: "p",
+        text: "South Africa's beauty scene is booming, and starting your own skincare brand has never been more achievable. You don't need a factory or a fortune — you need a clear product, the right suppliers, and packaging that makes you look established. Here's a practical roadmap for launching in 2026.",
+      },
+      { type: "h2", text: "1. Decide on your hero product" },
+      {
+        type: "p",
+        text: "Resist launching ten products at once. Start with one or two hero items — a serum, a moisturiser, or a facial oil — that solve a clear problem for a clear customer. A focused range is cheaper to launch, easier to market, and lets you learn what sells before you scale.",
+      },
+      { type: "h2", text: "2. Sort out your formula" },
+      {
+        type: "p",
+        text: "You can work with a local contract manufacturer (a 'private label' or 'white label' lab) that formulates and fills for you, or formulate yourself if you're qualified. Either way, make sure your product is safe, stable and compliant. Popular actives that customers actively search for include niacinamide, vitamin C, hyaluronic acid and retinol.",
+      },
+      { type: "h2", text: "3. Choose your packaging" },
+      {
+        type: "p",
+        text: "Packaging is where many new SA brands either shine or look amateur. Match the format to the formula — droppers for serums and oils, jars for creams and balms, pumps for lotions, airless for sensitive actives like vitamin C. Crucially, you no longer need to order thousands of units: with Be Different Packaging you can start from just 10 units per item, so you can launch a full, coordinated range affordably.",
+      },
+      { type: "h2", text: "4. Brand it" },
+      {
+        type: "p",
+        text: "Your logo on your bottles is what turns a generic product into a brand. Silk-screen and hot-stamp printing are affordable ways to look professional from day one. Keep your design clean and your palette consistent across the range — the minimalist, coordinated look reads as premium.",
+      },
+      { type: "h2", text: "5. Handle the admin" },
+      {
+        type: "ul",
+        items: [
+          "Register your business and trademark your brand name if you can.",
+          "Make sure labelling meets local cosmetic requirements (ingredients, net content, your details).",
+          "Set up a simple online store and social presence to sell and showcase.",
+        ],
+      },
+      { type: "h2", text: "6. Launch small, learn, scale" },
+      {
+        type: "p",
+        text: "Start with a modest run, sell, gather feedback, and reorder what works — our tiered pricing means your unit costs drop as you grow. This 'launch lean' approach keeps your risk low and your cash free while you find your market.",
+      },
+      {
+        type: "p",
+        text: "A skincare brand in South Africa is well within reach in 2026. Nail one great product, package it like you mean it, and grow from there.",
+      },
+    ],
+    related: [
+      { href: "/shop", label: "Shop packaging from 10 units" },
+      { href: "/finder", label: "Find the right packaging" },
+      { href: "/customise", label: "Add your branding" },
+      { href: "/for-business", label: "Scaling up? See B2B options" },
+    ],
+  },
 ];
 
 export function getPost(slug: string): Post | undefined {
