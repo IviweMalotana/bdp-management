@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ProductCard from "@/app/components/ProductCard";
+import { getCategoryCopy } from "../categoryCopy";
+import { SITE_URL } from "@/app/layout";
 
 interface CollectionProduct {
   id: number;
@@ -45,10 +47,10 @@ export async function generateMetadata({
   const collection = await getCollection(slug);
   if (!collection) return { title: "Collection not found" };
 
+  const copy = getCategoryCopy(slug, collection.name);
   const title = `${collection.name} South Africa | Wholesale Cosmetic Packaging`;
   const description =
-    collection.description?.replace(/\s+/g, " ").slice(0, 160) ||
-    `Buy ${collection.name.toLowerCase()} wholesale in South Africa from 10 units. Premium cosmetic packaging with custom branding.`;
+    collection.description?.replace(/\s+/g, " ").slice(0, 160) || copy.metaDescription;
 
   return {
     title,
@@ -68,8 +70,50 @@ export default async function CollectionDetailPage({
 
   if (!collection) notFound();
 
+  // Staff-authored description wins; otherwise fall back to bespoke/generic copy.
+  const copy = getCategoryCopy(slug, collection.name);
+  const introParagraphs = collection.description?.trim()
+    ? [collection.description.trim()]
+    : copy.intro;
+
+  const canonical = `${SITE_URL}/collections/${slug}`;
+  const breadcrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      { "@type": "ListItem", position: 2, name: "Collections", item: `${SITE_URL}/collections` },
+      { "@type": "ListItem", position: 3, name: collection.name, item: canonical },
+    ],
+  };
+  const collectionLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: `${collection.name} — Cosmetic Packaging South Africa`,
+    url: canonical,
+    description: introParagraphs[0],
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: collection.products.length,
+      itemListElement: collection.products.map((p, i) => ({
+        "@type": "ListItem",
+        position: i + 1,
+        url: `${SITE_URL}/product/${p.slug}`,
+        name: p.name,
+      })),
+    },
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-20">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionLd) }}
+      />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-xs mb-10" style={{ color: "#C9B8A8" }}>
         <Link href="/" className="hover:opacity-70 transition-opacity" style={{ color: "#4A4540" }}>
@@ -91,11 +135,13 @@ export default async function CollectionDetailPage({
         >
           {collection.name.toLowerCase()}
         </h1>
-        {collection.description && (
-          <p className="text-sm leading-relaxed" style={{ color: "#4A4540", lineHeight: 1.8 }}>
-            {collection.description}
-          </p>
-        )}
+        <div className="space-y-3">
+          {introParagraphs.map((para, i) => (
+            <p key={i} className="text-sm leading-relaxed" style={{ color: "#4A4540", lineHeight: 1.8 }}>
+              {para}
+            </p>
+          ))}
+        </div>
         <p className="text-xs mt-4" style={{ color: "#C9B8A8" }}>
           {collection.products.length} {collection.products.length === 1 ? "product" : "products"}
         </p>
