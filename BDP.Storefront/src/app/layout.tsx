@@ -9,6 +9,9 @@ export const SITE_URL = "https://www.bedifferentpackaging.com";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  verification: {
+    google: "s044kxGNg8eVFVgOu61lbygu-_bBd6U6nCyjppnyqLk",
+  },
   title: {
     default: "Cosmetic Packaging South Africa | From 10 Units | Be Different Packaging",
     template: "%s | Be Different Packaging",
