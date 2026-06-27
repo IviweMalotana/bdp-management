@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import HomeClient from "./components/HomeClient";
+
+export const metadata: Metadata = {
+  // Uses the layout's keyword-rich default title; just pin the canonical.
+  alternates: { canonical: "/" },
+};
 
 async function getFeaturedProducts() {
   try {

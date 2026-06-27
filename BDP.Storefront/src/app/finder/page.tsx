@@ -2,9 +2,10 @@ import { Suspense } from "react";
 import FinderClient from "./FinderClient";
 
 export const metadata = {
-  title: "Find Your Bottle | BDP Management",
+  title: "Packaging Finder — Choose the Right Cosmetic Bottle or Jar",
   description:
-    "Not sure what packaging you need? Answer a few quick questions and we'll point you to the right bottles, jars and droppers for your product.",
+    "Not sure what packaging you need? Answer a few quick questions and we'll point you to the right cosmetic bottles, jars and droppers for your skincare product.",
+  alternates: { canonical: "/finder" },
 };
 
 export default function FinderPage() {

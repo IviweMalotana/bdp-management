@@ -2,7 +2,10 @@ import { Suspense } from "react";
 import ShopClient from "./ShopClient";
 
 export const metadata = {
-  title: "Shop Packaging | BDP Management",
+  title: "Buy Cosmetic Bottles & Jars Wholesale South Africa",
+  description:
+    "Shop cosmetic bottles, jars, droppers, pump and spray packaging wholesale in South Africa — from 10 units. Live tiered pricing, custom branding and fast delivery.",
+  alternates: { canonical: "/shop" },
 };
 
 export default function ShopPage() {
