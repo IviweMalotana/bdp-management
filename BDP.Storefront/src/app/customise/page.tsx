@@ -30,7 +30,21 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://bdp-api-production.u
 // Centred on the bottle body — works for most portrait product photos
 const LABEL_FRAC = [0.22, 0.36, 0.56, 0.40] as const;
 
-interface ProductHit { slug: string; name: string; primaryUrl?: string }
+interface ProductHit { slug: string; name: string; primaryUrl?: string; printArea?: string | null }
+
+// A product's saved logo print area: centre + size as fractions of the photo,
+// rotation in degrees, and a curve amount (0 flat → 1 strong cylinder wrap).
+interface PrintAreaSpec { cx: number; cy: number; w: number; h: number; angle: number; curve: number }
+
+function parsePrintArea(raw?: string | null): PrintAreaSpec | null {
+  if (!raw) return null;
+  try {
+    const o = JSON.parse(raw);
+    if (typeof o.cx !== "number" || typeof o.cy !== "number" ||
+        typeof o.w !== "number" || typeof o.h !== "number") return null;
+    return { cx: o.cx, cy: o.cy, w: o.w, h: o.h, angle: Number(o.angle) || 0, curve: o.curve ?? 0.5 };
+  } catch { return null; }
+}
 
 function LogoPreviewTool() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -75,8 +89,8 @@ function LogoPreviewTool() {
     fetch(`${API_URL}/api/storefront/products?pageSize=100`)
       .then((r) => r.json())
       .then((d) => {
-        const items = (d.items ?? d) as { slug: string; name: string; primaryUrl?: string }[];
-        setAllProducts(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl })));
+        const items = (d.items ?? d) as { slug: string; name: string; primaryUrl?: string; primaryPrintArea?: string }[];
+        setAllProducts(items.map((p) => ({ slug: p.slug, name: p.name, primaryUrl: p.primaryUrl, printArea: p.primaryPrintArea })));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -188,15 +202,22 @@ function LogoPreviewTool() {
     tc.drawImage(logoImg, 0, 0);
     const src = tc.getImageData(0, 0, sw, sh);
 
-    // ── Label box: keep the logo's aspect ratio; size + place with the sliders ─
-    const lw = Math.max(8, scale * dw);
-    const lh = lw * (sh / sw);
-    const lx = dx + posX * dw - lw / 2;
-    const ly = dy + posY * dh - lh / 2;
+    // ── Placement: use the product's saved print area, else the manual sliders ─
+    const pa = parsePrintArea(confirmed?.printArea);
+    const boxW = Math.max(8, (pa ? pa.w : scale) * dw);
+    const boxH = pa ? Math.max(8, pa.h * dh) : boxW * (sh / sw);
+    const cx = dx + (pa ? pa.cx : posX) * dw;
+    const cy = dy + (pa ? pa.cy : posY) * dh;
+    const angle = pa ? (pa.angle * Math.PI) / 180 : 0;
+    const curve = pa ? pa.curve : 1;            // slider mode uses a full cylinder
 
-    // ── Warp onto a partial cylinder (the "wrap") ────────────────────────────
-    const ARC = (150 * Math.PI) / 180;     // visible wrap angle (~150°)
-    const halfArc = ARC / 2;
+    // Fit the logo inside the box, preserving its aspect ratio
+    const fit = Math.min(boxW / sw, boxH / sh);
+    const lw = Math.max(1, sw * fit);
+    const lh = Math.max(1, sh * fit);
+
+    // ── Warp onto a partial cylinder (curve 0 = flat, 1 = strong wrap) ────────
+    const halfArc = (Math.max(0.001, curve) * 150 * Math.PI) / 180 / 2;
     const sinHalf = Math.sin(halfArc);
     const W = Math.max(1, Math.ceil(lw));
     const H = Math.max(1, Math.ceil(lh));
@@ -226,47 +247,56 @@ function LogoPreviewTool() {
     }
     wctx.putImageData(dst, 0, 0);
 
-    // ── Capture the glass highlights under the logo box ──────────────────────
-    // The bottle is already drawn; pull out only its bright glints so we can lay
-    // them back OVER the print — making the logo sit *under* the glass shine.
-    const bx = Math.max(0, Math.round(lx));
-    const by = Math.max(0, Math.round(ly));
-    const bw = Math.min(CW - bx, W);
-    const bh = Math.min(CH - by, H);
-    let highlights: HTMLCanvasElement | null = null;
-    try {
-      if (bw > 0 && bh > 0) {
-        const region = ctx.getImageData(bx, by, bw, bh);
-        const rd = region.data;
-        const T = 175;                                   // highlight threshold
-        for (let i = 0; i < rd.length; i += 4) {
-          const lum = 0.299 * rd[i] + 0.587 * rd[i + 1] + 0.114 * rd[i + 2];
-          const k = lum > T ? Math.min(1, (lum - T) / (255 - T)) : 0;
-          rd[i + 3] = Math.round(rd[i + 3] * k * 0.7);   // keep only the glints
-        }
-        highlights = document.createElement("canvas");
-        highlights.width = bw; highlights.height = bh;
-        highlights.getContext("2d")!.putImageData(region, 0, 0);
-      }
-    } catch { /* tainted canvas — skip the highlight pass gracefully */ }
+    const blend: GlobalCompositeOperation = inkMode === "light" ? "screen" : "multiply";
+    const lx = cx - lw / 2, ly = cy - lh / 2;
 
-    // ── Composite: print the logo into the glass, then shine back on top ──────
-    // Multiply makes a dark logo print into the glass; Screen lets a light logo
-    // glow on a dark bottle. Either way it picks up the real shading underneath.
     ctx.save();
     ctx.beginPath();
     ctx.rect(dx, dy, dw, dh);                 // never spill past the photo
     ctx.clip();
-    ctx.globalCompositeOperation = inkMode === "light" ? "screen" : "multiply";
-    ctx.globalAlpha = 0.94;
-    ctx.drawImage(wc, lx, ly);
-    if (highlights) {
-      ctx.globalCompositeOperation = "screen";   // glass shine sits over the ink
-      ctx.globalAlpha = 1;
-      ctx.drawImage(highlights, bx, by);
+
+    if (angle !== 0) {
+      // Angled bottle — rotate into place (highlight pass skipped for rotation)
+      ctx.translate(cx, cy);
+      ctx.rotate(angle);
+      ctx.globalCompositeOperation = blend;
+      ctx.globalAlpha = 0.94;
+      ctx.drawImage(wc, -lw / 2, -lh / 2);
+    } else {
+      // Upright — print the logo, then re-apply the glass shine over it so it
+      // reads as printed *under* the glass rather than sitting on top.
+      const bx = Math.max(0, Math.round(lx));
+      const by = Math.max(0, Math.round(ly));
+      const bw = Math.min(CW - bx, W);
+      const bh = Math.min(CH - by, H);
+      let highlights: HTMLCanvasElement | null = null;
+      try {
+        if (bw > 0 && bh > 0) {
+          const region = ctx.getImageData(bx, by, bw, bh);
+          const rd = region.data;
+          const T = 175;                                 // highlight threshold
+          for (let i = 0; i < rd.length; i += 4) {
+            const lum = 0.299 * rd[i] + 0.587 * rd[i + 1] + 0.114 * rd[i + 2];
+            const k = lum > T ? Math.min(1, (lum - T) / (255 - T)) : 0;
+            rd[i + 3] = Math.round(rd[i + 3] * k * 0.7);
+          }
+          highlights = document.createElement("canvas");
+          highlights.width = bw; highlights.height = bh;
+          highlights.getContext("2d")!.putImageData(region, 0, 0);
+        }
+      } catch { /* tainted canvas — skip the highlight pass gracefully */ }
+
+      ctx.globalCompositeOperation = blend;
+      ctx.globalAlpha = 0.94;
+      ctx.drawImage(wc, lx, ly);
+      if (highlights) {
+        ctx.globalCompositeOperation = "screen";   // glass shine over the ink
+        ctx.globalAlpha = 1;
+        ctx.drawImage(highlights, bx, by);
+      }
     }
     ctx.restore();
-  }, [logoUrl, productImg, logoReady, scale, posX, posY, inkMode]);
+  }, [logoUrl, productImg, logoReady, scale, posX, posY, inkMode, confirmed]);
 
   useEffect(() => { draw(); }, [draw]);
 
@@ -395,8 +425,13 @@ function LogoPreviewTool() {
           </label>
         </div>
 
-        {/* Step 3: Place the logo */}
-        {logoUrl && (
+        {/* Step 3: Place the logo — manual sliders only when this bottle has no preset */}
+        {logoUrl && confirmed?.printArea && (
+          <p className="text-xs" style={{ color: "#C9B8A8" }}>
+            ✓ Auto-placed for this bottle — positioned to match its print area.
+          </p>
+        )}
+        {logoUrl && !confirmed?.printArea && (
           <div className="space-y-4">
             <p className="text-xs uppercase tracking-widest" style={{ color: "#C9B8A8" }}>3. Position &amp; size</p>
 
