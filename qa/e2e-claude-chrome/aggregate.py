@@ -155,9 +155,11 @@ def build_summary(all_results, all_findings):
 def main():
     paths = collect_inputs(sys.argv[1:])
     if not paths:
-        print("No report files found. Save reports as .md files in ./results/ "
+        print("No report files found yet. Save reports as .md files in ./results/ "
               "(or pass paths), then re-run.", file=sys.stderr)
-        return 1
+        # Exit 0 so an empty results/ folder doesn't fail CI; there's simply nothing
+        # to aggregate until the first report lands.
+        return 0
 
     all_results, all_findings = [], []
     for p in paths:
