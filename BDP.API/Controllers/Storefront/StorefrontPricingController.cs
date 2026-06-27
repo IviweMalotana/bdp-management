@@ -65,34 +65,11 @@ public class StorefrontPricingController : ControllerBase
             decimal unitPrice = PricingService.InterpolateTierPrice(tiers, line.Quantity);
             var lineTotal = Math.Round(unitPrice * line.Quantity, 2);
 
-            decimal customCost = 0;
-            if (line.CustomisationOptionId.HasValue)
-            {
-                var co = customOptions.FirstOrDefault(c => c.Id == line.CustomisationOptionId.Value);
-                if (co != null)
-                {
-                    var setting = customSettings.FirstOrDefault(s => s.Type == co.Type);
-                    if (setting != null)
-                    {
-                        var customMoq = co.MinimumQuantity ?? setting.DefaultMinimumQuantity;
-                        if (line.Quantity >= customMoq)
-                        {
-                            decimal customUnitPrice;
-                            if (setting.Type == "ColourChange")
-                            {
-                                customUnitPrice = setting.PricePerUnitZAR; // flat fee (R1.25)
-                            }
-                            else
-                            {
-                                var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
-                                var markup = PricingService.InterpolateMarkup(line.Quantity);
-                                customUnitPrice = Math.Round(costZAR * (1 + markup / 100m), 4);
-                            }
-                            customCost = Math.Round(customUnitPrice * line.Quantity, 2);
-                        }
-                    }
-                }
-            }
+            var co = line.CustomisationOptionId.HasValue
+                ? customOptions.FirstOrDefault(c => c.Id == line.CustomisationOptionId.Value)
+                : null;
+            var coSetting = co != null ? customSettings.FirstOrDefault(s => s.Type == co.Type) : null;
+            decimal customCost = PricingService.ComputeCustomisationCostZAR(co, coSetting, line.Quantity, rate);
 
             subtotal += lineTotal + customCost;
 

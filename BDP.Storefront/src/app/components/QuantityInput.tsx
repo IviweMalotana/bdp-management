@@ -23,8 +23,16 @@ export default function QuantityInput({ value, min = 1, onChange }: QuantityInpu
         value={value}
         min={min}
         onChange={(e) => {
+          // Propagate the typed number even when below min so the page can surface the
+          // "Minimum order is N units" error and keep Add to Cart disabled...
           const v = parseInt(e.target.value, 10);
-          if (!isNaN(v) && v >= min) onChange(v);
+          if (!isNaN(v)) onChange(v);
+        }}
+        onBlur={(e) => {
+          // ...then clamp any invalid / below-min / empty value back to the minimum so the
+          // field never rests on 0, a negative, or a sub-MOQ quantity.
+          const v = parseInt(e.target.value, 10);
+          if (isNaN(v) || v < min) onChange(min);
         }}
         className="w-16 text-center text-sm border-x outline-none bg-transparent h-10"
         style={{ borderColor: "#C9B8A8", color: "#1C1A17" }}

@@ -41,7 +41,7 @@ const addressSchema = z.object({
 });
 
 const step1Schema = z.object({
-  email: z.string().email(),
+  email: z.string().min(1, "Email is required").email("Enter a valid email address"),
   shipping: addressSchema,
   sameAsBilling: z.boolean(),
   billing: addressSchema.optional(),

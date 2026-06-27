@@ -1,5 +1,6 @@
 using BDP.API.Data;
 using BDP.API.Models;
+using BDP.API.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -10,8 +11,13 @@ namespace BDP.API.Controllers.Storefront;
 public class StorefrontProductsController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly PricingService _pricing;
 
-    public StorefrontProductsController(AppDbContext db) => _db = db;
+    public StorefrontProductsController(AppDbContext db, PricingService pricing)
+    {
+        _db = db;
+        _pricing = pricing;
+    }
 
     [HttpGet("products")]
     public async Task<IActionResult> GetProducts(
@@ -99,7 +105,10 @@ public class StorefrontProductsController : ControllerBase
         // Build response: for each active global setting, check if this supplier has it enabled.
         // If the supplier has no options configured at all, treat all as available (default open).
         bool supplierHasAnyOptions = supplierOptions.Any();
-        const decimal cnyToZar = 2.60m; // fallback; live rate used server-side for quotes
+        // Use the SAME live rate the quote/cart/checkout use, so the customisation price
+        // shown on the product page equals the price charged (a hardcoded 2.60 here drifted
+        // from the live rate and over-quoted the printing surcharge on the PDP).
+        var cnyToZar = await _pricing.GetLiveExchangeRate();
         var customisationOptions = globalSettings
             .Select(setting =>
             {

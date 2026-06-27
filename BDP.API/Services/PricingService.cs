@@ -70,6 +70,31 @@ public class PricingService
         return last.Quantity > 0 ? last.SalePriceZAR / last.Quantity : 0m;
     }
 
+    // Customisation surcharge for a line — shared by the quote, cart and checkout so the
+    // add-on price shown always equals the price charged. Returns 0 below the option's
+    // minimum quantity. ColourChange is a flat per-unit fee; printing types are
+    // cost x interpolated markup.
+    public static decimal ComputeCustomisationCostZAR(
+        CustomisationOption? option, CustomisationSetting? setting, int quantity, decimal rate)
+    {
+        if (option == null || setting == null) return 0m;
+        var customMoq = option.MinimumQuantity ?? setting.DefaultMinimumQuantity;
+        if (quantity < customMoq) return 0m;
+
+        decimal unit;
+        if (setting.Type == "ColourChange")
+        {
+            unit = setting.PricePerUnitZAR;
+        }
+        else
+        {
+            var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
+            var markup = InterpolateMarkup(quantity);
+            unit = Math.Round(costZAR * (1 + markup / 100m), 4);
+        }
+        return Math.Round(unit * quantity, 2);
+    }
+
     private static readonly Dictionary<int, decimal> MarkupTable = MarkupAnchors
         .ToDictionary(a => a.Qty, a => a.Markup);
 

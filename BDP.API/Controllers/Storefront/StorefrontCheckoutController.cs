@@ -124,31 +124,12 @@ public class StorefrontCheckoutController : ControllerBase
             var lineTotal = Math.Round(unitPrice * item.Quantity, 2);
             subtotal += lineTotal;
 
-            // Compute customisation cost server-side (same logic as StorefrontPricingController)
-            decimal customisationCost = 0;
-            if (item.CustomisationOption != null)
-            {
-                var setting = customSettings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type);
-                if (setting != null)
-                {
-                    var customMoq = item.CustomisationOption.MinimumQuantity ?? setting.DefaultMinimumQuantity;
-                    if (item.Quantity >= customMoq)
-                    {
-                        decimal customUnitPrice;
-                        if (setting.Type == "ColourChange")
-                        {
-                            customUnitPrice = setting.PricePerUnitZAR;
-                        }
-                        else
-                        {
-                            var costZAR = Math.Round(setting.CostPerUnitCNY * rate, 4);
-                            var markup = PricingService.InterpolateMarkup(item.Quantity);
-                            customUnitPrice = Math.Round(costZAR * (1 + markup / 100m), 4);
-                        }
-                        customisationCost = Math.Round(customUnitPrice * item.Quantity, 2);
-                    }
-                }
-            }
+            // Customisation cost — shared calc so checkout == cart == quote == order.
+            var coSetting = item.CustomisationOption != null
+                ? customSettings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type)
+                : null;
+            decimal customisationCost = PricingService.ComputeCustomisationCostZAR(
+                item.CustomisationOption, coSetting, item.Quantity, rate);
             subtotal += customisationCost;
 
             orderItems.Add(new OrderItem
