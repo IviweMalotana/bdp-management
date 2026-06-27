@@ -127,6 +127,215 @@ export const POSTS: Post[] = [
       { href: "/finder", label: "Not sure? Use the packaging finder" },
     ],
   },
+  {
+    slug: "airless-pump-bottles-vs-regular-pumps-serum",
+    title: "Airless Pump Bottles vs Regular Pumps: Which Is Right for Your Serum?",
+    description:
+      "Airless or regular pump bottles for your serum? Compare freshness, dispensing, cost and which protects active skincare ingredients best.",
+    excerpt:
+      "Both dispense neatly, but only one protects your actives and gets almost every drop out. Here's how to choose between airless and regular pumps.",
+    date: "2026-06-25",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "If you're packaging a serum, the choice between an airless pump and a regular pump bottle matters more than it looks. Both give clean, measured dispensing — but they protect your formula very differently, and that affects shelf life, customer experience and how premium your product feels.",
+      },
+      { type: "h2", text: "How each one works" },
+      {
+        type: "p",
+        text: "A regular pump draws liquid up a dip tube using a spring mechanism, pulling air back into the bottle with every press. An airless pump has no dip tube: a piston or collapsing pouch pushes product up from the base, so air never enters the chamber. That single difference drives everything else.",
+      },
+      { type: "h2", text: "Protecting active ingredients" },
+      {
+        type: "p",
+        text: "Many of the ingredients that make a serum worth buying — vitamin C, retinol, peptides, many botanical oils — degrade when exposed to air and light. Because airless bottles keep oxygen out, they preserve these actives far better than a regular pump, which lets a little air in with each use. If your serum is built around sensitive actives, airless is the safer choice.",
+      },
+      { type: "h2", text: "Getting every drop" },
+      {
+        type: "p",
+        text: "Regular pumps with a dip tube often leave product stranded at the bottom and around the sides. Airless systems dispense almost the entire fill — typically 90%+ — which customers notice and appreciate, especially for higher-priced serums.",
+      },
+      { type: "h2", text: "Cost and look" },
+      {
+        type: "p",
+        text: "Regular pump bottles are cheaper and perfectly good for oils and less air-sensitive formulas. Airless bottles cost a little more but look and feel distinctly premium — the sleek, modern format customers associate with high-performance skincare. For a hero serum, that perception often pays for itself.",
+      },
+      { type: "h2", text: "Quick rule of thumb" },
+      {
+        type: "ul",
+        items: [
+          "Active-rich or oxidation-prone serum → airless pump.",
+          "Simple facial oil or budget line → regular pump or dropper.",
+          "Want the most premium feel → airless.",
+          "Tightest cost per unit → regular pump.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Because you can order either from just 10 units, you don't have to guess — sample both with your actual formula and see which dispenses and ages best before committing to a larger run.",
+      },
+    ],
+    related: [
+      { href: "/collections/airless-pump-bottles", label: "Airless pump bottles" },
+      { href: "/collections/pump-bottles", label: "Regular pump bottles" },
+      { href: "/collections/serum-bottles", label: "Serum & dropper bottles" },
+      { href: "/shop", label: "Shop all packaging" },
+    ],
+  },
+  {
+    slug: "minimum-order-quantities-cosmetic-packaging-south-africa",
+    title: "Minimum Order Quantities for Cosmetic Packaging: What Small Brands Need to Know",
+    description:
+      "Cosmetic packaging MOQs explained for South African brands — why most suppliers demand 1,000+ units, and how to start from just 10.",
+    excerpt:
+      "MOQs are the biggest hurdle for new skincare brands. Here's what they really mean, why they exist, and how to launch without ordering thousands of units.",
+    date: "2026-06-26",
+    readMinutes: 4,
+    blocks: [
+      {
+        type: "p",
+        text: "Minimum order quantity — MOQ — is the smallest number of units a supplier will sell you of a given item. For new cosmetic brands in South Africa, it's often the single biggest barrier to launching: many suppliers won't sell a bottle or jar in quantities under 1,000, sometimes far more.",
+      },
+      { type: "h2", text: "Why MOQs exist" },
+      {
+        type: "p",
+        text: "MOQs come from how packaging is made and shipped. Moulds, machine setup and freight from overseas are most economical in bulk, so suppliers set a floor that makes each order worth fulfilling. That logic suits established brands moving volume — but it's brutal for someone testing their first three products.",
+      },
+      { type: "h2", text: "The hidden cost of a high MOQ" },
+      {
+        type: "p",
+        text: "A 1,000-unit minimum per item means a three-product range can require 3,000+ pieces before you've sold a single unit. That's money tied up in stock, storage to find, and real risk if a product doesn't land. Worse, it discourages experimentation — the very thing a new brand needs to find what sells.",
+      },
+      { type: "h2", text: "A better model for small brands" },
+      {
+        type: "p",
+        text: "Be Different Packaging is built around low minimums: you can order most items from just 10 units. That changes the maths entirely. You can launch a full range cheaply, see which products move, and reorder your winners — scaling stock to demand instead of betting on it upfront.",
+      },
+      { type: "h2", text: "Tiered pricing: the best of both" },
+      {
+        type: "p",
+        text: "Low minimums don't mean you're stuck with high prices forever. Our pricing is tiered and fully transparent — the unit cost drops as your quantities grow. So you start small at a fair price, and your margins improve automatically as you scale. There's a clear, affordable path from your first 10 units to your first 10,000.",
+      },
+      {
+        type: "p",
+        text: "If a high MOQ has been holding your brand back, it no longer has to. Start with the quantities you can actually sell, and grow from there.",
+      },
+    ],
+    related: [
+      { href: "/shop", label: "Shop packaging from 10 units" },
+      { href: "/for-business", label: "Bulk & wholesale options" },
+      { href: "/collections/cosmetic-jars", label: "Cosmetic jars" },
+      { href: "/collections/dropper-bottles", label: "Dropper bottles" },
+    ],
+  },
+  {
+    slug: "how-to-get-your-logo-on-cosmetic-bottles-south-africa",
+    title: "How to Get Your Logo on Cosmetic Bottles in South Africa",
+    description:
+      "Custom branding for cosmetic bottles in South Africa — silk screen vs hot stamping vs colour change, costs, artwork tips and minimums.",
+    excerpt:
+      "Branded packaging makes a small range look established. Here's how logo printing on bottles and jars works — the methods, the artwork, and what it costs.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "Putting your logo on your packaging is one of the fastest ways to make a young skincare brand look established. A branded jar or bottle reads as a real product, not a repackaged generic — and it lifts perceived value far beyond what the printing costs. Here's how it works in South Africa.",
+      },
+      { type: "h2", text: "Silk screen printing" },
+      {
+        type: "p",
+        text: "Silk screen presses ink directly onto the bottle or jar through a fine mesh. It's crisp, durable and excellent for logos and simple artwork in one or two colours. It's the most popular choice for cosmetic packaging because it looks clean and holds up well to handling and bathroom humidity.",
+      },
+      { type: "h2", text: "Hot stamping (foil)" },
+      {
+        type: "p",
+        text: "Hot stamping applies a metallic or coloured foil under heat and pressure — that gold or silver logo you see on premium skincare. It's the go-to when you want a luxurious, reflective finish that signals a high-end product. Best for bold, solid logos rather than fine detail.",
+      },
+      { type: "h2", text: "Colour change" },
+      {
+        type: "p",
+        text: "Beyond printing your logo, you can change the colour or finish of the bottle or lid itself — frosted, matte, or a custom shade — to match your brand palette. Combined with a printed logo, it creates a fully coordinated, bespoke look.",
+      },
+      { type: "h2", text: "Getting your artwork right" },
+      {
+        type: "ul",
+        items: [
+          "Supply your logo as a vector file (AI, EPS, SVG or PDF) so it scales cleanly.",
+          "Keep one- or two-colour designs for silk screen; bold, solid shapes for hot stamping.",
+          "Allow for the curved surface — very fine detail and tiny text can be hard to print on small bottles.",
+          "Decide placement (front panel, lid, or both) before you order.",
+        ],
+      },
+      { type: "h2", text: "Costs and minimums" },
+      {
+        type: "p",
+        text: "Customisation pricing depends on the method and quantity, and like our packaging it's transparent and tiered. You don't need a giant order to brand your products — talk to us about the current minimums for silk screen, hot stamping and colour change, and we'll help you choose the most cost-effective option for your range.",
+      },
+      {
+        type: "p",
+        text: "Branded packaging is often the difference between looking like a hobby and looking like a brand. It's more affordable than most founders expect — and it's one of the highest-impact upgrades you can make.",
+      },
+    ],
+    related: [
+      { href: "/customise", label: "See customisation options" },
+      { href: "/collections/cosmetic-jars", label: "Jars to brand" },
+      { href: "/collections/dropper-bottles", label: "Dropper bottles to brand" },
+      { href: "/contact", label: "Ask about branding your range" },
+    ],
+  },
+  {
+    slug: "cosmetic-packaging-for-hotels-spas-south-africa",
+    title: "Cosmetic Packaging for Hotels and Spas: What to Order and How Much",
+    description:
+      "A guide to amenity packaging for South African hotels and spas — bottle types, sizes, refillable vs single-use, branding and quantities.",
+    excerpt:
+      "Guest amenities shape how your property feels. Here's what packaging to order for a hotel or spa, in what sizes, and how to make it on-brand.",
+    date: "2026-06-27",
+    readMinutes: 5,
+    blocks: [
+      {
+        type: "p",
+        text: "For a hotel, lodge or spa, amenity packaging is part of the guest experience. Well-chosen, on-brand bottles signal quality the moment a guest walks into the bathroom. Here's how to think about what to order and how much.",
+      },
+      { type: "h2", text: "What to include" },
+      {
+        type: "p",
+        text: "A standard guest set usually covers shampoo, conditioner, body wash and body lotion, often with a bar or liquid soap. Spas may add massage oils, scrubs and treatment products in jars. Keep the line visually consistent — matching bottles, pumps and labels — so the set looks intentional rather than assembled from whatever was available.",
+      },
+      { type: "h2", text: "Refillable vs single-use" },
+      {
+        type: "p",
+        text: "Refillable wall-mounted or counter dispensers cut waste and cost per guest over time, and increasingly guests expect them. Single-use guest bottles still suit premium rooms and spa retail. Many properties mix the two: refillable for everyday toiletries, smaller branded bottles for premium suites or as retail items guests can buy.",
+      },
+      { type: "h2", text: "Sizes that make sense" },
+      {
+        type: "ul",
+        items: [
+          "Guest single-use: compact 30–50ml bottles.",
+          "Refillable in-room dispensers: 250ml+.",
+          "Spa retail: full-size bottles and jars customers can take home.",
+        ],
+      },
+      { type: "h2", text: "Make it on-brand" },
+      {
+        type: "p",
+        text: "Adding your property's logo with silk screen or hot stamping turns standard amenities into a branded touchpoint — and branded retail bottles become an extra revenue line in the spa shop. Even a small guesthouse can present a coordinated, professional range.",
+      },
+      { type: "h2", text: "How much to order" },
+      {
+        type: "p",
+        text: "Estimate from occupancy: rooms × turnover × your reorder window, plus a buffer. Because we supply from low minimums with tiered pricing, you can start with a modest order to trial a line, then scale to your true volume without overcommitting. Our team can help you match bottles, pumps and closures into one cohesive amenity range.",
+      },
+    ],
+    related: [
+      { href: "/collections/hotel-spa", label: "Hotel & spa amenity bottles" },
+      { href: "/for-business", label: "Bulk & B2B ordering" },
+      { href: "/collections/pump-bottles", label: "Pump bottles & dispensers" },
+      { href: "/contact", label: "Plan your amenity range" },
+    ],
+  },
 ];
 
 export function getPost(slug: string): Post | undefined {
