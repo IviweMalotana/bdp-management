@@ -53,6 +53,17 @@ public class EmailService
     public bool IsConfigured =>
         !string.IsNullOrEmpty(ResendApiKey) || !string.IsNullOrEmpty(SmtpHost);
 
+    /// <summary>
+    /// Which transport the running app will actually use for the next send.
+    /// "resend" (HTTPS API, preferred), "smtp" (fallback — blocked on most cloud
+    /// hosts), or "none". Surfaced on /api/email/status so the admin can see at a
+    /// glance whether the Resend key is being picked up at runtime.
+    /// </summary>
+    public string Transport =>
+        !string.IsNullOrEmpty(ResendApiKey) ? "resend"
+        : !string.IsNullOrEmpty(SmtpHost) ? "smtp"
+        : "none";
+
     public string FromAddress => _config["Email:FromAddress"] ?? "noreply@bdp.co.za";
 
     /// <summary>
@@ -161,6 +172,8 @@ public class EmailService
         message.Body = builder.ToMessageBody();
 
         using var smtp = new SmtpClient();
+        // Fail fast instead of hanging ~100s when a cloud host blocks SMTP ports.
+        smtp.Timeout = 15000; // ms
         await smtp.ConnectAsync(host,
             int.Parse(_config["Email:SmtpPort"] ?? "587"),
             SecureSocketOptions.StartTls);

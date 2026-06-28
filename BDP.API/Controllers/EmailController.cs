@@ -26,6 +26,7 @@ public class EmailController : ControllerBase
     {
         configured = _email.IsConfigured,
         fromAddress = _email.FromAddress,
+        transport = _email.Transport, // "resend" | "smtp" | "none"
     });
 
     // GET /api/email/logs — recent send history (sent / failed / skipped)

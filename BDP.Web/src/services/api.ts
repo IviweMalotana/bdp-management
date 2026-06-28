@@ -266,7 +266,7 @@ export const orders = {
 // ── Email ───────────────────────────────────────────────────────────────────────
 export const email = {
   status: () =>
-    http.get<{ configured: boolean; fromAddress: string }>('/email/status').then((r) => r.data),
+    http.get<{ configured: boolean; fromAddress: string; transport?: 'resend' | 'smtp' | 'none' }>('/email/status').then((r) => r.data),
 
   sendTest: (body: { to: string; subject?: string; message?: string }) =>
     http.post('/email/test', body).then((r) => r.data),
