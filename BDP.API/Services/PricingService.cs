@@ -95,6 +95,38 @@ public class PricingService
         return Math.Round(unit * quantity, 2);
     }
 
+    public record CustomisationLine(int OptionId, string Type, decimal CostZAR);
+
+    // Resolve the customisation option IDs on a line: the JSON list when present
+    // (multiple add-ons, e.g. printing + colour), else the legacy single id.
+    public static List<int> ParseCustomisationOptionIds(string? idsJson, int? legacySingle)
+    {
+        if (!string.IsNullOrWhiteSpace(idsJson))
+        {
+            try
+            {
+                var ids = JsonSerializer.Deserialize<List<int>>(idsJson);
+                if (ids != null && ids.Count > 0) return ids.Distinct().ToList();
+            }
+            catch { /* fall through to legacy */ }
+        }
+        return legacySingle.HasValue ? new List<int> { legacySingle.Value } : new List<int>();
+    }
+
+    // Per-option customisation costs for a line (each add-on priced and summed by callers).
+    public static List<CustomisationLine> ComputeCustomisationBreakdown(
+        IEnumerable<CustomisationOption> options, List<CustomisationSetting> settings, int quantity, decimal rate)
+    {
+        var lines = new List<CustomisationLine>();
+        foreach (var o in options)
+        {
+            var setting = settings.FirstOrDefault(s => s.Type == o.Type);
+            var cost = ComputeCustomisationCostZAR(o, setting, quantity, rate);
+            if (cost > 0) lines.Add(new CustomisationLine(o.Id, o.Type, cost));
+        }
+        return lines;
+    }
+
     private static readonly Dictionary<int, decimal> MarkupTable = MarkupAnchors
         .ToDictionary(a => a.Qty, a => a.Markup);
 

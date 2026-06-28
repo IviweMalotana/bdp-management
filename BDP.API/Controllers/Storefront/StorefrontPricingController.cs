@@ -18,14 +18,19 @@ public class StorefrontPricingController : ControllerBase
         _pricing = pricing;
     }
 
-    public record QuoteLine(int VariantId, int Quantity, int? CustomisationOptionId);
+    public record QuoteLine(int VariantId, int Quantity, int? CustomisationOptionId, int[]? CustomisationOptionIds);
 
     [HttpPost("quote")]
     public async Task<IActionResult> Quote([FromBody] List<QuoteLine> lines)
     {
         var variantIds = lines.Select(l => l.VariantId).Distinct().ToList();
-        var customIds = lines.Where(l => l.CustomisationOptionId.HasValue)
-                             .Select(l => l.CustomisationOptionId!.Value).Distinct().ToList();
+        // All customisation IDs referenced (single or multiple) across the quote.
+        var customIds = lines
+            .SelectMany(l => PricingService.ParseCustomisationOptionIds(
+                l.CustomisationOptionIds != null && l.CustomisationOptionIds.Length > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(l.CustomisationOptionIds) : null,
+                l.CustomisationOptionId))
+            .Distinct().ToList();
 
         var variants = await _db.ProductVariants
             .Include(v => v.PricingTiers)
@@ -65,11 +70,13 @@ public class StorefrontPricingController : ControllerBase
             decimal unitPrice = PricingService.InterpolateTierPrice(tiers, line.Quantity);
             var lineTotal = Math.Round(unitPrice * line.Quantity, 2);
 
-            var co = line.CustomisationOptionId.HasValue
-                ? customOptions.FirstOrDefault(c => c.Id == line.CustomisationOptionId.Value)
-                : null;
-            var coSetting = co != null ? customSettings.FirstOrDefault(s => s.Type == co.Type) : null;
-            decimal customCost = PricingService.ComputeCustomisationCostZAR(co, coSetting, line.Quantity, rate);
+            var lineIds = PricingService.ParseCustomisationOptionIds(
+                line.CustomisationOptionIds != null && line.CustomisationOptionIds.Length > 0
+                    ? System.Text.Json.JsonSerializer.Serialize(line.CustomisationOptionIds) : null,
+                line.CustomisationOptionId);
+            var lineOpts = lineIds.Select(id => customOptions.FirstOrDefault(c => c.Id == id)).Where(o => o != null).Select(o => o!).ToList();
+            decimal customCost = Math.Round(
+                PricingService.ComputeCustomisationBreakdown(lineOpts, customSettings, line.Quantity, rate).Sum(b => b.CostZAR), 2);
 
             subtotal += lineTotal + customCost;
 

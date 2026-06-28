@@ -7,6 +7,9 @@ public class CartItem
     public int ProductVariantId { get; set; }
     public int Quantity { get; set; }
     public int? CustomisationOptionId { get; set; }
+    // JSON array of customisation option IDs when a line has more than one add-on
+    // (e.g. printing + colour change). Falls back to CustomisationOptionId when null.
+    public string? CustomisationOptionIdsJson { get; set; }
     public string? CustomisationNotes { get; set; }
     public DateTime AddedAt { get; set; } = DateTime.UtcNow;
     public Cart Cart { get; set; } = null!;

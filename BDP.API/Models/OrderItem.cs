@@ -7,6 +7,9 @@ public class OrderItem
     public int ProductVariantId { get; set; }
     public int PricingTierId { get; set; }
     public int? CustomisationOptionId { get; set; }
+    // JSON array of customisation option IDs when a line has more than one add-on.
+    // Falls back to CustomisationOptionId when null. CustomisationCostZAR holds the sum.
+    public string? CustomisationOptionIdsJson { get; set; }
     public int? CustomisationPricingTierId { get; set; }
     public int Quantity { get; set; }
     public decimal UnitPriceZAR { get; set; }

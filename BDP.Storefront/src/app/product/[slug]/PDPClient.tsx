@@ -418,13 +418,15 @@ export default function PDPClient({ product }: { product: Product }) {
     setAdding(true);
     try {
       const token = getSessionToken();
-      // Resolve the selected customisation option's DB id (silk/hot are mutually exclusive; colour is independent)
-      const selectedOption = printMethod === "SilkScreen" ? silkOption
-        : printMethod === "HotStamping" ? hotOption
+      // A line can carry one printing method (silk OR hot) AND a colour change.
+      // Collect every selected, enabled customisation option id.
+      const printOption = silkScreen && silkEnabled ? silkOption
+        : hotStamping && hotEnabled ? hotOption
         : null;
-      // If only colour change is selected (no print method), use colour option id
-      const customisationId = selectedOption?.id ?? (colourChange ? colourOption?.id : undefined);
-      const result = await addToCart(token, selectedVariant.id, quantity, customisationId, jwt ?? undefined);
+      const customisationIds: number[] = [];
+      if (printOption?.id != null) customisationIds.push(printOption.id);
+      if (colourChange && colourEnabled && colourOption?.id != null) customisationIds.push(colourOption.id);
+      const result = await addToCart(token, selectedVariant.id, quantity, customisationIds, jwt ?? undefined);
       setCart(result as Parameters<typeof setCart>[0]);
       setAdded(true);
       openDrawer();
@@ -615,7 +617,7 @@ export default function PDPClient({ product }: { product: Product }) {
                         processingNote="+7 days production"
                         enabled={silkEnabled}
                         checked={silkScreen}
-                        onChange={(v) => { setPrintMethod(v ? "SilkScreen" : null); if (v) setColourChange(false); }}
+                        onChange={(v) => setPrintMethod(v ? "SilkScreen" : null)}
                         cost={silkEnabled && silkScreen ? silkCost : null}
                         formatAmount={formatPrice}
                         lockedMessage={silkEnabled ? undefined : `Available from ${silkOption.minimumQuantity.toLocaleString()} units`}
@@ -630,7 +632,7 @@ export default function PDPClient({ product }: { product: Product }) {
                         processingNote="+7 days production"
                         enabled={hotEnabled}
                         checked={hotStamping}
-                        onChange={(v) => { setPrintMethod(v ? "HotStamping" : null); if (v) setColourChange(false); }}
+                        onChange={(v) => setPrintMethod(v ? "HotStamping" : null)}
                         cost={hotEnabled && hotStamping ? hotCost : null}
                         formatAmount={formatPrice}
                         lockedMessage={hotEnabled ? undefined : `Available from ${hotOption.minimumQuantity.toLocaleString()} units`}
@@ -651,7 +653,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     processingNote="+2 days production"
                     enabled={colourEnabled}
                     checked={colourChange}
-                    onChange={(v) => { setColourChange(v); if (v) setPrintMethod(null); }}
+                    onChange={setColourChange}
                     cost={colourEnabled ? colourCost : null}
                     formatAmount={formatPrice}
                     lockedMessage={colourEnabled ? undefined : `Available from ${colourOption.minimumQuantity.toLocaleString()} units`}

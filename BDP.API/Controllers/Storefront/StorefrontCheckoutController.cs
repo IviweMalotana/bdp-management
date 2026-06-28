@@ -108,8 +108,9 @@ public class StorefrontCheckoutController : ControllerBase
         if (cart == null) return NotFound("Cart not found.");
         if (!cart.Items.Any()) return BadRequest("Cart is empty.");
 
-        // Pre-load customisation settings for pricing
+        // Pre-load customisation settings + options for pricing
         var customSettings = await _db.CustomisationSettings.ToListAsync();
+        var customOptions = await _db.CustomisationOptions.ToListAsync();
         var rate = await _pricing.GetLiveExchangeRate();
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -138,19 +139,20 @@ public class StorefrontCheckoutController : ControllerBase
             var lineTotal = Math.Round(unitPrice * item.Quantity, 2);
             subtotal += lineTotal;
 
-            // Customisation cost — shared calc so checkout == cart == quote == order.
-            var coSetting = item.CustomisationOption != null
-                ? customSettings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type)
-                : null;
-            decimal customisationCost = PricingService.ComputeCustomisationCostZAR(
-                item.CustomisationOption, coSetting, item.Quantity, rate);
+            // Customisation cost — sum ALL add-ons on the line (printing + colour), with
+            // the SAME calc as cart/quote so checkout == cart == quote == order.
+            var coIds = PricingService.ParseCustomisationOptionIds(item.CustomisationOptionIdsJson, item.CustomisationOptionId);
+            var coOpts = coIds.Select(id => customOptions.FirstOrDefault(o => o.Id == id)).Where(o => o != null).Select(o => o!).ToList();
+            var coBreakdown = PricingService.ComputeCustomisationBreakdown(coOpts, customSettings, item.Quantity, rate);
+            decimal customisationCost = Math.Round(coBreakdown.Sum(b => b.CostZAR), 2);
             subtotal += customisationCost;
 
             orderItems.Add(new OrderItem
             {
                 ProductVariantId = item.ProductVariantId,
                 PricingTierId = tier.Id,
-                CustomisationOptionId = item.CustomisationOptionId,
+                CustomisationOptionId = coIds.Count > 0 ? coIds[0] : (int?)null,
+                CustomisationOptionIdsJson = item.CustomisationOptionIdsJson,
                 Quantity = item.Quantity,
                 UnitPriceZAR = unitPrice,
                 LineTotal = lineTotal,

@@ -15,7 +15,7 @@ interface OrderItem {
   unitPriceZAR: number;
   lineTotal: number;
   customisationCostZAR?: number;
-  customisationType?: string | null;
+  customisationTypes?: string[];
 }
 
 interface TrackingEvent {
@@ -360,9 +360,9 @@ export default function OrderDetailPage() {
                 <p className="text-xs mt-0.5" style={{ color: "#4A4540" }}>
                   SKU: {item.variantSku} · Qty: {item.quantity}
                 </p>
-                {item.customisationType && (item.customisationCostZAR ?? 0) > 0 && (
+                {(item.customisationTypes?.length ?? 0) > 0 && (item.customisationCostZAR ?? 0) > 0 && (
                   <p className="text-xs mt-0.5" style={{ color: "#4A4540" }}>
-                    {customisationLabel(item.customisationType)}: +{formatZAR(item.customisationCostZAR!)}
+                    {item.customisationTypes!.map(customisationLabel).join(" + ")}: +{formatZAR(item.customisationCostZAR!)}
                   </p>
                 )}
               </div>

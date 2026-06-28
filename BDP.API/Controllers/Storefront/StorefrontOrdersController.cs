@@ -60,6 +60,8 @@ public class StorefrontOrdersController : ControllerBase
 
         if (order == null) return NotFound();
 
+        var allOptions = await _db.CustomisationOptions.ToListAsync();
+
         return Ok(new
         {
             order.Id,
@@ -81,17 +83,25 @@ public class StorefrontOrdersController : ControllerBase
             order.ShippedDate,
             order.DeliveredDate,
             order.CreatedAt,
-            items = order.Items.Select(i => new
+            items = order.Items.Select(i =>
             {
-                i.Id,
-                i.ProductVariantId,
-                productName = i.ProductVariant.Product.Name,
-                variantSku = i.ProductVariant.SKU,
-                i.Quantity,
-                i.UnitPriceZAR,
-                i.LineTotal,
-                i.CustomisationCostZAR,
-                customisationType = i.CustomisationOption != null ? i.CustomisationOption.Type : null
+                var coIds = PricingService.ParseCustomisationOptionIds(i.CustomisationOptionIdsJson, i.CustomisationOptionId);
+                var coTypes = coIds
+                    .Select(cid => allOptions.FirstOrDefault(o => o.Id == cid)?.Type)
+                    .Where(t => t != null)
+                    .ToList();
+                return new
+                {
+                    i.Id,
+                    i.ProductVariantId,
+                    productName = i.ProductVariant.Product.Name,
+                    variantSku = i.ProductVariant.SKU,
+                    i.Quantity,
+                    i.UnitPriceZAR,
+                    i.LineTotal,
+                    i.CustomisationCostZAR,
+                    customisationTypes = coTypes
+                };
             })
         });
     }

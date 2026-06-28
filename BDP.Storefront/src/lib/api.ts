@@ -58,7 +58,7 @@ export function addToCart(
   sessionToken: string,
   variantId: number,
   quantity: number,
-  customisationOptionId?: number,
+  customisationOptionIds?: number[],
   jwt?: string
 ) {
   return request("/api/storefront/cart/items", {
@@ -67,7 +67,13 @@ export function addToCart(
       "X-Cart-Token": sessionToken,
       ...(jwt ? { Authorization: `Bearer ${jwt}` } : {}),
     },
-    body: JSON.stringify({ variantId, quantity, customisationOptionId }),
+    // Send the array plus the first id for backward compatibility.
+    body: JSON.stringify({
+      variantId,
+      quantity,
+      customisationOptionIds,
+      customisationOptionId: customisationOptionIds?.[0],
+    }),
   });
 }
 
