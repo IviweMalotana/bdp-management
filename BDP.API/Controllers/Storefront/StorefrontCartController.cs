@@ -60,11 +60,13 @@ public class StorefrontCartController : ControllerBase
     private async Task<object> SerialiseCartAsync(Cart cart)
     {
         var settings = await _db.CustomisationSettings.ToListAsync();
+        var options = await _db.CustomisationOptions.ToListAsync();
         var rate = await _pricing.GetLiveExchangeRate();
-        return SerialiseCart(cart, settings, rate);
+        return SerialiseCart(cart, settings, options, rate);
     }
 
-    private object SerialiseCart(Cart cart, List<CustomisationSetting> settings, decimal rate)
+    private object SerialiseCart(Cart cart, List<CustomisationSetting> settings,
+        List<CustomisationOption> options, decimal rate)
     {
         return new
         {
@@ -77,11 +79,11 @@ public class StorefrontCartController : ControllerBase
                 var unitPrice = PricingService.InterpolateTierPrice(tiers, item.Quantity);
                 var bottleTotal = Math.Round(unitPrice * item.Quantity, 2);
 
-                var setting = item.CustomisationOption != null
-                    ? settings.FirstOrDefault(s => s.Type == item.CustomisationOption.Type)
-                    : null;
-                var customisationCost = PricingService.ComputeCustomisationCostZAR(
-                    item.CustomisationOption, setting, item.Quantity, rate);
+                // A line may carry several add-ons (printing + colour). Sum them all.
+                var ids = PricingService.ParseCustomisationOptionIds(item.CustomisationOptionIdsJson, item.CustomisationOptionId);
+                var opts = ids.Select(id => options.FirstOrDefault(o => o.Id == id)).Where(o => o != null).Select(o => o!).ToList();
+                var breakdown = PricingService.ComputeCustomisationBreakdown(opts, settings, item.Quantity, rate);
+                var customisationCost = Math.Round(breakdown.Sum(b => b.CostZAR), 2);
 
                 var imageUrl = item.ProductVariant.Product?.Images
                     .OrderBy(i => i.SortOrder).FirstOrDefault()?.Url;
@@ -99,6 +101,8 @@ public class StorefrontCartController : ControllerBase
                     },
                     item.Quantity,
                     item.CustomisationOptionId,
+                    customisationOptionIds = ids,
+                    customisations = breakdown.Select(b => new { type = b.Type, costZAR = b.CostZAR }),
                     item.CustomisationNotes,
                     unitPriceZAR = unitPrice,
                     customisationCostZAR = customisationCost,
@@ -110,6 +114,10 @@ public class StorefrontCartController : ControllerBase
             })
         };
     }
+
+    // Canonical sorted-CSV key for a line's customisation set (for merge identity).
+    private static string CustomisationKey(string? idsJson, int? legacySingle)
+        => string.Join(",", PricingService.ParseCustomisationOptionIds(idsJson, legacySingle).OrderBy(x => x));
 
     [HttpGet]
     public async Task<IActionResult> GetCart()
@@ -123,7 +131,9 @@ public class StorefrontCartController : ControllerBase
         return Ok(await SerialiseCartAsync(cart));
     }
 
-    public record AddItemRequest(int VariantId, int Quantity, int? CustomisationOptionId, string? CustomisationNotes);
+    // CustomisationOptionIds supports multiple add-ons per line (printing + colour);
+    // CustomisationOptionId is kept for backward compatibility (older clients).
+    public record AddItemRequest(int VariantId, int Quantity, int? CustomisationOptionId, int[]? CustomisationOptionIds, string? CustomisationNotes);
 
     [HttpPost("items")]
     public async Task<IActionResult> AddItem([FromBody] AddItemRequest req)
@@ -133,7 +143,16 @@ public class StorefrontCartController : ControllerBase
 
         var cart = ResolveCart(userId, sessionToken) ?? CreateCart(userId, sessionToken);
 
-        var existing = cart.Items.FirstOrDefault(i => i.ProductVariantId == req.VariantId && i.CustomisationOptionId == req.CustomisationOptionId);
+        // Canonical, de-duplicated, sorted set of customisation option IDs for this line.
+        var ids = (req.CustomisationOptionIds != null && req.CustomisationOptionIds.Length > 0)
+            ? req.CustomisationOptionIds.Distinct().OrderBy(x => x).ToList()
+            : (req.CustomisationOptionId.HasValue ? new List<int> { req.CustomisationOptionId.Value } : new List<int>());
+        var idsJson = ids.Count > 0 ? System.Text.Json.JsonSerializer.Serialize(ids) : null;
+        var key = string.Join(",", ids);
+
+        var existing = cart.Items.FirstOrDefault(i =>
+            i.ProductVariantId == req.VariantId &&
+            CustomisationKey(i.CustomisationOptionIdsJson, i.CustomisationOptionId) == key);
         if (existing != null)
         {
             existing.Quantity += req.Quantity;
@@ -144,7 +163,8 @@ public class StorefrontCartController : ControllerBase
             {
                 ProductVariantId = req.VariantId,
                 Quantity = req.Quantity,
-                CustomisationOptionId = req.CustomisationOptionId,
+                CustomisationOptionId = ids.Count > 0 ? ids[0] : (int?)null,
+                CustomisationOptionIdsJson = idsJson,
                 CustomisationNotes = req.CustomisationNotes
             });
         }
@@ -230,7 +250,10 @@ public class StorefrontCartController : ControllerBase
 
         foreach (var item in guestCart.Items)
         {
-            var existing = userCart.Items.FirstOrDefault(i => i.ProductVariantId == item.ProductVariantId && i.CustomisationOptionId == item.CustomisationOptionId);
+            var existing = userCart.Items.FirstOrDefault(i =>
+                i.ProductVariantId == item.ProductVariantId &&
+                CustomisationKey(i.CustomisationOptionIdsJson, i.CustomisationOptionId)
+                    == CustomisationKey(item.CustomisationOptionIdsJson, item.CustomisationOptionId));
             if (existing != null)
                 existing.Quantity += item.Quantity;
             else
@@ -239,6 +262,7 @@ public class StorefrontCartController : ControllerBase
                     ProductVariantId = item.ProductVariantId,
                     Quantity = item.Quantity,
                     CustomisationOptionId = item.CustomisationOptionId,
+                    CustomisationOptionIdsJson = item.CustomisationOptionIdsJson,
                     CustomisationNotes = item.CustomisationNotes
                 });
         }
