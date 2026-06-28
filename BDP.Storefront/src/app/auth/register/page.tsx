@@ -153,14 +153,6 @@ function RegisterForm() {
                 <option value="Other">Other</option>
               </select>
             </div>
-
-            <div>
-              <label className="block text-xs uppercase tracking-widest mb-1" style={labelStyle}>Payment terms *</label>
-              <select name="requestedPaymentTermsDays" value={biz.requestedPaymentTermsDays} onChange={handleBizChange} required className="w-full text-sm px-3 py-2.5 border outline-none" style={inputStyle}>
-                <option value={30}>30 days</option>
-                <option value={60}>60 days</option>
-              </select>
-            </div>
           </div>
         )}
 

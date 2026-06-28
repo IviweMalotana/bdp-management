@@ -28,11 +28,6 @@ const inp = (err?: boolean) =>
   `w-full px-3 py-2 bg-gray-800 border rounded-lg text-sm text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500 ${err ? 'border-red-500' : 'border-gray-700'}`
 
 const INDUSTRIES = ['Beauty', 'Healthcare', 'Pharmaceutical', 'Hospitality', 'Retail', 'Other']
-const PAYMENT_TERMS = [
-  { label: 'Net 30', value: '30' },
-  { label: 'Net 60', value: '60' },
-  { label: 'Net 90', value: '90' },
-]
 
 export default function ClientForm() {
   const navigate = useNavigate()
@@ -184,30 +179,16 @@ export default function ClientForm() {
           )}
         </div>
 
-        {/* Financial */}
-        <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Financial Settings</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Credit Limit (ZAR)</label>
-              <input {...register('creditLimit')} type="number" min={0} step={1000} className={inp()} placeholder="0" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Payment Terms</label>
-              <select {...register('paymentTermsDays')} className={inp()}>
-                {PAYMENT_TERMS.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {isEdit && (
+        {/* Status (edit only) — credit limit / payment terms removed: customers pay upfront */}
+        {isEdit && (
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
+            <h2 className="text-sm font-semibold text-gray-300 uppercase tracking-wider">Status</h2>
             <label className="flex items-center gap-2 cursor-pointer">
               <input type="checkbox" {...register('isActive')} className="accent-indigo-500" />
               <span className="text-sm text-gray-300">Client is active</span>
             </label>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="flex items-center justify-end gap-3">
           <button type="button" onClick={() => navigate(-1)} className="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">

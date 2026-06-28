@@ -280,10 +280,12 @@ public class ClientsController : ControllerBase
         return Ok(result);
     }
 
-    public record ApproveB2BRequest(decimal CreditLimit, int PaymentTermsDays);
+    // Credit/payment-terms removed: customers pay upfront. Fields are optional and
+    // ignored for compatibility; approval is a simple yes/no.
+    public record ApproveB2BRequest(decimal? CreditLimit = null, int? PaymentTermsDays = null);
 
     [HttpPost("{id}/approve-b2b")]
-    public async Task<IActionResult> ApproveB2B(int id, [FromBody] ApproveB2BRequest req)
+    public async Task<IActionResult> ApproveB2B(int id, [FromBody] ApproveB2BRequest? req)
     {
         var client = await _context.Clients.FindAsync(id);
         if (client == null) return NotFound(new { message = "Client not found." });
@@ -292,8 +294,6 @@ public class ClientsController : ControllerBase
         if (user == null) return NotFound(new { message = "No user linked to this client." });
 
         client.IsActive = true;
-        client.CreditLimit = req.CreditLimit;
-        client.PaymentTermsDays = req.PaymentTermsDays;
         user.B2BStatus = "Approved";
 
         await _context.SaveChangesAsync();

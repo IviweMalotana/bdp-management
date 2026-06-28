@@ -90,8 +90,8 @@ export default function ClientDetail() {
         {[
           { label: 'Reg Number', value: client.companyRegistrationNumber ?? '—' },
           { label: 'VAT Number', value: client.vatNumber ?? '—' },
-          { label: 'Credit Limit', value: fmt(client.creditLimit) },
-          { label: 'Payment Terms', value: `Net ${client.paymentTermsDays}` },
+          { label: 'Industry', value: client.industry ?? '—' },
+          { label: 'Contact Phone', value: client.contactPhone ?? '—' },
         ].map((card) => (
           <div key={card.label} className="bg-gray-900 border border-gray-800 rounded-xl p-4">
             <p className="text-xs text-gray-500 mb-1">{card.label}</p>

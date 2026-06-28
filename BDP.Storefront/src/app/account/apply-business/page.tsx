@@ -78,7 +78,7 @@ export default function ApplyBusinessPage() {
       </div>
 
       <p className="text-sm mb-8" style={{ color: "#4A4540" }}>
-        Apply for a business account to access bulk pricing, extended payment terms, and a dedicated account manager.
+        Apply for a business account to access recurring orders and a dedicated account manager.
         Applications are reviewed within 2 business days.
       </p>
 
@@ -155,20 +155,6 @@ export default function ApplyBusinessPage() {
           </select>
         </div>
 
-        <div>
-          <label className="block text-xs uppercase tracking-widest mb-1" style={{ color: "#4A4540" }}>Requested payment terms *</label>
-          <select
-            name="requestedPaymentTermsDays"
-            value={form.requestedPaymentTermsDays}
-            onChange={handleChange}
-            required
-            className="w-full text-sm px-3 py-2.5 border outline-none"
-            style={inputStyle}
-          >
-            <option value={30}>30 days</option>
-            <option value={60}>60 days</option>
-          </select>
-        </div>
 
         {error && <p className="text-xs" style={{ color: "#D4A89A" }}>{error}</p>}
 

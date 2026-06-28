@@ -131,7 +131,7 @@ export default function AccountPage() {
         >
           <div>
             <p className="text-sm font-medium" style={{ color: "#1C1A17" }}>Trade with BDP</p>
-            <p className="text-xs mt-0.5" style={{ color: "#4A4540" }}>Apply for a business account to access bulk pricing and extended payment terms.</p>
+            <p className="text-xs mt-0.5" style={{ color: "#4A4540" }}>Apply for a business account to access recurring orders and a dedicated account manager.</p>
           </div>
           <Link
             href="/account/apply-business"

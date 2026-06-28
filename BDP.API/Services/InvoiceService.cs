@@ -35,7 +35,9 @@ public class InvoiceService
             ?? throw new KeyNotFoundException($"Order {orderId} not found");
 
         var invoiceNumber = $"INV-{DateTime.UtcNow:yyyyMM}-{order.Id:D4}";
-        var dueDate = DateTime.UtcNow.AddDays(order.Client?.PaymentTermsDays ?? 30);
+        // Customers pay upfront — invoices are confirmations/receipts, due on receipt
+        // (no on-account credit terms).
+        var dueDate = DateTime.UtcNow;
 
         var invoice = new Invoice
         {
@@ -189,9 +191,8 @@ public class InvoiceService
                         row.ConstantItem(200).Column(c =>
                         {
                             c.Item().Text($"Invoice Date: {invoice.InvoiceDate:dd MMM yyyy}");
-                            c.Item().Text($"Due Date: {invoice.DueDate:dd MMM yyyy}");
                             c.Item().Text($"Order #: {order.OrderNumber}");
-                            c.Item().Text($"Payment Terms: {order.Client?.PaymentTermsDays ?? 30} days");
+                            c.Item().Text("Payment Terms: Due on receipt");
                         });
                     });
 
@@ -282,8 +283,7 @@ public class InvoiceService
         <p>Please find your invoice <strong>{invoice.InvoiceNumber}</strong> attached.</p>
         <table>
             <tr><td>Invoice Date:</td><td>{invoice.InvoiceDate:dd MMM yyyy}</td></tr>
-            <tr><td>Due Date:</td><td>{invoice.DueDate:dd MMM yyyy}</td></tr>
-            <tr><td>Amount Due:</td><td><strong>R {invoice.TotalZAR:N2}</strong></td></tr>
+            <tr><td>Total:</td><td><strong>R {invoice.TotalZAR:N2}</strong></td></tr>
         </table>
         {(string.IsNullOrEmpty(invoice.PaystackPaymentRequestId) ? string.Empty :
             $"<p>Pay online: <a href=\"https://paystack.com/pay/{invoice.PaystackPaymentRequestId}\">Click here to pay</a></p>")}
