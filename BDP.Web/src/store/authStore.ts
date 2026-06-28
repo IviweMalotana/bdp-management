@@ -6,6 +6,10 @@ interface AuthState {
   user: User | null
   token: string | null
   isAuthenticated: boolean
+  // True once we've checked localStorage for an existing session. Route guards must
+  // wait for this before redirecting, otherwise a hard reload of a deep link bounces
+  // an authenticated user to login (the token is read in an effect, after first render).
+  isInitialized: boolean
   isLoading: boolean
   error: string | null
 
@@ -19,6 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   token: null,
   isAuthenticated: false,
+  isInitialized: false,
   isLoading: false,
   error: null,
 
@@ -28,12 +33,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     if (token && userRaw) {
       try {
         const user: User = JSON.parse(userRaw)
-        set({ token, user, isAuthenticated: true })
+        set({ token, user, isAuthenticated: true, isInitialized: true })
+        return
       } catch {
         localStorage.removeItem('bdp_token')
         localStorage.removeItem('bdp_user')
       }
     }
+    set({ isInitialized: true })
   },
 
   login: async (email, password) => {

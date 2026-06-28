@@ -72,6 +72,12 @@ public class StorefrontCheckoutController : ControllerBase
         return Ok(new { shippingZAR, estimatedDays = "28-42" });
     }
 
+    // Which payment providers the storefront should offer. PayJustNow only appears when
+    // it's configured (env vars set), so customers never see a button that can't work.
+    [HttpGet("payment-methods")]
+    public IActionResult PaymentMethods()
+        => Ok(new { paystack = true, payJustNow = _payJustNow.IsConfigured });
+
     public record CheckoutAddress(string RecipientName, string Line1, string? Line2, string City, string Province, string PostalCode, string Country = "ZA", string? Phone = null);
     public record InitiateRequest(
         int CartId,

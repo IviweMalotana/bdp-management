@@ -1,12 +1,12 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
-import { getShippingOptions, initiateCheckout, verifyCheckout, ShippingOption } from "@/lib/api";
+import { getShippingOptions, initiateCheckout, verifyCheckout, getPaymentMethods, ShippingOption } from "@/lib/api";
 
 const SA_PROVINCES = [
   "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal",
@@ -273,6 +273,15 @@ export default function CheckoutPage() {
   const shippingCountry = watch("shipping.country");
   const [formError, setFormError] = useState<string | null>(null);
   const [paymentProvider, setPaymentProvider] = useState<"Paystack" | "PayJustNow">("Paystack");
+  const [payJustNowEnabled, setPayJustNowEnabled] = useState(false);
+
+  // Only offer PayJustNow when the server says it's configured, so customers never see
+  // a payment option that can't complete.
+  useEffect(() => {
+    getPaymentMethods()
+      .then((m) => setPayJustNowEnabled(!!m.payJustNow))
+      .catch(() => setPayJustNowEnabled(false));
+  }, []);
 
   // Called when the step-1 form fails validation. Surfaces a banner and scrolls to the
   // top so the user always gets feedback instead of the Continue button appearing to do
@@ -631,7 +640,8 @@ export default function CheckoutPage() {
             </div>
           )}
 
-          {/* Payment method */}
+          {/* Payment method — only shown when there's a choice (PayJustNow configured) */}
+          {payJustNowEnabled && (
           <div className="mt-2">
             <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Payment method</p>
             <div className="grid grid-cols-2 gap-3">
@@ -659,6 +669,7 @@ export default function CheckoutPage() {
               })}
             </div>
           </div>
+          )}
 
           <div className="flex gap-3">
             <button
