@@ -15,6 +15,7 @@ public class StorefrontCheckoutController : ControllerBase
     private readonly AppDbContext _db;
     private readonly ShippingCalculatorService _shipping;
     private readonly PaystackService _paystack;
+    private readonly PayJustNowService _payJustNow;
     private readonly IConfiguration _config;
     private readonly PricingService _pricing;
     private readonly YunExpressService _yunExpress;
@@ -23,6 +24,7 @@ public class StorefrontCheckoutController : ControllerBase
         AppDbContext db,
         ShippingCalculatorService shipping,
         PaystackService paystack,
+        PayJustNowService payJustNow,
         IConfiguration config,
         PricingService pricing,
         YunExpressService yunExpress)
@@ -30,6 +32,7 @@ public class StorefrontCheckoutController : ControllerBase
         _db = db;
         _shipping = shipping;
         _paystack = paystack;
+        _payJustNow = payJustNow;
         _config = config;
         _pricing = pricing;
         _yunExpress = yunExpress;
@@ -69,6 +72,12 @@ public class StorefrontCheckoutController : ControllerBase
         return Ok(new { shippingZAR, estimatedDays = "28-42" });
     }
 
+    // Which payment providers the storefront should offer. PayJustNow only appears when
+    // it's configured (env vars set), so customers never see a button that can't work.
+    [HttpGet("payment-methods")]
+    public IActionResult PaymentMethods()
+        => Ok(new { paystack = true, payJustNow = _payJustNow.IsConfigured });
+
     public record CheckoutAddress(string RecipientName, string Line1, string? Line2, string City, string Province, string PostalCode, string Country = "ZA", string? Phone = null);
     public record InitiateRequest(
         int CartId,
@@ -78,7 +87,9 @@ public class StorefrontCheckoutController : ControllerBase
         string PaymentMethod = "Paystack_Card",
         string? ShippingServiceCode = null,
         string? ShippingServiceName = null,
-        decimal? ShippingPriceZAR = null
+        decimal? ShippingPriceZAR = null,
+        // "Paystack" (default) or "PayJustNow".
+        string PaymentProvider = "Paystack"
     );
 
     [HttpPost("initiate")]
@@ -214,6 +225,49 @@ public class StorefrontCheckoutController : ControllerBase
         if (cartItemsList.Any(ci => ci.Artworks.Any()))
             await _db.SaveChangesAsync();
 
+        // PayJustNow: create a checkout and return the redirect URL for the customer.
+        if (string.Equals(req.PaymentProvider, "PayJustNow", StringComparison.OrdinalIgnoreCase))
+        {
+            var addr = req.ShippingAddress;
+            var nameParts = (addr.RecipientName ?? string.Empty).Trim().Split(' ', 2);
+            var firstName = nameParts.Length > 0 && nameParts[0].Length > 0 ? nameParts[0] : "Customer";
+            var lastName = nameParts.Length > 1 ? nameParts[1] : firstName;
+            var mobile = new string((addr.Phone ?? string.Empty).Where(c => char.IsDigit(c) || c == '+').ToArray());
+
+            var callbackBase = $"{Request.Scheme}://{Request.Host}/api/storefront/checkout/payjustnow/callback";
+            // One summary line so the item total always equals the order amount.
+            var items = new[]
+            {
+                new PayJustNowService.CheckoutItem(order.OrderNumber, 1, $"BDP order {order.OrderNumber}", (long)Math.Round(totalZAR * 100))
+            };
+
+            var checkout = await _payJustNow.CreateCheckoutAsync(
+                new PayJustNowService.CheckoutCustomer(
+                    firstName, lastName, email, mobile,
+                    addr.Line1, addr.Line2, addr.City, addr.Province, addr.PostalCode),
+                order.OrderNumber,
+                (long)Math.Round(totalZAR * 100),
+                $"{callbackBase}?result=success",
+                $"{callbackBase}?result=fail",
+                items);
+
+            if (checkout == null)
+                return StatusCode(502, new { message = "Could not start PayJustNow checkout. Please try another payment method." });
+
+            // Store the PayJustNow token on the order so the callback can find it.
+            order.PaystackPaymentReference = checkout.Token;
+            order.PaymentMethod = "PayJustNow";
+            await _db.SaveChangesAsync();
+
+            return Ok(new
+            {
+                orderId = order.Id,
+                provider = "PayJustNow",
+                redirectUrl = checkout.RedirectTo,
+                amountZAR = totalZAR
+            });
+        }
+
         var (reference, authorizationUrl, accessCode) = await _paystack.InitializeTransactionAsync(email, totalZAR, order.Id);
         order.PaystackPaymentReference = reference;
         await _db.SaveChangesAsync();
@@ -221,11 +275,46 @@ public class StorefrontCheckoutController : ControllerBase
         return Ok(new
         {
             orderId = order.Id,
+            provider = "Paystack",
             paystackReference = reference,
             paystackAuthorizationUrl = authorizationUrl,
             paystackPublicKey = _config["Paystack:PublicKey"],
             amountZAR = totalZAR
         });
+    }
+
+    // PayJustNow calls this server-to-server after the customer completes (or fails)
+    // payment, with ?token=...&status=... . We mark the order paid on success and reply
+    // with { token, return_url } telling PayJustNow where to send the customer next.
+    // SECURITY: this trusts the status param. Before go-live, verify the checkout with
+    // PayJustNow by token (configuration/status endpoint) rather than trusting status.
+    [HttpGet("payjustnow/callback")]
+    [HttpPost("payjustnow/callback")]
+    public async Task<IActionResult> PayJustNowCallback([FromQuery] string? token, [FromQuery] string? status)
+    {
+        var storefront = (_config["STOREFRONT_URL"] ?? _config["Storefront:Url"]
+            ?? "https://www.bedifferentpackaging.com").TrimEnd('/');
+
+        if (string.IsNullOrWhiteSpace(token))
+            return Ok(new { token, return_url = $"{storefront}/checkout" });
+
+        var order = await _db.Orders.FirstOrDefaultAsync(o => o.PaystackPaymentReference == token);
+        if (order == null)
+            return Ok(new { token, return_url = $"{storefront}/checkout" });
+
+        var ok = string.Equals(status, "SUCCESS", StringComparison.OrdinalIgnoreCase);
+        if (ok)
+        {
+            if (!order.IsPaid)
+            {
+                order.IsPaid = true;
+                order.PaidAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+            }
+            return Ok(new { token, return_url = $"{storefront}/checkout/success/{order.Id}" });
+        }
+
+        return Ok(new { token, return_url = $"{storefront}/checkout?payment=failed" });
     }
 
     // Resolve the shipping price authoritatively from the SAME source shown to the

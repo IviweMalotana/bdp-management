@@ -1,12 +1,12 @@
 "use client";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
-import { getShippingOptions, initiateCheckout, verifyCheckout, ShippingOption } from "@/lib/api";
+import { getShippingOptions, initiateCheckout, verifyCheckout, getPaymentMethods, ShippingOption } from "@/lib/api";
 
 const SA_PROVINCES = [
   "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal",
@@ -272,6 +272,16 @@ export default function CheckoutPage() {
   const sameAsBilling = watch("sameAsBilling");
   const shippingCountry = watch("shipping.country");
   const [formError, setFormError] = useState<string | null>(null);
+  const [paymentProvider, setPaymentProvider] = useState<"Paystack" | "PayJustNow">("Paystack");
+  const [payJustNowEnabled, setPayJustNowEnabled] = useState(false);
+
+  // Only offer PayJustNow when the server says it's configured, so customers never see
+  // a payment option that can't complete.
+  useEffect(() => {
+    getPaymentMethods()
+      .then((m) => setPayJustNowEnabled(!!m.payJustNow))
+      .catch(() => setPayJustNowEnabled(false));
+  }, []);
 
   // Called when the step-1 form fails validation. Surfaces a banner and scrolls to the
   // top so the user always gets feedback instead of the Continue button appearing to do
@@ -318,12 +328,23 @@ export default function CheckoutPage() {
         shippingAddress: step1Data.shipping,
         billingAddress,
         guestEmail: jwt ? undefined : step1Data.email,
-        paymentMethod: "Paystack_Card",
+        paymentMethod: paymentProvider === "PayJustNow" ? "PayJustNow" : "Paystack_Card",
+        paymentProvider,
         shippingServiceCode: selectedOption.code,
         shippingServiceName: selectedOption.name,
         shippingPriceZAR: selectedOption.priceZAR,
-      }, jwt ?? undefined) as typeof checkoutResult;
-      setCheckoutResult(result);
+      }, jwt ?? undefined) as { orderId: number; provider?: string; redirectUrl?: string; amountZAR: number; paystackReference?: string; paystackPublicKey?: string };
+
+      // PayJustNow: redirect the customer to PayJustNow to complete payment.
+      if (paymentProvider === "PayJustNow") {
+        if (result.redirectUrl) {
+          window.location.href = result.redirectUrl;
+          return;
+        }
+        throw new Error("PayJustNow is unavailable right now. Please choose card payment.");
+      }
+
+      setCheckoutResult(result as typeof checkoutResult);
       setStep(4);
     } catch (e: unknown) {
       alert(`Checkout failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -619,6 +640,37 @@ export default function CheckoutPage() {
             </div>
           )}
 
+          {/* Payment method — only shown when there's a choice (PayJustNow configured) */}
+          {payJustNowEnabled && (
+          <div className="mt-2">
+            <p className="text-xs uppercase tracking-widest mb-2" style={{ color: "#4A4540" }}>Payment method</p>
+            <div className="grid grid-cols-2 gap-3">
+              {([
+                { id: "Paystack", title: "Card", sub: "Pay now with card (Paystack)" },
+                { id: "PayJustNow", title: "PayJustNow", sub: "Pay in 3 interest-free instalments" },
+              ] as const).map((m) => {
+                const active = paymentProvider === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setPaymentProvider(m.id)}
+                    className="text-left p-3 border transition-colors"
+                    style={{
+                      borderColor: active ? "#1C1A17" : "#C9B8A8",
+                      backgroundColor: active ? "#E8DDD0" : "transparent",
+                      borderRadius: "2px",
+                    }}
+                  >
+                    <span className="block text-sm font-medium" style={{ color: "#1C1A17" }}>{m.title}</span>
+                    <span className="block text-xs mt-0.5" style={{ color: "#4A4540" }}>{m.sub}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          )}
+
           <div className="flex gap-3">
             <button
               type="button"
@@ -635,7 +687,11 @@ export default function CheckoutPage() {
               className="flex-1 py-3.5 text-sm font-medium disabled:opacity-50"
               style={{ backgroundColor: "#1C1A17", color: "#FAF8F5", borderRadius: "2px" }}
             >
-              {loading ? "Processing…" : "Confirm & pay →"}
+              {loading
+                ? "Processing…"
+                : paymentProvider === "PayJustNow"
+                ? "Continue to PayJustNow →"
+                : "Confirm & pay →"}
             </button>
           </div>
         </div>

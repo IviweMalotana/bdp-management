@@ -101,6 +101,10 @@ export function removeCartItem(
   });
 }
 
+export function getPaymentMethods(): Promise<{ paystack: boolean; payJustNow: boolean }> {
+  return request("/api/storefront/checkout/payment-methods");
+}
+
 export function initiateCheckout(body: unknown, jwt?: string) {
   return request("/api/storefront/checkout/initiate", {
     method: "POST",
