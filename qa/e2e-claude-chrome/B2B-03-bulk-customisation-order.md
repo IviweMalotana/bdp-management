@@ -1,83 +1,99 @@
-# TEST B2B-03 — Approved B2B bulk order WITH customisation at volume
+# TEST B2B-03 — Bulk order with customisation (printing + colour change)
 
 > **Paste this whole file into a fresh Claude-in-Chrome session.**
 
 You are a QA tester driving a real browser against the live **Be Different Packaging**
-storefront. Goal: the highest-value real-world scenario — an approved B2B customer orders
-**bulk quantities with printing**, where customisation MOQs actually matter. This is where
-pricing/MOQ bugs surface most clearly.
+storefront. This is the highest-value real-world scenario: an approved B2B customer orders
+**bulk quantities with customisation**, including a **printing method AND a colour change
+on the same line** (multi-customisation). This is where pricing/MOQ bugs surface most.
+
+## HOW TO OPERATE (read first — applies to the whole session)
+Act like a real human shopper:
+- **Navigate by clicking** on-page elements (buttons, links, the cart icon) — **never type
+  a URL** into the address bar except the one starting URL.
+- **Stay in one tab**; don't hard-refresh or use the browser Back button unless told.
+- **Type into fields** one at a time and Tab/click out (don't paste or set values via script).
+- **Wait** for each action to register ("Adding…" → "Added to cart ✓", page transitions).
+- **Verify each step worked** (open the cart and confirm the item is there) before moving on.
+- Scroll to find elements below the fold. If a click won't work, stop and report what you saw.
+
+## ⚠️ Safety
+- LIVE Paystack — **never enter card details, never complete payment.** STOP at the Paystack
+  page. The order is created before payment, so it stays verifiable.
 
 ## Precondition
-Use the **approved B2B account** (from B2B-01 + ADMIN-01). If not approved yet, run as any
-logged-in customer but note that in the report (the funnel is the same; only the account
-type differs).
-
-## ⚠️ Safety rules
-- LIVE Paystack — **never pay.** STOP at the payment page. The order is created before
-  payment, so it remains verifiable afterward.
+Use the **approved B2B account** (e.g. `qa-b2b01-202606281430@testinbox.com` / `Test1234!`).
+If not approved, run as any logged-in customer and note that — the funnel is identical.
 
 ## Steps
 
-1. Log in (approved B2B). Open a bottle product that offers printing.
+1. Log in, then click into a bottle product that offers **Silk Screen / Hot Stamping** AND
+   **Colour Change**. Set quantity to **2500** (type it, click out). Record the **bottle
+   unit price**.
 
-2. **Set a genuinely bulk quantity — 2,500** (a common customisation MOQ anchor). Record
-   the bottle's per-unit price at 2,500.
+2. **MOQ unlock check:** at 2,500 all customisation options should be **unlocked** (no
+   "Available from N units" lock on Silk Screen, Hot Stamping, or Colour Change). Note any
+   that are still locked.
 
-3. **Open the customisation panel.** At 2,500 units, **all** printing options
-   (Silk Screen, Hot Stamping) and **Colour Change** should be **unlocked** (no
-   "Available from N units" lock).
-   - *Watch:* If any option is still locked at 2,500, record its stated minimum.
+3. **Tick BOTH** a printing method (Silk Screen *or* Hot Stamping) **and** Colour Change.
+   - *Expected:* both stay ticked — printing and colour change are **independent** (you can
+     have a printed *and* colour-changed bottle). Silk and Hot remain mutually exclusive
+     (one printing method).
+   - Record from the price summary: **P_bottle**, **P_print** (the printing line),
+     **P_colour** (the colour-change line), and **P_total** (ORDER TOTAL).
+   - Check: **P_total = P_bottle + P_print + P_colour**.
 
-4. **Tick Silk Screen Printing.** Record the **+R…/unit** and confirm the price summary
-   adds a `Silk Screen (2500 units)` line. Compute expected surcharge = per-unit × 2500.
-   - *Expected:* ORDER TOTAL = `(bottle unit × 2500) + (print unit × 2500)`.
+4. **Add to Cart** → wait for "Added ✓" → click the **cart icon** to open the cart. Record
+   the **cart subtotal C_sub**.
+   - *Expected (the key check):* **C_sub = P_total** — **both** add-ons are included; neither
+     printing nor colour change is dropped. (Dropping either is the bug this catches.)
 
-5. **Also tick Colour Change** (its MOQ ~2,500 should now be met). Record its **+R…/unit**.
-   - *Expected:* A third line appears; ORDER TOTAL increases by (colour unit × 2500).
-   - *Watch:* Colour Change is a **flat per-unit** fee — confirm the charged figure matches
-     what the UI states (suspected discrepancy between displayed and charged amount).
+5. Click **Checkout** in the cart. Fill the address by typing (QA Tester, 12 Test Street,
+   Cape Town, Western Cape, 8001, South Africa, +27 71 000 0000, a real email). Pick a
+   shipping option (note **S**). Reach **step 3 Review**. Record review subtotal **R_sub**
+   and total **R_total** (= R_sub + S).
+   - *Expected:* **R_sub = C_sub** (both add-ons still included).
 
-6. **Add to cart → `/cart`.** Confirm the cart subtotal equals the PDP ORDER TOTAL
-   (bottle + silk screen + colour change, all × 2500). Record all figures.
-   - *Watch (KNOWN RISK):* customisation surcharge being dropped or recalculated to a
-     different value between PDP and cart/server — capture exact numbers.
+6. **Artwork:** if prompted to upload artwork, try it. *(If it errors "Failed to upload
+   artwork to cloud storage", record it as a SEPARATE note — that's a known server-config
+   item, `GOOGLE_SERVICE_ACCOUNT_JSON` — and continue if the UI allows.)*
 
-7. **Checkout** to **step 3 review**. Confirm the **"Artwork / logo files"** section
-   appears (because the order is customised) and **upload an artwork file** for the line.
+7. **Confirm & pay →** step 4. Record the Paystack amount **D** (ZAR). **STOP — do not pay.**
+   - *Expected:* **D = R_total**.
 
-8. **Confirm & pay →** to **step 4**. Record **"Total: R …"** and confirm it equals the
-   review total. Open Paystack, confirm the **ZAR** amount matches, then **STOP — no pay.**
+8. Open **Account → Orders → the new order**. Record **O_total**.
+   - *Expected:* **O_total = D**; the line **itemises both add-ons** (e.g. "Silk Screen +
+     Colour Change: +R…"); the line total includes both; and the **delivery address is
+     populated** (not blank).
 
-9. **Verify** the created order in `/account/orders`: correct bulk quantity, both
-   customisations present, and total including all surcharges.
+9. **Single-each regression (quick):** add a line with **only printing** and another with
+   **only colour change**; confirm each prices correctly on its own.
 
-## Acceptance criteria
-- [ ] At 2,500 units all customisation options are unlocked.
-- [ ] Each customisation surcharge = stated per-unit × quantity, and the sum is identical
-      across PDP → cart → review → Paystack.
-- [ ] Colour Change flat fee charged matches the displayed figure.
-- [ ] Artwork upload works; the bulk customised order is created and visible in the account.
+## Acceptance criteria (PASS requires ALL)
+- [ ] At 2,500 every customisation option is unlocked.
+- [ ] Printing + colour change can both be selected (independent); silk/hot stay exclusive.
+- [ ] **P_total = C_sub = R_sub** — both add-ons survive PDP → cart → review (nothing dropped).
+- [ ] **D = R_total = O_total** to the cent, all in ZAR.
+- [ ] The order **itemises both** add-ons and shows the populated delivery address.
+- [ ] Single-printing-only and single-colour-only lines each price correctly.
 
-## Known-risk watch-list (this test's whole point)
-- **MOQ vs supplier MOQ mismatch:** the PDP customisation minimum (often shown as "from
-  100") may differ from the **supplier-level** MOQ enforced server-side (e.g. 2,500 for
-  some suppliers). At 2,500 you should be safely above both — but if the server still
-  zeroes the customisation cost or rejects it, that's a **High** bug. Capture the server
-  total vs the displayed total.
-- **Surcharge dropped/changed** between PDP and cart (prime suspected bug).
-- **Colour Change displayed-vs-charged** mismatch.
-- **Totals drift** at large quantities (rounding across 2,500 units magnifies per-unit
-  errors — check the cents).
+## Known-risk watch-list
+- **An add-on dropped** between PDP and cart (printing or colour change). Capture all figures.
+- **Totals drift** at 2,500 (per-unit rounding magnified across the line — check the cents).
+- **Order not itemising** the add-ons, or address blank on the order detail.
+- **MOQ vs supplier MOQ** mismatch (should be clear at 2,500).
 
 ## Report
 ```
 ### B2B-03 result: PASS | FAIL | BLOCKED
-Environment: <browser>, <date/time>
+Environment: <browser>, <date/time>, currency ZAR
 Account: <email> (B2B Approved / other)
-Qty: 2500; bottle unit=<R..>; silk screen/unit=<R..>; colour change/unit=<R..>
-Figures: PDP total=<R..> cart=<R..> review=<R..> paystack=<R..>
+Qty 2500: P_bottle=R__ P_print=R__ P_colour=R__ P_total=R__
+Cart C_sub=R__ (== P_total? Y/N)
+Review R_sub=R__ S=R__ R_total=R__ ; Paystack D=R__ ; Order O_total=R__ (all equal? Y/N)
+Both add-ons stayed selected? Y/N ; order itemises both? Y/N ; address populated? Y/N
+Single-each regression OK? Y/N ; artwork upload: ok / failed-config
 Order created: <SF-...>
-Steps completed: <x>–<y> of 9
 BUGS / ISSUES:
 - [SEVERITY] <title> — Step / Expected / Actual / Evidence / Reproducible
 Notes:
