@@ -615,7 +615,7 @@ export default function PDPClient({ product }: { product: Product }) {
                         processingNote="+7 days production"
                         enabled={silkEnabled}
                         checked={silkScreen}
-                        onChange={(v) => setPrintMethod(v ? "SilkScreen" : null)}
+                        onChange={(v) => { setPrintMethod(v ? "SilkScreen" : null); if (v) setColourChange(false); }}
                         cost={silkEnabled && silkScreen ? silkCost : null}
                         formatAmount={formatPrice}
                         lockedMessage={silkEnabled ? undefined : `Available from ${silkOption.minimumQuantity.toLocaleString()} units`}
@@ -630,7 +630,7 @@ export default function PDPClient({ product }: { product: Product }) {
                         processingNote="+7 days production"
                         enabled={hotEnabled}
                         checked={hotStamping}
-                        onChange={(v) => setPrintMethod(v ? "HotStamping" : null)}
+                        onChange={(v) => { setPrintMethod(v ? "HotStamping" : null); if (v) setColourChange(false); }}
                         cost={hotEnabled && hotStamping ? hotCost : null}
                         formatAmount={formatPrice}
                         lockedMessage={hotEnabled ? undefined : `Available from ${hotOption.minimumQuantity.toLocaleString()} units`}
@@ -651,7 +651,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     processingNote="+2 days production"
                     enabled={colourEnabled}
                     checked={colourChange}
-                    onChange={setColourChange}
+                    onChange={(v) => { setColourChange(v); if (v) setPrintMethod(null); }}
                     cost={colourEnabled ? colourCost : null}
                     formatAmount={formatPrice}
                     lockedMessage={colourEnabled ? undefined : `Available from ${colourOption.minimumQuantity.toLocaleString()} units`}

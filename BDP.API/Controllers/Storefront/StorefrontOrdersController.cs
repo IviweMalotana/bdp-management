@@ -55,6 +55,7 @@ public class StorefrontOrdersController : ControllerBase
 
         var order = await _db.Orders
             .Include(o => o.Items).ThenInclude(i => i.ProductVariant).ThenInclude(v => v.Product)
+            .Include(o => o.Items).ThenInclude(i => i.CustomisationOption)
             .FirstOrDefaultAsync(o => o.Id == id && (o.UserId == userId || o.GuestEmail == email));
 
         if (order == null) return NotFound();
@@ -88,7 +89,9 @@ public class StorefrontOrdersController : ControllerBase
                 variantSku = i.ProductVariant.SKU,
                 i.Quantity,
                 i.UnitPriceZAR,
-                i.LineTotal
+                i.LineTotal,
+                i.CustomisationCostZAR,
+                customisationType = i.CustomisationOption != null ? i.CustomisationOption.Type : null
             })
         });
     }

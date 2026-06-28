@@ -38,6 +38,9 @@ public class StorefrontCheckoutController : ControllerBase
         _yunExpress = yunExpress;
     }
 
+    private static readonly JsonSerializerOptions CamelCaseJson =
+        new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     public record ShippingQuoteAddress(string City, string Province, string PostalCode);
     public record ShippingQuoteRequest(int CartId, ShippingQuoteAddress Address);
 
@@ -192,8 +195,9 @@ public class StorefrontCheckoutController : ControllerBase
             TotalZAR = totalZAR,
             IsPaid = false,
             PaymentMethod = req.PaymentMethod,
-            ShippingAddressJson = JsonSerializer.Serialize(req.ShippingAddress),
-            BillingAddressJson = JsonSerializer.Serialize(req.BillingAddress),
+            // camelCase so the storefront (which reads recipientName/line1/...) can parse it.
+            ShippingAddressJson = JsonSerializer.Serialize(req.ShippingAddress, CamelCaseJson),
+            BillingAddressJson = JsonSerializer.Serialize(req.BillingAddress, CamelCaseJson),
             ShippingServiceCode = req.ShippingServiceCode,
             ShippingServiceName = req.ShippingServiceName,
             Items = orderItems
