@@ -135,6 +135,7 @@ builder.Services.AddScoped<JwtService>();
 builder.Services.AddScoped<BDP.API.Services.PricingService>();
 builder.Services.AddScoped<BDP.API.Services.ShopifyExportService>();
 builder.Services.AddScoped<BDP.API.Services.PaystackService>();
+builder.Services.AddScoped<BDP.API.Services.PayJustNowService>();
 builder.Services.AddScoped<BDP.API.Services.ShippingCalculatorService>();
 builder.Services.AddScoped<BDP.API.Services.EmailService>();
 builder.Services.AddScoped<BDP.API.Services.OrderEmailService>();
