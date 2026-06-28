@@ -13,8 +13,8 @@ const FEATURES = [
   },
   {
     icon: "◻",
-    heading: "Invoice & net terms",
-    body: "Get invoiced on 30- or 60-day net terms. Pay by EFT or Paystack. Full invoice history in your account.",
+    heading: "Invoices & receipts",
+    body: "Every order comes with an invoice you can use as a confirmation and cost breakdown. Pay securely upfront by card. Full invoice history in your account.",
   },
   {
     icon: "◈",

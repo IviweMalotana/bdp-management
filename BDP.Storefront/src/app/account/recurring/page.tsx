@@ -199,7 +199,7 @@ export default function RecurringOrdersPage() {
             Recurring orders are available to approved B2B accounts.
           </p>
           <p className="text-xs mb-3" style={{ color: "#4A4540" }}>
-            Apply for a business account to access bulk pricing, extended payment terms, and scheduled replenishment.
+            Apply for a business account to access scheduled replenishment and a dedicated account manager.
           </p>
           <Link
             href="/account/apply-business"

@@ -236,11 +236,9 @@ export default function CreateOrder() {
           </div>
 
           {selectedClient && (
-            <div className="grid grid-cols-3 gap-3 mt-2">
+            <div className="grid grid-cols-1 gap-3 mt-2">
               {[
                 { label: 'Company', value: selectedClient.companyName },
-                { label: 'Payment Terms', value: `Net ${selectedClient.paymentTermsDays}` },
-                { label: 'Credit Limit', value: fmt(selectedClient.creditLimit) },
               ].map((card) => (
                 <div key={card.label} className="bg-gray-800 rounded-lg p-3">
                   <p className="text-xs text-gray-500">{card.label}</p>

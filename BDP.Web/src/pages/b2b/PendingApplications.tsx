@@ -26,11 +26,6 @@ interface PendingApplication {
   client: PendingClient | null
 }
 
-interface ApproveFormState {
-  creditLimit: string
-  paymentTermsDays: string
-}
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-ZA', {
     day: 'numeric',
@@ -49,12 +44,8 @@ export default function PendingApplications() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Track which client is being approved (showing inline form)
+  // Track which client is being approved (showing inline confirmation)
   const [approvingId, setApprovingId] = useState<number | null>(null)
-  const [approveForm, setApproveForm] = useState<ApproveFormState>({
-    creditLimit: '0',
-    paymentTermsDays: '30',
-  })
 
   // Track which client is being rejected (showing confirmation)
   const [rejectingId, setRejectingId] = useState<number | null>(null)
@@ -87,14 +78,10 @@ export default function PendingApplications() {
     try {
       await axios.post(
         `${API}/clients/${clientId}/approve-b2b`,
-        {
-          creditLimit: parseFloat(approveForm.creditLimit) || 0,
-          paymentTermsDays: parseInt(approveForm.paymentTermsDays) || 30,
-        },
+        {},
         { headers: authHeader() }
       )
       setApprovingId(null)
-      setApproveForm({ creditLimit: '0', paymentTermsDays: '30' })
       await fetchApplications()
     } catch {
       setActionError('Failed to approve application. Please try again.')
@@ -217,10 +204,6 @@ export default function PendingApplications() {
                       <p className="text-gray-200">{client.industry}</p>
                     </div>
                   )}
-                  <div>
-                    <span className="text-gray-500">Requested payment terms</span>
-                    <p className="text-gray-200">{client.requestedPaymentTermsDays} days</p>
-                  </div>
                   {client.billingAddress && (
                     <div className="col-span-2">
                       <span className="text-gray-500">Billing address</span>
@@ -229,45 +212,13 @@ export default function PendingApplications() {
                   )}
                 </div>
 
-                {/* Approve form */}
+                {/* Approve confirmation */}
                 {isApproving && (
                   <div className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-4">
-                    <p className="text-sm font-medium text-white mb-3">Set account terms</p>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1">
-                          Credit limit (ZAR)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1000"
-                          value={approveForm.creditLimit}
-                          onChange={(e) =>
-                            setApproveForm((f) => ({ ...f, creditLimit: e.target.value }))
-                          }
-                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-gray-400 mb-1">
-                          Payment terms (days)
-                        </label>
-                        <input
-                          type="number"
-                          min="0"
-                          max="90"
-                          value={approveForm.paymentTermsDays}
-                          onChange={(e) =>
-                            setApproveForm((f) => ({
-                              ...f,
-                              paymentTermsDays: e.target.value,
-                            }))
-                          }
-                          className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500"
-                        />
-                      </div>
-                    </div>
+                    <p className="text-sm text-gray-300 mb-3">
+                      Approve this business account? They’ll be able to place orders and pay
+                      upfront at checkout.
+                    </p>
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleApprove(client.id)}
@@ -320,10 +271,6 @@ export default function PendingApplications() {
                       onClick={() => {
                         setApprovingId(client.id)
                         setRejectingId(null)
-                        setApproveForm({
-                          creditLimit: '0',
-                          paymentTermsDays: String(client.requestedPaymentTermsDays),
-                        })
                       }}
                       className="px-4 py-2 bg-green-800 hover:bg-green-700 text-white text-sm rounded-lg font-medium transition-colors"
                     >

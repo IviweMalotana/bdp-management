@@ -38,7 +38,8 @@ public class StorefrontAuthController : ControllerBase
         string BillingAddress,
         string? ShippingAddress,
         string Industry,
-        int RequestedPaymentTermsDays
+        // Payment terms removed (customers pay upfront) — optional/ignored for compatibility.
+        int RequestedPaymentTermsDays = 0
     );
 
     public record RegisterRequest(
