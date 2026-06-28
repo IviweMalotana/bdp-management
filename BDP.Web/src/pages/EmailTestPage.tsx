@@ -3,7 +3,7 @@ import { Mail, Send, CheckCircle, XCircle } from 'lucide-react'
 import { email as emailApi } from '../services/api'
 
 export default function EmailTestPage() {
-  const [status, setStatus] = useState<{ configured: boolean; fromAddress: string } | null>(null)
+  const [status, setStatus] = useState<{ configured: boolean; fromAddress: string; transport?: 'resend' | 'smtp' | 'none' } | null>(null)
   const [to, setTo] = useState('')
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
@@ -37,19 +37,32 @@ export default function EmailTestPage() {
         </div>
       </div>
 
-      {/* SMTP status */}
-      {status && (
-        <div className={`flex items-center gap-2 px-4 py-3 rounded-lg text-sm border ${
-          status.configured
-            ? 'bg-green-900/20 border-green-800 text-green-300'
-            : 'bg-amber-900/20 border-amber-800 text-amber-300'
-        }`}>
-          {status.configured ? <CheckCircle size={16} /> : <XCircle size={16} />}
-          {status.configured
-            ? <span>SMTP configured · sending from <span className="font-mono">{status.fromAddress}</span></span>
-            : <span>SMTP not configured — set the Email__* env vars in Railway</span>}
-        </div>
-      )}
+      {/* Email transport status */}
+      {status && (() => {
+        const transport = status.transport ?? (status.configured ? 'smtp' : 'none')
+        // "resend" = good. "smtp" = works locally but blocked on most cloud hosts.
+        const ok = transport === 'resend'
+        const warn = transport === 'smtp'
+        const cls = ok
+          ? 'bg-green-900/20 border-green-800 text-green-300'
+          : warn
+            ? 'bg-amber-900/20 border-amber-800 text-amber-300'
+            : 'bg-red-900/20 border-red-800 text-red-400'
+        return (
+          <div className={`flex items-start gap-2 px-4 py-3 rounded-lg text-sm border ${cls}`}>
+            {ok ? <CheckCircle size={16} className="mt-0.5 shrink-0" /> : <XCircle size={16} className="mt-0.5 shrink-0" />}
+            {transport === 'resend' && (
+              <span>Sending via <span className="font-mono">Resend API</span> (HTTPS) · from <span className="font-mono">{status.fromAddress}</span></span>
+            )}
+            {transport === 'smtp' && (
+              <span>Using <span className="font-mono">SMTP</span> fallback — cloud hosts (Railway) usually block this, so sends may time out. Set <span className="font-mono">Resend__ApiKey</span> in Railway to send over HTTPS.</span>
+            )}
+            {transport === 'none' && (
+              <span>Email not configured — set <span className="font-mono">Resend__ApiKey</span> in Railway.</span>
+            )}
+          </div>
+        )
+      })()}
 
       <div className="bg-gray-900 border border-gray-800 rounded-xl p-5 space-y-4">
         <div>
