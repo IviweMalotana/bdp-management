@@ -63,7 +63,7 @@ collect the bug reports.
 | **B2C-05** | Customer | Public order tracking (`/track`) by order number + email | runs after B2C-01/02 |
 | **B2B-01** | Prospective business | B2B registration application → "Pending" state | ADMIN-01 |
 | **B2B-02** | Approved B2B | Login → volume-tier pricing → recurring-orders access | needs ADMIN-01 done |
-| **B2B-03** | Approved B2B | Bulk order **with customisation at volume** → checkout | needs ADMIN-01 done |
+| **B2B-03** | Approved B2B | Bulk order with **printing + colour change together** → checkout | needs ADMIN-01 done |
 | **ADMIN-01** | Staff | Approve a pending B2B application | B2B-01 |
 | **ADMIN-02** | Staff | Walk a storefront order through the status pipeline (+ Cancelled) | needs a placed order |
 | **ADMIN-03** | Staff | Create a B2B order via the 3-step wizard + generate invoice | — |
