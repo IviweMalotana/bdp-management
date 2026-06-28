@@ -14,6 +14,8 @@ interface OrderItem {
   quantity: number;
   unitPriceZAR: number;
   lineTotal: number;
+  customisationCostZAR?: number;
+  customisationType?: string | null;
 }
 
 interface TrackingEvent {
@@ -26,6 +28,15 @@ interface TrackingInfo {
   trackingNumber: string | null;
   carrier: string | null;
   events: TrackingEvent[];
+}
+
+const CUSTOMISATION_LABELS: Record<string, string> = {
+  SilkScreen: "Silk Screen",
+  HotStamping: "Hot Stamping",
+  ColourChange: "Colour Change",
+};
+function customisationLabel(type: string) {
+  return CUSTOMISATION_LABELS[type] ?? type;
 }
 
 interface OrderDetail {
@@ -349,9 +360,16 @@ export default function OrderDetailPage() {
                 <p className="text-xs mt-0.5" style={{ color: "#4A4540" }}>
                   SKU: {item.variantSku} · Qty: {item.quantity}
                 </p>
+                {item.customisationType && (item.customisationCostZAR ?? 0) > 0 && (
+                  <p className="text-xs mt-0.5" style={{ color: "#4A4540" }}>
+                    {customisationLabel(item.customisationType)}: +{formatZAR(item.customisationCostZAR!)}
+                  </p>
+                )}
               </div>
               <div className="text-right">
-                <p className="text-sm" style={{ color: "#1C1A17" }}>{formatZAR(item.lineTotal)}</p>
+                <p className="text-sm" style={{ color: "#1C1A17" }}>
+                  {formatZAR(item.lineTotal + (item.customisationCostZAR ?? 0))}
+                </p>
                 <p className="text-xs" style={{ color: "#4A4540" }}>{formatZAR(item.unitPriceZAR)} each</p>
               </div>
             </div>
