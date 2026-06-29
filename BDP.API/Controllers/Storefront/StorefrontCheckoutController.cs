@@ -241,6 +241,11 @@ public class StorefrontCheckoutController : ControllerBase
             var mobile = new string((addr.Phone ?? string.Empty).Where(c => char.IsDigit(c) || c == '+').ToArray());
 
             var callbackBase = $"{Request.Scheme}://{Request.Host}/api/storefront/checkout/payjustnow/callback";
+            // Shared secret embedded in the callback URL we hand PayJustNow. The customer's
+            // browser never sees this URL (PayJustNow calls it server-to-server), so a
+            // matching ?s= proves the caller is PayJustNow — closing the forged-SUCCESS hole.
+            var cbSecret = _config["PayJustNow:CallbackSecret"] ?? _config["PayJustNow__CallbackSecret"];
+            var sQuery = string.IsNullOrWhiteSpace(cbSecret) ? "" : $"&s={Uri.EscapeDataString(cbSecret)}";
             // One summary line so the item total always equals the order amount.
             var items = new[]
             {
@@ -253,8 +258,8 @@ public class StorefrontCheckoutController : ControllerBase
                     addr.Line1, addr.Line2, addr.City, addr.Province, addr.PostalCode),
                 order.OrderNumber,
                 (long)Math.Round(totalZAR * 100),
-                $"{callbackBase}?result=success",
-                $"{callbackBase}?result=fail",
+                $"{callbackBase}?result=success{sQuery}",
+                $"{callbackBase}?result=fail{sQuery}",
                 items);
 
             if (checkout == null)
@@ -290,16 +295,24 @@ public class StorefrontCheckoutController : ControllerBase
     }
 
     // PayJustNow calls this server-to-server after the customer completes (or fails)
-    // payment, with ?token=...&status=... . We mark the order paid on success and reply
-    // with { token, return_url } telling PayJustNow where to send the customer next.
-    // SECURITY: this trusts the status param. Before go-live, verify the checkout with
-    // PayJustNow by token (configuration/status endpoint) rather than trusting status.
+    // payment, with ?token=...&status=... (plus our ?s=<secret> if configured). We mark
+    // the order paid on success and reply with { token, return_url } telling PayJustNow
+    // where to send the customer next.
+    // SECURITY: when PayJustNow:CallbackSecret is configured we require the ?s= secret to
+    // match before marking anything paid, so a forged SUCCESS can't unlock an order. The
+    // secret lives only in the callback URL we hand PayJustNow (never shown to the browser).
     [HttpGet("payjustnow/callback")]
     [HttpPost("payjustnow/callback")]
-    public async Task<IActionResult> PayJustNowCallback([FromQuery] string? token, [FromQuery] string? status)
+    public async Task<IActionResult> PayJustNowCallback([FromQuery] string? token, [FromQuery] string? status, [FromQuery] string? s)
     {
         var storefront = (_config["STOREFRONT_URL"] ?? _config["Storefront:Url"]
             ?? "https://www.bedifferentpackaging.com").TrimEnd('/');
+
+        // If a callback secret is configured, the incoming ?s= must match — otherwise this
+        // is not a genuine PayJustNow callback; never mark the order paid.
+        var cbSecret = _config["PayJustNow:CallbackSecret"] ?? _config["PayJustNow__CallbackSecret"];
+        if (!string.IsNullOrWhiteSpace(cbSecret) && !string.Equals(s, cbSecret, StringComparison.Ordinal))
+            return Ok(new { token, return_url = $"{storefront}/checkout?payment=failed" });
 
         if (string.IsNullOrWhiteSpace(token))
             return Ok(new { token, return_url = $"{storefront}/checkout" });
