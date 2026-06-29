@@ -20,7 +20,7 @@ public class AIContentService
         _apiKey = config["Anthropic:ApiKey"]
                   ?? Environment.GetEnvironmentVariable("ANTHROPIC_API_KEY");
         // Model is configuration-driven so the deployment owns the choice of Claude model.
-        _model = config["Anthropic:Model"] is { Length: > 0 } m ? m : "claude-opus-4-8";
+        _model = config["Anthropic:Model"] is { Length: > 0 } m ? m : "claude-haiku-4-5";
     }
 
     public bool IsConfigured =>
