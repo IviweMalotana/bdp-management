@@ -15,7 +15,7 @@ const services = [
     ),
     title: "Sourcing",
     description:
-      "We source premium glass and plastic packaging directly from vetted Chinese manufacturers, so you get factory-direct pricing without the complexity of overseas procurement.",
+      "We buy glass and plastic packaging straight from manufacturers we've vetted in China, so you get factory pricing without having to manage overseas procurement yourself.",
   },
   {
     icon: (
@@ -26,7 +26,7 @@ const services = [
     ),
     title: "Customisation",
     description:
-      "Silk screen printing, hot stamping, and colour matching available from 1,000 units. Your brand deserves packaging that is unmistakably yours.",
+      "Silk-screen printing, hot stamping and colour matching, available from 1,000 units. Put your logo on the bottle so it reads as your product, not a generic one.",
   },
   {
     icon: (
@@ -39,18 +39,18 @@ const services = [
     ),
     title: "Delivery",
     description:
-      "International shipping to South Africa, UK, USA, EU, and Australia. We handle freight logistics so your order arrives safely and on schedule.",
+      "We ship to South Africa, the UK, USA, EU and Australia, and handle the freight so your order turns up safely and on time.",
   },
 ];
 
 const reasons = [
   {
-    title: "Quality you can count on.",
-    description: "Every supplier in our network is vetted for production quality and consistency. We request samples and run quality checks before any shipment leaves the factory.",
+    title: "Checked before it ships.",
+    description: "We vet every supplier for production quality and consistency, request samples, and run checks before a shipment leaves the factory.",
   },
   {
-    title: "Transparent pricing. Flexible MOQs.",
-    description: "Pricing tiers are shown up front. No hidden fees, no surprise quotes. MOQs start from as low as 500 units on selected lines, making quality packaging accessible to independent brands.",
+    title: "Clear pricing, low minimums.",
+    description: "Pricing tiers are shown up front — no hidden fees, no surprise quotes. Minimums start from as little as 500 units on selected lines, so independent brands can afford good packaging too.",
   },
 ];
 
@@ -128,15 +128,15 @@ export default function AboutPage() {
             color: "#1C1A17",
           }}
         >
-          Packaging that tells your story.
+          Your packaging, sourced and shipped.
         </h1>
         <p
           className="hero-animate text-lg md:text-xl max-w-2xl mx-auto leading-relaxed"
           style={{ color: "#4A4540" }}
         >
-          BDP Management is a cosmetic packaging wholesale supplier connecting
-          South African brands with quality Chinese manufacturing, so you can
-          focus on what matters most: your product.
+          BDP is a wholesale cosmetic packaging supplier. We connect South
+          African brands with reliable Chinese manufacturing and handle the
+          sourcing, so you can get on with the product itself.
         </p>
       </section>
 
@@ -211,8 +211,8 @@ export default function AboutPage() {
               </p>
               <p className="text-sm leading-relaxed mt-4" style={{ color: "#4A4540" }}>
                 {i === 0
-                  ? "Whether you are launching your first collection or scaling an established brand, the standard never slips."
-                  : "Scale up as you grow. Your pricing improves with volume, automatically."}
+                  ? "First collection or your fifth, the standard stays the same."
+                  : "As you order more, your price drops automatically."}
               </p>
             </div>
           ))}

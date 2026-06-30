@@ -776,7 +776,7 @@ const CUSTOMISATION_DESCRIPTIONS: Record<string, string> = {
   SilkScreen:
     "Your logo or design is printed directly onto the bottle in ink. Flat, clean finish. Best for bold logos and solid shapes.",
   HotStamping:
-    "Your logo is pressed onto the bottle using metallic foil. Creates a shiny, premium look. Available in gold or silver.",
+    "Your logo is pressed onto the bottle in metallic foil, for a shiny finish. Available in gold or silver.",
 };
 
 function CustomisationToggle({

@@ -47,8 +47,8 @@ export default function ContactPage() {
             className="contact-animate text-base leading-relaxed"
             style={{ color: "#4A4540" }}
           >
-            Whether you&apos;re placing your first order or scaling up, we&apos;re
-            here to help.
+            Questions about products, pricing, custom branding or a bulk order?
+            Send a message and we&apos;ll get back to you.
           </p>
         </div>
 

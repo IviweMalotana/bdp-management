@@ -37,7 +37,7 @@ interface LookOption { label: string; hint: string; match: (colour?: string, tex
 const LOOK_OPTIONS: LookOption[] = [
   { label: "Clean & clear", hint: "See-through, minimal", match: (c) => /clear|transparent/i.test(c ?? "") },
   { label: "Bold & black", hint: "Matte, luxe", match: (c, t) => /black/i.test(c ?? "") || /matte/i.test(t ?? "") },
-  { label: "Soft & frosted", hint: "Diffused, premium", match: (c, t) => /frost/i.test(c ?? "") || /frost/i.test(t ?? "") },
+  { label: "Soft & frosted", hint: "Diffused, soft-touch", match: (c, t) => /frost/i.test(c ?? "") || /frost/i.test(t ?? "") },
   { label: "No preference", hint: "Surprise me", match: () => true },
 ];
 
