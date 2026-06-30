@@ -220,7 +220,12 @@ using (var scope = app.Services.CreateScope())
             UPDATE ""Products"" SET ""Category"" = 'Serum'   WHERE (lower(""Category"") LIKE '%serum%' OR lower(""Category"") LIKE '%dropper%' OR lower(""Category"") LIKE '%essential oil%') AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
             UPDATE ""Products"" SET ""Category"" = 'Airless' WHERE lower(""Category"") LIKE '%airless%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
             UPDATE ""Products"" SET ""Category"" = 'Tube'    WHERE lower(""Category"") LIKE '%tube%' AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
-            UPDATE ""Products"" SET ""Category"" = 'Shampoo' WHERE (lower(""Category"") LIKE '%shampoo%' OR lower(""Category"") LIKE '%conditioner%') AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');");
+            UPDATE ""Products"" SET ""Category"" = 'Shampoo' WHERE (lower(""Category"") LIKE '%shampoo%' OR lower(""Category"") LIKE '%conditioner%') AND ""Category"" NOT IN ('Jar','Pump','Spray','Serum','Airless','Tube','Shampoo');
+            -- Sharpen Google-hosted images: lh3 serves a small default render unless a size
+            -- is requested. Append a width hint so the source is high-res (idempotent: rows
+            -- already carrying a size param contain '=' and are skipped).
+            UPDATE ""ProductImages"" SET ""Url"" = ""Url"" || '=w1600' WHERE ""Url"" LIKE 'https://lh3.googleusercontent.com/d/%' AND ""Url"" NOT LIKE '%=%';
+            UPDATE ""Collections"" SET ""ImageUrl"" = ""ImageUrl"" || '=w1600' WHERE ""ImageUrl"" LIKE 'https://lh3.googleusercontent.com/d/%' AND ""ImageUrl"" NOT LIKE '%=%';");
     }
     catch (Exception ex)
     {
