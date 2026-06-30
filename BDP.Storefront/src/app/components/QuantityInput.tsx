@@ -8,7 +8,7 @@ interface QuantityInputProps {
 
 export default function QuantityInput({ value, min = 1, onChange }: QuantityInputProps) {
   return (
-    <div className="flex items-center border" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
+    <div className="inline-flex items-center border w-fit" style={{ borderColor: "#C9B8A8", borderRadius: "2px" }}>
       <button
         type="button"
         className="w-10 h-10 flex items-center justify-center text-lg hover:opacity-70 transition-opacity"
