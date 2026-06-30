@@ -26,7 +26,7 @@ const services = [
     ),
     title: "Customisation",
     description:
-      "Silk-screen printing, hot stamping and colour matching, available from 1,000 units. Put your logo on the bottle so it reads as your product, not a generic one.",
+      "Silk-screen printing, hot stamping and colour matching, available from 2,500 units. Put your logo on the bottle so it reads as your product, not a generic one.",
   },
   {
     icon: (

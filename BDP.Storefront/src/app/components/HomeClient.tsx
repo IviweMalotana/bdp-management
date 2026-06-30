@@ -430,7 +430,7 @@ function CustomisationSection() {
             make it yours.
           </h2>
           <p className="text-sm mb-8 max-w-md" style={{ color: "#B8B0A4", lineHeight: 1.7 }}>
-            Add your logo with silk-screen or hot-stamp printing. Minimum 100 units. Delivered to your door from China in 4–6 weeks.
+            Add your logo with silk-screen or hot-stamp printing. Minimum 2,500 units. Delivered to your door from China in 4–6 weeks.
           </p>
           <Link href="/customise" className="inline-flex items-center px-8 py-3.5 text-sm font-medium tracking-wide border hover:bg-[#1A1A18] hover:text-[#F5F0E8] transition-colors" style={{ borderColor: "#1A1A18", color: "#1A1A18", borderRadius: "2px" }}>
             Explore Customisation →
