@@ -455,6 +455,7 @@ export default function PDPClient({ product }: { product: Product }) {
                 src={images[selectedImage].url}
                 alt={images[selectedImage].altText || product.name}
                 fill className="object-cover" priority
+                sizes="(max-width: 768px) 100vw, 600px"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -475,7 +476,7 @@ export default function PDPClient({ product }: { product: Product }) {
                     backgroundColor: "#E8DDD0",
                   }}
                 >
-                  {img.url && <Image src={img.url} alt={img.altText} fill className="object-cover" />}
+                  {img.url && <Image src={img.url} alt={img.altText} fill className="object-cover" sizes="64px" />}
                 </button>
               ))}
             </div>

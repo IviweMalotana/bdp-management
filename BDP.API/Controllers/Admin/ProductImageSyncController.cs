@@ -112,8 +112,9 @@ public class ProductImageSyncController : ControllerBase
         var match = Regex.Match(driveUrl, @"/file/d/([a-zA-Z0-9_-]+)");
         if (!match.Success) return null;
         var fileId = match.Groups[1].Value;
-        // lh3.googleusercontent.com/d/{id} renders directly in <img> and Next.js <Image>
-        return $"https://lh3.googleusercontent.com/d/{fileId}";
+        // lh3.googleusercontent.com/d/{id} renders directly in <img> and Next.js <Image>.
+        // The =w1600 size hint forces a high-res render (the default is small/blurry).
+        return $"https://lh3.googleusercontent.com/d/{fileId}=w1600";
     }
 
     private static int IndexOf(List<string> headers, string name) =>

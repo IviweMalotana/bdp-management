@@ -369,7 +369,9 @@ public class CatalogueImportService
         var match = Regex.Match(driveUrl, @"/file/d/([a-zA-Z0-9_-]+)");
         if (!match.Success) return null;
         var fileId = match.Groups[1].Value;
-        return $"https://lh3.googleusercontent.com/d/{fileId}";
+        // Request a large render — without a size hint lh3 serves a small default that
+        // looks blurry once upscaled in the storefront.
+        return $"https://lh3.googleusercontent.com/d/{fileId}=w1600";
     }
 
     public static async Task EnsureProductInCollectionAsync(AppDbContext context, Product product, string productType)
