@@ -36,18 +36,21 @@ public class AIContentService
         var base64Image = Convert.ToBase64String(imageBytes);
 
         var titlePrompt =
-            $"Create a high-converting B2B Shopify Product Title for a wholesale cosmetic vessel. " +
-            $"Specs: {productName}, {size} {category}, {colour}, {texture}. " +
-            $"RULES: Must specify it is an empty bottle. Focus on B2B keywords: Wholesale, Bulk, Professional Grade. " +
-            $"Identify material (Glass, PET, Acrylic) from the image. Return ONLY the title string.";
+            $"Write a short, plain product title for an empty wholesale cosmetic container. " +
+            $"Details: {productName}, {size} {category}, colour {colour}, finish {texture}. " +
+            $"Identify the material (glass, PET or acrylic) from the image and include it, and make clear it's an empty container. " +
+            $"No marketing words (avoid 'premium', 'luxury', 'elevate', 'professional grade'), no ALL CAPS, no keyword stuffing. " +
+            $"Return only the title as plain text, about 10 words or fewer.";
 
         var title = await CallClaude(titlePrompt, base64Image, imageMimeType, 150);
 
         var bodyPrompt =
-            $"Write factual HTML B2B technical specifications for the packaging item: {title}. " +
-            $"Target: Cosmetic Chemists, Skincare Brand Owners. " +
-            $"Focus on: Material & Durability (identify from image), Capacity: {size}, UV Resistance, Seal Integrity, Closure Type. " +
-            $"Use <ul> with black checkmarks (&#10003;). HTML ONLY.";
+            $"Write a short, factual product description in plain HTML for this cosmetic container: {title}. " +
+            $"Reader: a skincare brand owner or formulator deciding whether it fits their product. " +
+            $"Cover only what you can tell from the image and specs: material, capacity ({size}), closure or dispensing type, and what it suits. " +
+            $"Use one or two short paragraphs, optionally with a plain <ul> spec list (normal <li>, no checkmark symbols or emoji). " +
+            $"Write like a knowledgeable supplier, not an ad: no buzzwords ('premium', 'luxurious', 'elevate', 'unlock', 'seamless', 'curated'), no hype, no invented specs. " +
+            $"Return HTML only, with no <html> or <body> wrapper.";
 
         var htmlBody = await CallClaude(bodyPrompt, base64Image, imageMimeType, 800);
 

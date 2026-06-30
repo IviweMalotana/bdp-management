@@ -19,7 +19,7 @@ const TECHNIQUES = [
     moq: 100,
     lead: "4–6 weeks",
     description:
-      "Metallic foil transferred under heat. Gives your packaging a premium, luxurious feel. Available in gold, silver, rose gold, and more.",
+      "Metallic foil pressed on under heat, for a shiny gold, silver or rose-gold finish. Best for bold logos rather than fine detail.",
     startingFrom: "R16.50 / unit",
   },
 ];
@@ -540,8 +540,6 @@ export default function CustomisePage() {
             }}
           >
             make it
-            <br />
-            undeniably
             <br />
             yours.
           </h1>

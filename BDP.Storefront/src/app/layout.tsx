@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s | Be Different Packaging",
   },
   description:
-    "Buy cosmetic bottles, jars, droppers, pumps and sprays wholesale in South Africa — from just 10 units. Premium skincare and hospitality packaging with live tiered pricing and custom branding.",
+    "Buy cosmetic bottles, jars, droppers, pumps and sprays wholesale in South Africa — from just 10 units. Skincare and hospitality packaging with live tiered pricing and custom branding.",
   applicationName: "Be Different Packaging",
   keywords: [
     "cosmetic packaging south africa",
@@ -36,14 +36,14 @@ export const metadata: Metadata = {
     siteName: "Be Different Packaging",
     title: "Cosmetic Packaging South Africa | From 10 Units",
     description:
-      "Premium cosmetic and skincare packaging wholesale in South Africa — bottles, jars, droppers, pumps. From 10 units, with custom branding.",
+      "Cosmetic and skincare packaging wholesale in South Africa — bottles, jars, droppers, pumps. From 10 units, with custom branding.",
     images: ["/logo.png"],
   },
   twitter: {
     card: "summary_large_image",
     title: "Cosmetic Packaging South Africa | From 10 Units",
     description:
-      "Premium cosmetic and skincare packaging wholesale in South Africa — from 10 units, with custom branding.",
+      "Cosmetic and skincare packaging wholesale in South Africa — from 10 units, with custom branding.",
     images: ["/logo.png"],
   },
 };
@@ -55,7 +55,7 @@ const organizationLd = {
   url: SITE_URL,
   logo: `${SITE_URL}/logo.png`,
   description:
-    "Premium cosmetic and skincare packaging supplier in South Africa — bottles, jars, droppers, pumps and sprays, wholesale from 10 units with custom branding.",
+    "Cosmetic and skincare packaging supplier in South Africa — bottles, jars, droppers, pumps and sprays, wholesale from 10 units with custom branding.",
   areaServed: "ZA",
   sameAs: [
     "https://www.instagram.com/bedifferentpackaging",

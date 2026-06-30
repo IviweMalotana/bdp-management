@@ -234,7 +234,7 @@ export default function ForBusinessPage() {
               color: "#1C1A17",
             }}
           >
-            volume unlocks value.
+            bigger orders, lower prices.
           </h2>
           <div className="grid grid-cols-3 gap-6 mb-10">
             {[
