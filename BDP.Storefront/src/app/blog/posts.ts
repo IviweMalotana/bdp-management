@@ -46,7 +46,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "2. Pick a material" },
       {
         type: "p",
-        text: "Glass feels premium, is fully recyclable and is inert — ideal for facial oils and high-end serums. Amber and frosted glass also shield light-sensitive actives. PET and acrylic are lighter, shatter-resistant and cheaper to ship, which makes them practical for body products and travel sizes. Many brands mix materials across a range: glass for the hero serum, PET for the body lotion.",
+        text: "Glass feels expensive, is fully recyclable and is inert, which makes it ideal for facial oils and high-end serums. Amber and frosted glass also shield light-sensitive actives. PET and acrylic are lighter, shatter-resistant and cheaper to ship, so they're practical for body products and travel sizes. Many brands mix materials across a range: glass for the hero serum, PET for the body lotion.",
       },
       { type: "h2", text: "3. Get the size right" },
       {
@@ -61,7 +61,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "5. Plan your branding early" },
       {
         type: "p",
-        text: "Decide upfront whether you'll add your logo. Silk-screen and hot-stamp printing turn a generic bottle into a branded product and dramatically lift perceived value. Even a single colour logo on a frosted jar reads as premium. Factor the customisation minimum and lead time into your launch timeline so your branded stock arrives when you need it.",
+        text: "Decide upfront whether you'll add your logo. Silk-screen and hot-stamp printing turn a generic bottle into a branded product and lift perceived value a lot. Even a single colour logo on a frosted jar makes a jar look more expensive. Factor the customisation minimum and lead time into your launch timeline so your branded stock arrives when you need it.",
       },
       {
         type: "p",
@@ -92,32 +92,32 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Glass" },
       {
         type: "p",
-        text: "Glass is the premium choice. It's inert, so it won't react with oils, essential oils or active ingredients, and it's endlessly recyclable. Frosted and amber glass also protect light-sensitive formulations. The trade-offs are weight and fragility: glass costs more to ship and can break, so it's best for hero products — facial serums, oils and high-end creams — where the look and protection justify it.",
+        text: "Glass is the high-end choice. It's inert, so it won't react with oils, essential oils or active ingredients, and it's endlessly recyclable. Frosted and amber glass also protect light-sensitive formulations. The trade-offs are weight and fragility: glass costs more to ship and can break, so it's best for hero products like facial serums, oils and high-end creams, where the look and protection justify it.",
       },
       { type: "h2", text: "PET (plastic)" },
       {
         type: "p",
-        text: "PET is a lightweight, shatter-resistant plastic that's widely recyclable. It keeps shipping costs down and is practically unbreakable, which makes it ideal for body lotions, shampoos, cleansers, mists and anything travel-sized. Modern PET can look surprisingly premium — especially in frosted finishes — at a fraction of the weight of glass.",
+        text: "PET is a lightweight, shatter-resistant plastic that's widely recyclable. It keeps shipping costs down and is practically unbreakable, which makes it ideal for body lotions, shampoos, cleansers, mists and anything travel-sized. Modern PET can look surprisingly upmarket, especially in frosted finishes, at a fraction of the weight of glass.",
       },
       { type: "h2", text: "Acrylic" },
       {
         type: "p",
-        text: "Acrylic delivers a thick, glossy, luxurious look — think double-walled cream jars that feel substantial in the hand. It's often used for premium-positioned moisturisers where presentation is part of the product. It's heavier and pricier than PET but more impact-resistant than glass.",
+        text: "Acrylic gives a thick, glossy look — think double-walled cream jars that feel substantial in the hand. It's often used for high-end moisturisers where presentation is part of the product. It's heavier and pricier than PET but more impact-resistant than glass.",
       },
       { type: "h2", text: "Quick comparison" },
       {
         type: "ul",
         items: [
-          "Premium feel: Glass and acrylic lead; PET is catching up in frosted finishes.",
+          "Expensive feel: Glass and acrylic lead; PET is catching up in frosted finishes.",
           "Protects actives: Glass (especially amber/frosted) is best.",
           "Shipping cost & durability: PET wins — light and shatter-resistant.",
           "Recyclability: Glass and PET are both widely recyclable.",
-          "Best for: Glass — serums & oils; PET — body & travel; Acrylic — luxury creams.",
+          "Best for: Glass — serums & oils; PET — body & travel; Acrylic — rich creams.",
         ],
       },
       {
         type: "p",
-        text: "Most successful ranges mix materials: glass for the statement serum, PET for the everyday body products, acrylic where a jar needs to feel indulgent. Because you can order from just 10 units, it's easy and affordable to test a couple of materials before you commit to a full run.",
+        text: "Most successful ranges mix materials: glass for the statement serum, PET for the everyday body products, acrylic where a jar needs to feel indulgent. Because you can order from just 10 units, it's cheap and easy to test a couple of materials before you commit to a full run.",
       },
     ],
     related: [
@@ -139,7 +139,7 @@ export const POSTS: Post[] = [
     blocks: [
       {
         type: "p",
-        text: "If you're packaging a serum, the choice between an airless pump and a regular pump bottle matters more than it looks. Both give clean, measured dispensing — but they protect your formula very differently, and that affects shelf life, customer experience and how premium your product feels.",
+        text: "If you're packaging a serum, the choice between an airless pump and a regular pump bottle matters more than it looks. Both give clean, measured dispensing, but they protect your formula very differently, and that affects shelf life, customer experience and how high-end your product feels.",
       },
       { type: "h2", text: "How each one works" },
       {
@@ -159,7 +159,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Cost and look" },
       {
         type: "p",
-        text: "Regular pump bottles are cheaper and perfectly good for oils and less air-sensitive formulas. Airless bottles cost a little more but look and feel distinctly premium — the sleek, modern format customers associate with high-performance skincare. For a hero serum, that perception often pays for itself.",
+        text: "Regular pump bottles are cheaper and a good fit for oils and less air-sensitive formulas. Airless bottles cost a little more but look and feel distinctly high-end — the sleek, modern format customers associate with high-performance skincare. For a hero serum, that perception often pays for itself.",
       },
       { type: "h2", text: "Quick rule of thumb" },
       {
@@ -167,7 +167,7 @@ export const POSTS: Post[] = [
         items: [
           "Active-rich or oxidation-prone serum → airless pump.",
           "Simple facial oil or budget line → regular pump or dropper.",
-          "Want the most premium feel → airless.",
+          "Want the most upmarket feel → airless.",
           "Tightest cost per unit → regular pump.",
         ],
       },
@@ -251,12 +251,12 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Hot stamping (foil)" },
       {
         type: "p",
-        text: "Hot stamping applies a metallic or coloured foil under heat and pressure — that gold or silver logo you see on premium skincare. It's the go-to when you want a luxurious, reflective finish that signals a high-end product. Best for bold, solid logos rather than fine detail.",
+        text: "Hot stamping applies a metallic or coloured foil under heat and pressure — that gold or silver logo you see on high-end skincare. It's the go-to when you want a shiny, reflective finish that signals an expensive product. Best for bold, solid logos rather than fine detail.",
       },
       { type: "h2", text: "Colour change" },
       {
         type: "p",
-        text: "Beyond printing your logo, you can change the colour or finish of the bottle or lid itself — frosted, matte, or a custom shade — to match your brand palette. Combined with a printed logo, it creates a fully coordinated, bespoke look.",
+        text: "Beyond printing your logo, you can change the colour or finish of the bottle or lid itself — frosted, matte, or a custom shade — to match your brand palette. Combined with a printed logo, it creates a fully coordinated, custom look.",
       },
       { type: "h2", text: "Getting your artwork right" },
       {
@@ -307,7 +307,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Refillable vs single-use" },
       {
         type: "p",
-        text: "Refillable wall-mounted or counter dispensers cut waste and cost per guest over time, and increasingly guests expect them. Single-use guest bottles still suit premium rooms and spa retail. Many properties mix the two: refillable for everyday toiletries, smaller branded bottles for premium suites or as retail items guests can buy.",
+        text: "Refillable wall-mounted or counter dispensers cut waste and cost per guest over time, and increasingly guests expect them. Single-use guest bottles still suit upmarket rooms and spa retail. Many properties mix the two: refillable for everyday toiletries, smaller branded bottles for high-end suites or as retail items guests can buy.",
       },
       { type: "h2", text: "Sizes that make sense" },
       {
@@ -340,7 +340,7 @@ export const POSTS: Post[] = [
     slug: "make-your-skincare-brand-look-luxury-minimalist-packaging",
     title: "How to Make Your Skincare Brand Look Luxury: The Minimalist Packaging Aesthetic",
     description:
-      "The clean, minimalist 'quiet luxury' packaging look that makes new skincare brands feel expensive — and how to get it on a small budget.",
+      "The clean, minimalist packaging look that makes new skincare brands feel expensive — and how to get it on a small budget.",
     excerpt:
       "The biggest celebrity beauty launches all share one look: clean, minimal, expensive-feeling. Here's how to capture that aesthetic for your own brand — without a big budget.",
     date: "2026-06-27",
@@ -348,12 +348,12 @@ export const POSTS: Post[] = [
     blocks: [
       {
         type: "p",
-        text: "Look at the beauty brands breaking records right now — the celebrity- and influencer-founded labels dominating TikTok and Sephora — and you'll notice they share a visual language. It's clean, pared-back and tactile: frosted glass, soft neutral tones, minimal text, a single confident logo. This 'quiet luxury' aesthetic is what makes a brand feel expensive before a customer has even tried the product. The good news: the look is far more about restraint than budget, so a small South African brand can absolutely achieve it.",
+        text: "Look at the beauty brands breaking records right now — the celebrity- and influencer-founded labels dominating TikTok and Sephora — and you'll notice they share a visual language. It's clean, pared-back and tactile: frosted glass, soft neutral tones, minimal text, a single confident logo. This understated look is what makes a brand feel expensive before a customer has even tried the product. The good news is that the look is far more about restraint than budget, so a small South African brand can pull it off.",
       },
       { type: "h2", text: "1. Let the bottle do the talking" },
       {
         type: "p",
-        text: "Premium-feeling packaging is usually simple packaging. Frosted glass droppers and jars, matte or soft-touch finishes, and a restrained colour palette read as high-end. Resist the urge to crowd the bottle — negative space signals confidence. A frosted glass serum bottle with a single hot-stamped logo will out-class a busy, over-printed one every time.",
+        text: "Expensive-looking packaging is usually simple packaging. Frosted glass droppers and jars, matte or soft-touch finishes, and a restrained colour palette read as high-end. Resist the urge to crowd the bottle — empty space signals confidence. A frosted glass serum bottle with a single hot-stamped logo will out-class a busy, over-printed one every time.",
       },
       { type: "h2", text: "2. Choose a tight, neutral palette" },
       {
@@ -363,21 +363,21 @@ export const POSTS: Post[] = [
       { type: "h2", text: "3. Coordinate the whole range" },
       {
         type: "p",
-        text: "Luxury reads as cohesion: the serum, the cream and the cleanser look like family. Use the same material story (e.g. frosted glass throughout), matching lids, and consistent logo placement. A coordinated three-product set looks far more established than three mismatched bottles — even if the formulas are simple.",
+        text: "An expensive range looks like a set: the serum, the cream and the cleanser look like family. Use the same material throughout (e.g. frosted glass), matching lids, and consistent logo placement. A coordinated three-product set looks far more established than three mismatched bottles, even if the formulas are simple.",
       },
       { type: "h2", text: "4. Brand it — even subtly" },
       {
         type: "p",
         text: "A logo is what turns a generic bottle into your product. Silk-screen printing gives a crisp, modern mark; hot stamping adds that reflective gold or silver detail associated with prestige skincare. Even a single-colour logo dramatically lifts perceived value. This is the highest-impact, lowest-cost upgrade you can make.",
       },
-      { type: "h2", text: "5. You don't need a thousand units to look the part" },
+      { type: "h2", text: "5. You don't need a thousand units to pull this off" },
       {
         type: "p",
         text: "The reason this aesthetic used to be out of reach for small brands was minimum orders. At Be Different Packaging you can build a coordinated, branded range from just 10 units per item, with transparent tiered pricing as you grow. So you can launch looking like an established brand — and scale once your products prove themselves.",
       },
       {
         type: "p",
-        text: "Quiet luxury isn't about spending more; it's about choosing well and staying consistent. Pick clean shapes, a calm palette, one good logo treatment, and coordinate the set — and your brand will punch well above its size.",
+        text: "This look isn't about spending more; it's about choosing well and staying consistent. Pick clean shapes, a calm palette, one good logo treatment, and coordinate the set, and your brand will punch well above its size.",
       },
     ],
     related: [
@@ -404,7 +404,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Niacinamide is relatively stable — which gives you options" },
       {
         type: "p",
-        text: "Unlike vitamin C or retinol, niacinamide is comparatively stable and not especially light- or air-sensitive, so you're not forced into amber glass or airless packaging. That means you can prioritise the look and the customer experience — though many brands still choose tinted or frosted bottles for the premium feel and to keep the serum looking fresh.",
+        text: "Unlike vitamin C or retinol, niacinamide is comparatively stable and not especially light- or air-sensitive, so you're not forced into amber glass or airless packaging. That means you can prioritise the look and the customer experience, though many brands still choose tinted or frosted bottles for the upmarket feel and to keep the serum looking fresh.",
       },
       { type: "h2", text: "Dropper bottles: the classic choice" },
       {
@@ -414,7 +414,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "When to consider a pump or airless bottle" },
       {
         type: "p",
-        text: "If your niacinamide serum is combined with sensitive actives (like vitamin C or peptides), or you want the most premium, modern presentation, an airless pump bottle protects the formula and dispenses almost every drop. A treatment pump is also a great fit for thinner, water-based serums applied to larger areas.",
+        text: "If your niacinamide serum is combined with sensitive actives (like vitamin C or peptides), or you want the most high-end, modern presentation, an airless pump bottle protects the formula and dispenses almost every drop. A treatment pump is also a great fit for thinner, water-based serums applied to larger areas.",
       },
       { type: "h2", text: "Get the size right" },
       {
@@ -422,7 +422,7 @@ export const POSTS: Post[] = [
         items: [
           "30ml glass dropper — the standard, sells well and finishes in a sensible time.",
           "15ml — great for a starter or travel size, or a higher-strength formula.",
-          "Airless 30–50ml — for premium positioning or multi-active blends.",
+          "Airless 30–50ml — for high-end positioning or multi-active blends.",
         ],
       },
       {
@@ -464,14 +464,14 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Option 2: Airless pump bottles" },
       {
         type: "p",
-        text: "Airless bottles keep oxygen out entirely — there's no dip tube and air never enters the chamber — so the formula is protected with every use, and you dispense almost all of it. For a premium vitamin C serum, or one combined with other sensitive actives, airless is the gold standard. Opaque or tinted airless bottles add light protection on top.",
+        text: "Airless bottles keep oxygen out entirely — there's no dip tube and air never enters the chamber — so the formula is protected with every use, and you dispense almost all of it. For a high-end vitamin C serum, or one combined with other sensitive actives, airless is the safest bet. Opaque or tinted airless bottles add light protection on top.",
       },
       { type: "h2", text: "Quick guide" },
       {
         type: "ul",
         items: [
           "Budget-friendly & classic look → amber glass dropper bottle.",
-          "Most protection & most premium → opaque airless pump.",
+          "Most protection & most high-end → opaque airless pump.",
           "Avoid → clear glass with a standard dropper for pure vitamin C.",
           "Always → store cool and away from direct light.",
         ],
@@ -520,7 +520,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "4. Brand it" },
       {
         type: "p",
-        text: "Your logo on your bottles is what turns a generic product into a brand. Silk-screen and hot-stamp printing are affordable ways to look professional from day one. Keep your design clean and your palette consistent across the range — the minimalist, coordinated look reads as premium.",
+        text: "Your logo on your bottles is what turns a generic product into a brand. Silk-screen and hot-stamp printing are affordable ways to look professional from day one. Keep your design clean and your palette consistent across the range — the minimalist, coordinated look reads as expensive.",
       },
       { type: "h2", text: "5. Handle the admin" },
       {
@@ -560,7 +560,7 @@ export const POSTS: Post[] = [
     blocks: [
       {
         type: "p",
-        text: "Retinol is the most-searched skincare active in the world and the gold standard for anti-ageing — but it's also one of the most unstable. Exposure to light and air breaks retinol down quickly, and once it degrades it stops delivering results. If you're bottling a retinol product, packaging is part of whether it actually works.",
+        text: "Retinol is the most-searched skincare active in the world and the benchmark ingredient for anti-ageing — but it's also one of the most unstable. Exposure to light and air breaks retinol down quickly, and once it degrades it stops delivering results. If you're bottling a retinol product, packaging is part of whether it actually works.",
       },
       { type: "h2", text: "Why retinol is so fragile" },
       {
@@ -581,7 +581,7 @@ export const POSTS: Post[] = [
       {
         type: "ul",
         items: [
-          "Best protection & most premium → opaque airless pump.",
+          "Best protection & most high-end → opaque airless pump.",
           "Classic active look on a budget → amber glass with a pump or dropper.",
           "Retinol in a cream → opaque airless jar or tube, not an open pot.",
           "Avoid → clear glass, open jars, standard air-return droppers.",
@@ -605,7 +605,7 @@ export const POSTS: Post[] = [
     description:
       "The best packaging for hyaluronic acid and peptide serums — dropper, pump or airless? How to choose for these popular hydrating actives.",
     excerpt:
-      "Hyaluronic acid and peptides are hero hydrating and anti-ageing actives. Here's how to package them so they look premium and stay effective.",
+      "Hyaluronic acid and peptides are hero hydrating and anti-ageing actives. Here's how to package them so they look the part and stay effective.",
     date: "2026-06-27",
     readMinutes: 4,
     blocks: [
@@ -621,7 +621,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Peptides: protect them a little more" },
       {
         type: "p",
-        text: "Peptides can be more sensitive, especially in blends with other actives. An airless pump bottle is a smart upgrade: it limits air exposure, keeps the formula fresh, and gives a premium, modern feel that suits a higher-priced peptide serum. If you prefer glass, a dropper in tinted or frosted glass is a good middle ground.",
+        text: "Peptides can be more sensitive, especially in blends with other actives. An airless pump bottle is a smart upgrade: it limits air exposure, keeps the formula fresh, and gives a sleek, modern feel that suits a higher-priced peptide serum. If you prefer glass, a dropper in tinted or frosted glass is a good middle ground.",
       },
       { type: "h2", text: "Choosing your format" },
       {
@@ -629,7 +629,7 @@ export const POSTS: Post[] = [
         items: [
           "Hyaluronic acid serum → 30ml glass dropper (frosted or clear).",
           "Water-light HA mist or essence → fine-mist spray or treatment pump.",
-          "Peptide serum → airless pump for protection and premium feel.",
+          "Peptide serum → airless pump for protection and an upmarket feel.",
           "Multi-active blend → airless, to protect the most sensitive ingredient.",
         ],
       },
@@ -683,7 +683,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "When cheap is fine — and when it isn't" },
       {
         type: "p",
-        text: "Prototyping a concept at home? A marketplace bottle is fine. Sending product to real customers, or trying to look like a brand worth paying for? Invest the small extra in reliable, brandable packaging. It pays for itself in fewer complaints, repeat customers, and a brand that looks the part.",
+        text: "Prototyping a concept at home? A marketplace bottle is fine. Sending product to real customers, or trying to look like a brand worth paying for? Invest the small extra in reliable, brandable packaging. It pays for itself in fewer complaints, repeat customers, and a brand that looks credible.",
       },
     ],
     related: [
@@ -710,7 +710,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Choose recyclable materials" },
       {
         type: "p",
-        text: "Glass is endlessly recyclable and feels premium — a natural fit for a sustainability story. PET is widely recyclable and lightweight, which also lowers the carbon cost of shipping. Leading with glass for hero products and recyclable PET elsewhere is a credible, practical approach.",
+        text: "Glass is endlessly recyclable and feels expensive, which makes it a natural fit for a sustainability story. PET is widely recyclable and lightweight, which also lowers the carbon cost of shipping. Leading with glass for hero products and recyclable PET elsewhere is a credible, practical approach.",
       },
       { type: "h2", text: "Design for refills and reuse" },
       {
@@ -720,7 +720,7 @@ export const POSTS: Post[] = [
       { type: "h2", text: "Keep the look clean" },
       {
         type: "p",
-        text: "Sustainability and the minimalist 'quiet luxury' aesthetic go hand in hand — less plastic, less over-packaging, simple branding. A clean frosted glass bottle with a single logo signals both premium and conscious, which is exactly where the market is heading.",
+        text: "Sustainability and the clean, minimalist aesthetic go hand in hand: less plastic, less over-packaging, simple branding. A clean frosted glass bottle with a single logo signals both high-end and conscious, which is exactly where the market is heading.",
       },
       { type: "h2", text: "Make the claims you can back up" },
       {
@@ -729,7 +729,7 @@ export const POSTS: Post[] = [
       },
       {
         type: "p",
-        text: "Because you can order from just 10 units with tiered pricing, it's easy to trial recyclable glass and refill-friendly formats for your range without a large commitment. Add your branding and you've got a sustainable line that looks the part.",
+        text: "Because you can order from just 10 units with tiered pricing, it's easy to trial recyclable glass and refill-friendly formats for your range without a large commitment. Add your branding and you've got a sustainable line that looks every bit the part.",
       },
     ],
     related: [
