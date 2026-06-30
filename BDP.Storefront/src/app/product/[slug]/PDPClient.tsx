@@ -372,8 +372,6 @@ export default function PDPClient({ product }: { product: Product }) {
 
   const tiers = selectedVariant.pricingTiers ?? [];
   const moq = Math.max(selectedVariant.moq || MIN_QTY, MIN_QTY);
-  const maxTierQty = tiers.reduce((m, t) => Math.max(m, t.quantity), 0);
-  const sliderMax = Math.max(maxTierQty, moq * 50);
 
   // Sliding-scale unit price interpolated between surrounding anchor tiers
   const unitPrice = interpolateTierPrice(tiers, quantity);
@@ -531,27 +529,6 @@ export default function PDPClient({ product }: { product: Product }) {
               <QuantityInput value={quantity} min={moq} onChange={handleQuantityChange} />
             </div>
             {moqError && <p className="text-xs mt-1" style={{ color: "#D4A89A" }}>{moqError}</p>}
-
-            {/* Quantity slider — drag to see the unit price drop in real time */}
-            {sliderMax > moq && (
-              <div className="mt-4">
-                <input
-                  type="range"
-                  min={moq}
-                  max={sliderMax}
-                  step={moq}
-                  value={Math.min(quantity, sliderMax)}
-                  onChange={(e) => handleQuantityChange(parseInt(e.target.value, 10))}
-                  className="w-full"
-                  style={{ accentColor: "#C4A882" }}
-                  aria-label="Quantity slider"
-                />
-                <div className="flex justify-between text-[11px] mt-1" style={{ color: "#C9B8A8" }}>
-                  <span>{moq}</span>
-                  <span>{sliderMax.toLocaleString()}</span>
-                </div>
-              </div>
-            )}
 
             {/* Tier breakpoints — shows the volume discount */}
             {tiers.length > 0 && (
