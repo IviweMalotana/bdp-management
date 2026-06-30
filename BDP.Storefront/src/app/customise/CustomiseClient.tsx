@@ -8,7 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 const TECHNIQUES = [
   {
     name: "Silk Screen Printing",
-    moq: 100,
+    moq: 2500,
     lead: "4–6 weeks",
     description:
       "Up to 2 colours printed directly onto the bottle. Clean, precise, and durable. Ideal for logos, wordmarks, and simple graphics.",
@@ -16,7 +16,7 @@ const TECHNIQUES = [
   },
   {
     name: "Hot Stamp Foiling",
-    moq: 100,
+    moq: 2500,
     lead: "4–6 weeks",
     description:
       "Metallic foil pressed on under heat, for a shiny gold, silver or rose-gold finish. Best for bold logos rather than fine detail.",
@@ -547,7 +547,7 @@ export default function CustomisePage() {
             className="hero-animate text-lg max-w-xl"
             style={{ color: "#4A4540", lineHeight: 1.8 }}
           >
-            Add your brand identity directly to the packaging. From 100 units,
+            Add your brand identity directly to the packaging. From 2,500 units,
             shipped from our China supplier in 4–6 weeks.
           </p>
         </div>
@@ -660,7 +660,7 @@ export default function CustomisePage() {
               {
                 step: "01",
                 heading: "Choose your bottle",
-                body: "Browse the shop and select your packaging. Add 100+ units to your cart.",
+                body: "Browse the shop and select your packaging. Add 2,500+ units to your cart.",
               },
               {
                 step: "02",

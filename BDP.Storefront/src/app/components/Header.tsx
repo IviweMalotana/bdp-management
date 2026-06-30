@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
 import { useCurrencyStore } from "@/store/currencyStore";
@@ -16,7 +16,8 @@ export default function Header() {
   const items = useCartStore((s) => s.items);
   const openCart = useCartStore((s) => s.openDrawer);
   const itemCount = items.reduce((n, i) => n + i.quantity, 0);
-  const { jwt, firstName } = useAuthStore();
+  const { jwt, firstName, clearAuth } = useAuthStore();
+  const router = useRouter();
 
   useEffect(() => {
     fetch(`${API}/api/storefront/categories`)
@@ -51,6 +52,12 @@ export default function Header() {
   const pathname = usePathname();
   const accountHref = jwt ? "/account" : "/auth/login";
   const accountLabel = jwt && firstName ? firstName : "Account";
+
+  function handleLogout() {
+    clearAuth();
+    setDrawerOpen(false);
+    router.push("/");
+  }
 
   return (
     <header
@@ -142,6 +149,15 @@ export default function Header() {
           <Link href={accountHref} className="hidden md:block text-sm" style={{ color: "#4A4540" }}>
             {accountLabel}
           </Link>
+          {jwt && (
+            <button
+              onClick={handleLogout}
+              className="hidden md:block text-sm"
+              style={{ color: "#4A4540" }}
+            >
+              Log out
+            </button>
+          )}
           <button onClick={openCart} className="relative" aria-label="Open cart">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#1C1A17" strokeWidth="1.5">
               <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z" />
@@ -232,6 +248,15 @@ export default function Header() {
             >
               {accountLabel}
             </Link>
+            {jwt && (
+              <button
+                onClick={handleLogout}
+                className="text-base mt-1 text-left"
+                style={{ color: "#4A4540" }}
+              >
+                Log out
+              </button>
+            )}
             <MobileCurrencyPills onClose={() => setDrawerOpen(false)} />
           </div>
         </div>

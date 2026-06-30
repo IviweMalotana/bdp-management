@@ -24,7 +24,7 @@ const FEATURES = [
   {
     icon: "✦",
     heading: "Branded packaging",
-    body: "Add your property logo via silk screen or hot stamp. Minimum 100 units. Delivered in 4–6 weeks.",
+    body: "Add your property logo via silk screen or hot stamp. Minimum 2,500 units. Delivered in 4–6 weeks.",
   },
   {
     icon: "⊞",
