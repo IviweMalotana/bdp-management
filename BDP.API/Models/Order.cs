@@ -20,6 +20,9 @@ public class Order
     public bool IsPaid { get; set; }
     public DateTime? PaidAt { get; set; }
     public string? PaystackPaymentReference { get; set; }
+    // Set once the order-confirmation email has gone out, so webhook + success-page
+    // verify can both trigger it without sending duplicates.
+    public DateTime? ConfirmationEmailSentAt { get; set; }
     public int? RecurringOrderId { get; set; }
     public string? Notes { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -19,6 +19,7 @@ public class StorefrontCheckoutController : ControllerBase
     private readonly IConfiguration _config;
     private readonly PricingService _pricing;
     private readonly YunExpressService _yunExpress;
+    private readonly OrderEmailService _orderEmail;
 
     public StorefrontCheckoutController(
         AppDbContext db,
@@ -27,7 +28,8 @@ public class StorefrontCheckoutController : ControllerBase
         PayJustNowService payJustNow,
         IConfiguration config,
         PricingService pricing,
-        YunExpressService yunExpress)
+        YunExpressService yunExpress,
+        OrderEmailService orderEmail)
     {
         _db = db;
         _shipping = shipping;
@@ -36,6 +38,7 @@ public class StorefrontCheckoutController : ControllerBase
         _config = config;
         _pricing = pricing;
         _yunExpress = yunExpress;
+        _orderEmail = orderEmail;
     }
 
     private static readonly JsonSerializerOptions CamelCaseJson =
@@ -330,6 +333,7 @@ public class StorefrontCheckoutController : ControllerBase
                 order.PaidAt = DateTime.UtcNow;
                 await _db.SaveChangesAsync();
             }
+            await _orderEmail.TrySendOrderConfirmationAsync(order.Id);
             return Ok(new { token, return_url = $"{storefront}/checkout/success/{order.Id}" });
         }
 
@@ -434,6 +438,10 @@ public class StorefrontCheckoutController : ControllerBase
             _db.Carts.Remove(cart);
 
         await _db.SaveChangesAsync();
+
+        // Send the confirmation here too (idempotent) so it goes out even if the
+        // Paystack webhook isn't configured/received.
+        await _orderEmail.TrySendOrderConfirmationAsync(order.Id);
 
         return Ok(new { success = true, orderId = order.Id });
     }

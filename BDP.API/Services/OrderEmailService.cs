@@ -49,6 +49,11 @@ public class OrderEmailService
                 return;
             }
 
+            // Idempotent: only ever send one confirmation, no matter how many paths
+            // (webhook, success-page verify, PayJustNow callback) call this.
+            if (order.ConfirmationEmailSentAt != null)
+                return;
+
             var email = ResolveRecipientEmail(order);
             if (string.IsNullOrEmpty(email))
             {
@@ -109,6 +114,9 @@ public class OrderEmailService
             }
 
             await _email.SendAsync(email, recipientName, subject, html, category: "order_confirmation");
+
+            order.ConfirmationEmailSentAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
 
             _logger.LogInformation("Order confirmation sent for {OrderNumber} to {Email}", order.OrderNumber, email);
         }

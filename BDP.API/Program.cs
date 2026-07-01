@@ -193,6 +193,7 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""ProductImages"" ADD COLUMN IF NOT EXISTS ""PrintArea"" text;
             ALTER TABLE ""CartItems"" ADD COLUMN IF NOT EXISTS ""CustomisationOptionIdsJson"" text;
             ALTER TABLE ""OrderItems"" ADD COLUMN IF NOT EXISTS ""CustomisationOptionIdsJson"" text;
+            ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ConfirmationEmailSentAt"" timestamp with time zone;
             CREATE TABLE IF NOT EXISTS ""EmailTemplates"" (
                 ""Id"" serial PRIMARY KEY,
                 ""Name"" text NOT NULL,
