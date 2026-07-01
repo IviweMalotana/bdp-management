@@ -3,10 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { useAuthStore } from "@/store/authStore";
-import { getShippingOptions, initiateCheckout, verifyCheckout, getPaymentMethods, ShippingOption } from "@/lib/api";
+import { getShippingOptions, initiateCheckout, getPaymentMethods, ShippingOption } from "@/lib/api";
 
 const SA_PROVINCES = [
   "Eastern Cape", "Free State", "Gauteng", "KwaZulu-Natal",
@@ -246,8 +245,7 @@ function ArtworkUploader({
 }
 
 export default function CheckoutPage() {
-  const router = useRouter();
-  const { items, cartId, getSessionToken, clearCart } = useCartStore();
+  const { items, cartId, getSessionToken } = useCartStore();
   const { jwt, email: userEmail } = useAuthStore();
 
   const [step, setStep] = useState(1);
@@ -256,7 +254,7 @@ export default function CheckoutPage() {
   const [selectedOption, setSelectedOption] = useState<ShippingOption | null>(null);
   const [shippingLoading, setShippingLoading] = useState(false);
   const [shippingError, setShippingError] = useState<string | null>(null);
-  const [checkoutResult, setCheckoutResult] = useState<{ orderId: number; paystackReference: string; paystackPublicKey: string; amountZAR: number } | null>(null);
+  const [checkoutResult, setCheckoutResult] = useState<{ orderId: number; paystackReference: string; paystackPublicKey: string; paystackAuthorizationUrl?: string; amountZAR: number } | null>(null);
   const [loading, setLoading] = useState(false);
 
   const customisedItems = items.filter((i) => i.customisationOptionId != null);
@@ -333,7 +331,7 @@ export default function CheckoutPage() {
         shippingServiceCode: selectedOption.code,
         shippingServiceName: selectedOption.name,
         shippingPriceZAR: selectedOption.priceZAR,
-      }, jwt ?? undefined) as { orderId: number; provider?: string; redirectUrl?: string; amountZAR: number; paystackReference?: string; paystackPublicKey?: string };
+      }, jwt ?? undefined) as { orderId: number; provider?: string; redirectUrl?: string; amountZAR: number; paystackReference?: string; paystackPublicKey?: string; paystackAuthorizationUrl?: string };
 
       // PayJustNow: redirect the customer to PayJustNow to complete payment.
       if (paymentProvider === "PayJustNow") {
@@ -353,38 +351,23 @@ export default function CheckoutPage() {
     }
   }
 
-  async function onPaymentSuccess(reference: string) {
-    const token = getSessionToken();
-    const result = await verifyCheckout(reference, token, jwt ?? undefined) as { success: boolean; orderId: number };
-    if (result.success) {
-      clearCart();
-      router.push(`/checkout/success/${result.orderId}`);
-    }
-  }
-
   function launchPaystack() {
-    if (!checkoutResult) return;
-    const PaystackPop = (window as unknown as { PaystackPop: { setup: (opts: unknown) => { openIframe: () => void } } }).PaystackPop;
-    if (!PaystackPop) { alert("Paystack not loaded. Please refresh."); return; }
-    const handler = PaystackPop.setup({
-      key: checkoutResult.paystackPublicKey || process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY,
-      email: step1Data?.email,
-      amount: Math.round(checkoutResult.amountZAR * 100),
-      ref: checkoutResult.paystackReference,
-      currency: "ZAR",
-      onSuccess: (transaction: { reference: string }) => onPaymentSuccess(transaction.reference),
-      onClose: () => {},
-    });
-    handler.openIframe();
+    // Redirect to Paystack's hosted checkout (authorization_url), which the API
+    // generated with the secret key. This makes the payment page's mode (test/live)
+    // always match the server's Paystack keys — no public key on the frontend, so no
+    // test/live mismatch. Paystack returns to our callback_url (/checkout/success),
+    // where PaymentVerifier confirms the payment.
+    if (checkoutResult?.paystackAuthorizationUrl) {
+      window.location.href = checkoutResult.paystackAuthorizationUrl;
+      return;
+    }
+    alert("Payment could not be started. Please try again.");
   }
 
   const steps = ["Contact & address", "Shipping", "Review", "Payment"];
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-16">
-      {/* Paystack script */}
-      <script src="https://js.paystack.co/v1/inline.js" async />
-
       {/* Progress */}
       <div className="flex items-center gap-3 mb-12">
         {steps.map((s, i) => (
