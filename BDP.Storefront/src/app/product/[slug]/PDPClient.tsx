@@ -76,6 +76,11 @@ function interpolateMarkup(qty: number): number {
 }
 
 // Interpolate sale price per unit between the two surrounding tier anchors
+// Match the server's rounding so the PDP total equals the cart/checkout total to
+// the cent: per-unit prices to 4 dp, line totals to 2 dp (see PricingService).
+const round4 = (n: number) => Math.round(n * 1e4) / 1e4;
+const round2 = (n: number) => Math.round(n * 1e2) / 1e2;
+
 function interpolateTierPrice(tiers: Tier[], qty: number): number {
   if (tiers.length === 0) return 0;
   const sorted = [...tiers].sort((a, b) => a.quantity - b.quantity);
@@ -86,7 +91,7 @@ function interpolateTierPrice(tiers: Tier[], qty: number): number {
     const lo = sorted[i], hi = sorted[i + 1];
     if (qty >= lo.quantity && qty <= hi.quantity) {
       const t = (qty - lo.quantity) / (hi.quantity - lo.quantity);
-      return perUnit(lo) + (perUnit(hi) - perUnit(lo)) * t;
+      return round4(perUnit(lo) + (perUnit(hi) - perUnit(lo)) * t);
     }
   }
   return perUnit(sorted[sorted.length - 1]);
@@ -96,7 +101,7 @@ function interpolateTierPrice(tiers: Tier[], qty: number): number {
 function interpolateCustomisationPrice(option: CustomisationOption, qty: number): number {
   if (option.type === "ColourChange") return option.pricePerUnitZAR; // flat R3
   const markup = interpolateMarkup(qty) / 100;
-  return option.costPerUnitZAR * (1 + markup);
+  return round4(option.costPerUnitZAR * (1 + markup));
 }
 interface ProductImage { url: string; altText: string; isPrimary: boolean }
 
@@ -375,7 +380,7 @@ export default function PDPClient({ product }: { product: Product }) {
 
   // Sliding-scale unit price interpolated between surrounding anchor tiers
   const unitPrice = interpolateTierPrice(tiers, quantity);
-  const lineTotal = unitPrice * quantity;
+  const lineTotal = round2(unitPrice * quantity);
 
   // Customisation add-ons
   const silkOption = product.customisationOptions.find((co) => co.type === "SilkScreen");
@@ -391,9 +396,9 @@ export default function PDPClient({ product }: { product: Product }) {
   const hotUnitPrice = hotOption ? interpolateCustomisationPrice(hotOption, quantity) : 0;
   const colourUnitPrice = colourOption ? interpolateCustomisationPrice(colourOption, quantity) : 0;
 
-  const silkCost = silkScreen && silkEnabled ? silkUnitPrice * quantity : 0;
-  const hotCost = hotStamping && hotEnabled ? hotUnitPrice * quantity : 0;
-  const colourCost = colourChange && colourEnabled ? colourUnitPrice * quantity : 0;
+  const silkCost = silkScreen && silkEnabled ? round2(silkUnitPrice * quantity) : 0;
+  const hotCost = hotStamping && hotEnabled ? round2(hotUnitPrice * quantity) : 0;
+  const colourCost = colourChange && colourEnabled ? round2(colourUnitPrice * quantity) : 0;
   const grandTotal = lineTotal + silkCost + hotCost + colourCost;
 
   function handleQuantityChange(n: number) {
