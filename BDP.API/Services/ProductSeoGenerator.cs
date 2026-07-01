@@ -23,7 +23,7 @@ public static class ProductSeoGenerator
     private static string SustainabilityForMaterial(string? material)
     {
         var m = material?.ToLowerInvariant() ?? "";
-        if (m.Contains("glass")) return "premium, sustainable and fully recyclable";
+        if (m.Contains("glass")) return "sustainable and fully recyclable";
         if (m.Contains("pet") || m.Contains("plastic")) return "lightweight, durable and shatterproof";
         return "durable and reliable";
     }
@@ -31,9 +31,9 @@ public static class ProductSeoGenerator
     private static string AestheticForFinish(string? finish)
     {
         var f = finish?.ToLowerInvariant() ?? "";
-        if (f.Contains("frosted")) return "frosted matte finish with understated luxury";
+        if (f.Contains("frosted")) return "frosted matte finish";
         if (f.Contains("glossy") || f.Contains("gloss")) return "sleek, glossy modern finish";
-        if (f.Contains("sandblasted")) return "artisanal sandblasted finish with spa-quality texture";
+        if (f.Contains("sandblasted")) return "sandblasted finish with a soft texture";
         return string.IsNullOrWhiteSpace(finish) ? "" : $"{finish} finish";
     }
 
@@ -125,7 +125,7 @@ public static class ProductSeoGenerator
                 : $"Designed for {useCase}.";
         }
 
-        var sentence3 = "Minimum order 10 units with wholesale pricing and optional silk screen printing or hot stamping from 1,000 units.";
+        var sentence3 = "Minimum order 10 units with wholesale pricing and optional silk screen printing or hot stamping from 2,500 units.";
 
         return $"{sentence1} {sentence2} {sentence3}";
     }
@@ -299,7 +299,7 @@ public static class ProductSeoGenerator
                 : $"Designed for {useCase}.";
         }
 
-        var sentence3 = "Minimum order 10 units with wholesale pricing and optional silk screen printing or hot stamping from 1,000 units.";
+        var sentence3 = "Minimum order 10 units with wholesale pricing and optional silk screen printing or hot stamping from 2,500 units.";
         return $"{sentence1} {sentence2} {sentence3}";
     }
 }
