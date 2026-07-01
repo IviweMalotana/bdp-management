@@ -76,7 +76,7 @@ public class PaystackService
             amount = amountKobo,
             currency = "ZAR",
             metadata = new { order_id = orderId, channel = "storefront" },
-            callback_url = _config["Paystack:StorefrontCallbackUrl"]
+            callback_url = ResolveStorefrontCallbackUrl()
         };
         var response = await _http.PostAsync("/transaction/initialize",
             new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
@@ -101,7 +101,7 @@ public class PaystackService
             amount = (long)(amountZAR * 100),
             currency = "ZAR",
             metadata,
-            callback_url = callbackUrl ?? _config["Paystack:StorefrontCallbackUrl"]
+            callback_url = callbackUrl ?? ResolveStorefrontCallbackUrl()
         };
         var response = await _http.PostAsync("/transaction/initialize",
             new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json"));
@@ -110,6 +110,23 @@ public class PaystackService
         if (result?.Data == null)
             throw new InvalidOperationException($"Paystack initialization failed: {json}");
         return (result.Data.Reference, result.Data.AuthorizationUrl, result.Data.AccessCode);
+    }
+
+    // The callback_url Paystack redirects the customer to after payment. Never allow the
+    // localhost dev default in production: if Paystack:StorefrontCallbackUrl is missing or
+    // points at localhost, fall back to STOREFRONT_URL (always set on Railway) so a
+    // mis-set config can never strand a paying customer on a dead URL.
+    private string ResolveStorefrontCallbackUrl()
+    {
+        var configured = _config["Paystack:StorefrontCallbackUrl"];
+        if (!string.IsNullOrWhiteSpace(configured) &&
+            !configured.Contains("localhost", StringComparison.OrdinalIgnoreCase))
+            return configured;
+
+        var storefront = (Environment.GetEnvironmentVariable("STOREFRONT_URL")
+            ?? _config["STOREFRONT_URL"] ?? _config["Storefront:Url"]
+            ?? "https://www.bedifferentpackaging.com").TrimEnd('/');
+        return $"{storefront}/checkout/success";
     }
 
     public bool VerifyWebhookSignature(string rawBody, string signature)
