@@ -91,6 +91,7 @@ public class StorefrontCartController : ControllerBase
                 {
                     item.Id,
                     item.ProductVariantId,
+                    productName = item.ProductVariant.Product?.Name,
                     variant = new
                     {
                         item.ProductVariant.SKU,

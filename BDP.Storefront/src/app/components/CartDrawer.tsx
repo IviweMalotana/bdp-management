@@ -142,7 +142,7 @@ export default function CartDrawer() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium truncate" style={{ color: "#1C1A17" }}>
-                      {item.variant.size || item.variant.sku}
+                      {item.productName ?? item.variant.size ?? item.variant.sku}
                     </p>
                     <p className="text-xs font-mono mb-1" style={{ color: "#C9B8A8" }}>
                       {item.variant.sku}
