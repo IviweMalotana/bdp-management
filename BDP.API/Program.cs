@@ -196,13 +196,19 @@ using (var scope = app.Services.CreateScope())
             ALTER TABLE ""Orders"" ADD COLUMN IF NOT EXISTS ""ConfirmationEmailSentAt"" timestamp with time zone;
             CREATE TABLE IF NOT EXISTS ""EmailTemplates"" (
                 ""Id"" serial PRIMARY KEY,
+                ""Key"" text NOT NULL DEFAULT '',
                 ""Name"" text NOT NULL,
+                ""Description"" text NOT NULL DEFAULT '',
                 ""Subject"" text NOT NULL,
                 ""HtmlBody"" text NOT NULL,
                 ""IsActive"" boolean NOT NULL DEFAULT true,
                 ""CreatedAt"" timestamp with time zone NOT NULL DEFAULT now(),
                 ""UpdatedAt"" timestamp with time zone NOT NULL DEFAULT now()
             );
+            -- Existing DBs created the table before these columns existed in the model;
+            -- add them so seeding and template lookups (by Key) stop throwing 42703.
+            ALTER TABLE ""EmailTemplates"" ADD COLUMN IF NOT EXISTS ""Key"" text NOT NULL DEFAULT '';
+            ALTER TABLE ""EmailTemplates"" ADD COLUMN IF NOT EXISTS ""Description"" text NOT NULL DEFAULT '';
             CREATE TABLE IF NOT EXISTS ""EmailLogs"" (
                 ""Id"" serial PRIMARY KEY,
                 ""ToEmail"" text NOT NULL,
