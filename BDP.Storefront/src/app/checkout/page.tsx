@@ -587,7 +587,10 @@ export default function CheckoutPage() {
           <div className="space-y-3">
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-sm" style={{ color: "#1C1A17" }}>
-                <span>{item.variant?.sku} × {item.quantity}</span>
+                <span>
+                  {item.productName ?? item.variant?.sku}
+                  {item.productName && item.variant?.sku ? ` (${item.variant.sku})` : ""} × {item.quantity}
+                </span>
                 <span>{formatZAR(item.lineTotalZAR)}</span>
               </div>
             ))}
@@ -634,7 +637,7 @@ export default function CheckoutPage() {
                   cartItemId={item.id}
                   sessionToken={getSessionToken()}
                   jwt={jwt}
-                  label={`Customisation artwork for ${item.variant?.sku} × ${item.quantity}`}
+                  label={`Customisation artwork for ${item.productName ?? item.variant?.sku} × ${item.quantity}`}
                 />
               ))}
             </div>
